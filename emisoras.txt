@@ -1,3 +1,7 @@
+# Listado de emisoras obtenido inicialmente de https://gist.github.com/pisculichi/fae88a2f5570ab22da53
+# Las emisoras comentadas (#) no son tenidas en cuenta por el script
+# Actualizado el 12/07/21
+
 #"AMs Nacionales"
 
 http://cdn.instream.audio:9288/stream                                       "Radio Madre (530)"

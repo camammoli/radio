@@ -6,23 +6,22 @@
 # 	  (por defecto llama a mplayer)
 
 # Carlos Ariel Mammoli (Chang)
-# <cmammoli arroba gmail.com - 10072021
+# <cmammoli arroba gmail.com - 12/07/21
 
 # Fuentes
-# https://gist.github.com/pisculichi/fae88a2f5570ab22da53
-# https://www.taringa.net/+linux/3-scripts-utiles-para-bash_x5nap
+# https://gist.github.com/pisculichi/fae88a2f5570ab22da53 (1)
+# https://www.taringa.net/+linux/3-scripts-utiles-para-bash_x5nap (2)
+# https://andalinux.wordpress.com/2017/08/01/obtener-el-directorio-de-ejecucion-de-un-script-bash/ (3)
 
-# Truco para obtener el path donde esta el script (https://andalinux.wordpress.com/2017/08/01/obtener-el-directorio-de-ejecucion-de-un-script-bash/)
+# Truco para obtener el path donde esta el script (3)
 SCRIPT=$(readlink -f $0)
 dir_base=`dirname $SCRIPT`
 
 radio=`grep -v "#" $dir_base/emisoras.txt | grep -m 1 -i $1 | cut -d " " -f1`
 
 if [[ $radio == "" ]]; then
-	#statements
+	# Si no se encontro la emisora en el listado
 	
-	#estaciones=`grep -v "# " $dir_base/emisoras.txt | cut -d "\"" -f2`
-
 	echo "
 	Uso: radio.sh radio [reproductor]
 
@@ -31,10 +30,9 @@ if [[ $radio == "" ]]; then
 
 	"
 
-	#echo $estaciones
 	grep -v "# " $dir_base/emisoras.txt | cut -d "\"" -f2
 else 
-	#statements
+	# Si se encontro la emisora
 	if [[ $2 == "" ]]; then
 		# Por defecto se usa mplayer
 		mplayer -af lavcresample=44100 -cache 64 $radio
