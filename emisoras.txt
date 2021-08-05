@@ -62,7 +62,7 @@ http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad38                       
 http://streaming.latina101.com.ar:8080/RadioLatina                                               "Latina (101.1)"
 # https://s8.stweb.tv/popradio/live/playlist.m3u8                                                  "Pop (101.5)"
 # http://server4.stweb.tv:1935/lapatriada/live/playlist.m3u8                                       "La patriada (102.1)"
-# http://playerservices.streamtheworld.com/api/livestream-redirect/ASPENAAC                        "Aspen (102.3)"
+https://mdstrm.com/audio/60a2745ff943100826374a70/icecast.audio                                    "Aspen (102.3)"
 # http://209.95.35.49:7013/live                                                                    "Radio Uno (103.1)"
 # http://streamall.alsolnet.com:443/klimaxok                                                       "Klimax (103.5)"
 # http://streamall.alsolnet.com:443/fmsonidohd?type=.flv                                           "Sonido (103.5)"	
