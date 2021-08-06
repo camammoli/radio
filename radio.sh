@@ -17,9 +17,9 @@
 SCRIPT=$(readlink -f $0)
 dir_base=`dirname $SCRIPT`
 
-radio=`grep -v "#" $dir_base/emisoras.txt | grep -m 1 -i $1 | cut -d " " -f1`
+cuantos=`grep -v "#" $dir_base/emisoras.txt | grep -n -c -i "$1"`
 
-if [[ $radio == "" ]]; then
+if [[ $cuantos != "1" ]]; then
 	# Si no se encontro la emisora en el listado
 	
 	echo "
@@ -30,9 +30,14 @@ if [[ $radio == "" ]]; then
 
 	"
 
-	grep -v "# " $dir_base/emisoras.txt | cut -d "\"" -f2
+	grep -v "#" $dir_base/emisoras.txt | grep -v "://" | grep -i "$1"
 else 
 	# Si se encontro la emisora
+	
+	linea=`grep -n -m 1 -i "$1" $dir_base/emisoras.txt | cut -d ":" -f1`
+	linea=$((linea + 1)) 
+	radio=`awk "NR==$linea" $dir_base/emisoras.txt`
+
 	if [[ $2 == "" ]]; then
 		# Por defecto se usa mplayer
 		mplayer -af lavcresample=44100 -cache 64 $radio
