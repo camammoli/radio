@@ -7,9 +7,21 @@ El uso es mas simple aun: ./radio.sh sin parametros lista las emisoras disponibl
 
 Si se pasa como segundo parametro V se usa cvlc en lugar de mplayer.
 
-El formato del archivo de emisoras es muy sencillo tambien: cada linea contiene la url de la emisora, separada por espacios y entre comillas el nombre de la misma.
+El formato del archivo de emisoras es muy sencillo tambien: una linea que contiene el nombre de la emisora con el formato:
 
-Las lineas con emisoras comentadas no son tenidas en cuenta.
+[#] NOMBRE EMISORA [BANDA MHz] [* PRVINCIA, PAIS]
+
+[#] 				Opcional, si existe antes del nombre de la emisora indica que la misma esta deshabilitada
+					y no se tendra en cuenta en el script
+
+NOMBRE EMISORA 		Indica el nombre de la emisora
+
+[BANDA MHz]			Opcional, si esta disponible indica la banda de frecuenta (AM / FM) y la frecuencia en MHz
+
+[* PRVINCIA, PAIS]	Opcional, un * para separar seguido de un espacio y la provincia y pais de la emisora
+
+En la linea siguiente se encuentra la url de la emisora
+
 
 Recomiendo crear un alias con el siguiente contenido para poder usar el script sin tener que invocar todo el path:
 
