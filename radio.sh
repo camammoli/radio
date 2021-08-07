@@ -23,16 +23,22 @@ cuantos=$(grep -v "#" "$dir_base/emisoras.txt" | grep -n -c -i "$1")
 if [[ $cuantos != "1" ]]; then
 	# Si no se encontro ninguna emisora (o si por el contrario se encontro mas de 1) 
 	
-	# Muestra instrucciones de uso 
-	echo "
+	# Instrucciones de uso 
+	instrucciones="
 	Uso: radio.sh radio [reproductor]
 
 		radio : Parte del nombre de la estación o la frecuencia de la misma.
 		reproductor : Opcional, si se indica V usara cvlc, de lo contrario usara mplayer.
 	"
 
-	# Muestra el listado de las emisoras que concuerdan
-	grep -v "#" "$dir_base/emisoras.txt" | grep -v "://" | grep -i "$1"
+	# Listado de las emisoras que concuerdan
+	listadoemisoras="
+	Listado de emisoras disponibles ($1)
+
+	$(grep -v "#" "$dir_base/emisoras.txt" | grep -v "://" | grep -i "$1")"
+
+	echo "$instrucciones $listadoemisoras" | less
+
 else 
 	# Si se encontro una emisora que concuerda con el criterio
 	
