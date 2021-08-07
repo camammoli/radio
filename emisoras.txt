@@ -1972,3 +1972,5 @@ http://www.servidorstreaming2.com:9962/;stream.mp3
 [#656] Feeling
 http://www.turadioenvivo.com:8430/stream
 
+[657] Aspen (102.3) (¡Gracias cristianmiranda!)
+https://mdstrm.com/audio/60a2745ff943100826374a70/icecast.audio
