@@ -13,37 +13,43 @@
 # https://www.taringa.net/+linux/3-scripts-utiles-para-bash_x5nap (2)
 # https://andalinux.wordpress.com/2017/08/01/obtener-el-directorio-de-ejecucion-de-un-script-bash/ (3)
 
-# Truco para obtener el path donde esta el script (3)
-SCRIPT=$(readlink -f $0)
-dir_base=`dirname $SCRIPT`
+# Obtiene el path desde donde se esta ejecutando el script (3)
+SCRIPT=$(readlink -f "$0")
+dir_base=$(dirname "$SCRIPT")
 
-cuantos=`grep -v "#" $dir_base/emisoras.txt | grep -n -c -i "$1"`
+# Calcula la cantidad de emisoras que corresponden al criterio de busqueda
+cuantos=$(grep -v "#" "$dir_base/emisoras.txt" | grep -n -c -i "$1")
 
 if [[ $cuantos != "1" ]]; then
-	# Si no se encontro la emisora en el listado
+	# Si no se encontro ninguna emisora (o si por el contrario se encontro mas de 1) 
 	
+	# Muestra instrucciones de uso 
 	echo "
 	Uso: radio.sh radio [reproductor]
 
 		radio : Parte del nombre de la estación o la frecuencia de la misma.
 		reproductor : Opcional, si se indica V usara cvlc, de lo contrario usara mplayer.
-
 	"
 
-	grep -v "#" $dir_base/emisoras.txt | grep -v "://" | grep -i "$1"
+	# Muestra el listado de las emisoras que concuerdan
+	grep -v "#" "$dir_base/emisoras.txt" | grep -v "://" | grep -i "$1"
 else 
-	# Si se encontro la emisora
+	# Si se encontro una emisora que concuerda con el criterio
 	
-	linea=`grep -n -m 1 -i "$1" $dir_base/emisoras.txt | cut -d ":" -f1`
-	linea=$((linea + 1)) 
-	radio=`awk "NR==$linea" $dir_base/emisoras.txt`
+	# Obtiene el numero de linea donde esta en el archivo
+	linea=$(grep -n -m 1 -i "$1" "$dir_base/emisoras.txt" | cut -d ":" -f1)
+	linea=$((linea + 1)) # Le suma 1 para obtener el numero de linea donde esta la url de la emisorra
+	radio=$(awk "NR==$linea" "$dir_base/emisoras.txt") # Obtiene la la url
 
+	# Si no se indico nada como segundo parametro asume que el reproductor es mplayer
 	if [[ $2 == "" ]]; then
-		# Por defecto se usa mplayer
-		mplayer -af lavcresample=44100 -cache 64 $radio
+
+		mplayer -af lavcresample=44100 -cache 64 "$radio"
 	fi
+
+	# Si se indico V se usa cvlc
 	if [[ $2 == "V" ]]; then
-		# Se usa cvlc
-		cvlc $radio 2> /dev/null;
+
+		cvlc "$radio" 2> /dev/null;
 	fi
 fi
