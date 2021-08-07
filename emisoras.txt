@@ -1,83 +1,1974 @@
 ### Listado de emisoras de la Provincia de Mendoza, Argentina
-### Ariel Mammoli - 15/07/21
+### Ariel Mammoli - 07/08/21
 ### formato:
 ### [#] NOMBRE EMISORA [BANDA MHz] [* PROVINCIA, PAIS]
 ### URL
 
-The Lider Radio * Mendoza, Argentina
-http://radiopanel.com.ar:8100/radio.mp3
+[001] Bebana
+http://01.solumedia.com.ar:7537/aac
 
-Fuego Gitano Radio * Mendoza, Argentina
-http://63.247.91.178:13190/stream
+[002] Magic
+http://01.solumedia.com.ar:8052/aac
 
-Radio Noticias FM 105.5 * Mendoza, Argentina
-http://audio.bustream.com:8007/stream
+[003] Dínamo 100.9
+http://01.solumedia.com.ar:8144/;
 
-Radio Conectada * Mendoza, Argentina
-http://stream.zeno.fm/vpw7qtqaa5zuv
+[004] 99.1
+http://01.solumedia.com.ar:8178/aac
 
-MDz Radio FM 105.5 * Mendoza, Argentina
-http://latamstreaming-live-os.akamaized.net/live_passthrough_static/ammdz/playlist.m3u8
+[005] Dale
+http://01.solumedia.com.ar:8238/stream
 
-Emanuel FM 95.7 * Mendoza, Argentina
-http://190.15.210.217:80/;
+[006] La Redonda
+http://01.solumedia.com.ar:8290/aac
 
-Radio Zero FM 91.1 * Mendoza, Argentina
-http://104.131.4.100:8020/aac
+[007] Libre
+http://01.solumedia.com.ar:8420/;stream.nsv
 
-Aurora Argentina FM 91.3 * Mendoza, Argentina
-http://servidor2.serviciostreaming.com:9512/stream/;
+[008] Onda Latina
+http://01.solumedia.com.ar:8446/stream.aac
 
-Radio UTN FM 94.5 * Mendoza, Argentina
-http://streaming.fmutn.com.ar:8000/FMUTN
+[009] Classique
+http://01.solumedia.com.ar:8562/;stream.nsv
 
-Radio Fenix FM 89.1 * Mendoza, Argentina
-http://radio.plandos.com:8040/stream
+[010] Residencias
+http://01.solumedia.com.ar:8592/stream
 
-Radium FM * Mendoza, Argentina
-http://streaming3.locucionar.com:17818/stream/;
+[011] 221
+http://01.solumedia.com.ar:8612/stream
 
-Soomba FM 88.7 * Mendoza, Argentina
-http://srv2.voxon.top:7284/;;
+[012] Alfa 91.5
+http://01.solumedia.com.ar:8984/aac
 
-Radio Vida FM 105.1 * Mendoza, Argentina
-http://genexservicios.com:8006/stream/;
- 
-Radio Nacional Argentina AM 780 * Mendoza, Argentina
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad48
+[013] http//147.135.11.829300/
+http://104.131.4.100:8000/stream
 
-Estación Zafiro FM 89.5 * Mendoza, Argentina
-http://stream.idomo.com.ar/zafiro
+[014] Milenium
+http://­108.59.9.147:8078/
 
-Radio Jornada FM 91.9 * Mendoza, Argentina
-http://miradioenlaweb.com:4742/;
+[015] Radio Con Vos
+http://157nus.nuestrasradios.com/ymxu1k1gus5tv
 
-RED 101 FM 101.5 * Mendoza, Argentina
-http://stm3.srvif.com:7190/;;
+[016] Los 40
+http://16613.live.streamtheworld.com/LOS40_ARGENTINA_SC
 
-Radio Universidad UNCUYO FM 96.5 * Mendoza, Argentina
-http://fm.uncu.edu.ar:8000/
- 
-Vorterix Mendoza FM 104.5 * Mendoza, Argentina
-http://104.131.4.100:8000/stream/;
+[017] Estación Vinilo
+http://173.255.205.241:1127/;
 
-Radio Nacional Argentina AM 960 * Mendoza, Argentina
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad6
+[018] Atlántica Latina
+http://173.255.205.241:7070/;
 
-Redium (Claromecó):
-http://01.solumedia.com.ar:7840/aac
+[019] Atlántica Latina
+http://173.255.205.241:7070/listen.pls
 
-FM Ayer FM 98.1 * Mendoza, Argentina          
-http://190.113.164.52:8080/ayer
+[020] LU6
+http://173.255.205.241:9090/;
 
-LV Diez FM 104.1 * Mendoza, Argentina
+[021] LU6
+http://173.255.205.241:9090/listen.pls
+
+[022] Inolvidable
+http://184.107.35.153:9062/;
+
+[023] Boreal
+http://184.107.35.153:9758/;stream.mp3
+
+[024] Boing
+http://200.58.106.247:8626/;
+
+[025] Radiofónica
+http://200.58.106.247:8628/;
+
+[026] La 100
+http://217.172.179.57:8020/La100BahiaBlanca;
+
+[027] Vale
+http://217.172.179.57:8030/ValeBahiaBlanca;
+
+[028] Pop
+http://217.172.179.57:8060/PopBahiaBlanca;
+
+[029] Radio 10
+http://217.172.179.57:8070/Radio10BahiaBlanca;
+
+[030] LU19
+http://51.161.119.117:8064/stream
+
+[031] Nova
+http://62.210.129.76:9314/;
+
+[032] Frecuencia Z
+http://62.210.129.76:9800/;
+
+[033] Mix
+http://63.247.65.202:9179/stream
+
+[034] LT9
+http://63.247.91.178:12294/stream
+
+[035] Radio Eme
+http://63.247.91.178:14559/stream
+
+[036] Stylo
+http://67.212.166.178:7200/listen.pls
+
+[037] Stylo
+http://67.212.166.178:7200/stream
+
+[038] Pop (Junín)
+http://69.175.20.242:8086/live
+
+[039] Mega (Junín)
+http://69.175.20.242:8112/live
+
+[040] Radio 10
+http://69.175.20.242:8122/live
+
+[041] One
+http://69.175.20.242:8128/live
+
+[042] Cosmos 100.1
+http://71.6.165.113:9066/
+
+[043] FM La Voz
+http://96.30.21.126:9980/;stream.nsv
+
+[044] Radio Dimensión AM 940
+http://aliasdns.info:8114/live
+
+[045] LV10 Radio De Cuyo
 http://audio.bustream.com:8062/stream
 
-Radio 2 FM 103.1 * Mendoza, Argentina
+[046] Estación del Sol
+http://audio.bustream.com:8064/stream
+
+[047] Radio Z
+http://audiohd.sonidosenlared.com/proxy/radioz971?mp=/stream
+
+[048] QSL
+http://audio.questreaming.com:20038/;
+
+[049] Galas
+http://audio.questreaming.com:25859/;
+
+[050] 99.1 (repetidora Cadena 3)
+http://c3live-sm.mediainbox.net/cadena3.mp3
+
+[051] Futurock
+http://cdn2.instream.audio:8007/stream
+
+[052] Congo.fm
+http://cdn2.instream.audio:9243/live
+
+[053] NQP
+http://cdn.instream.audio:8111/stream
+
+[054] Delta
+http://cdn.instream.audio:9069/stream
+
+[055] FM del Viento
+http://cdn.instream.audio:9125/stream
+
+[056] Congo.fm
+http://cdn.instream.audio:9243/live
+
+[057] Señal Urbana
+http://centova.hostradios.com:12054/stream
+
+[058] Z98
+http://centova.hostradios.com:8104/stream?type=http&nocache=18
+
+[059] Radio María
+http://dreamsiteradiocp.com:8004/
+
+[060] FM Arroyos
+http://envivo.radio.net.ar:9664/stream
+
+[061] Frecuencia Plus
+http://fmplus.radio.rosario3.com:8006/fmplus
+
+[062] Señal Urbana
+http://hostingystreaming.net/generadornuevo/?pl=winamp&c=urbana98
+
+[063] Ciudad
+http://icecast2.hostingbahia.com.ar:8042/live
+
+[064] Norte
+http://icecast.hostingbahia.com.ar:8002/live
+
+[065] De La Bahía
+http://icecast.hostingbahia.com.ar:8010/live
+
+[066] La Brújula 24
+http://icecast.hostingbahia.com.ar:8020/live
+
+[067] LU3
+http://icecast.hostingbahia.com.ar:8024/live
+
+[068] FM Full 94.9
+http://nvradios.com:9396/;
+
+[069] Cadena 3
+http://playerservices.streamtheworld.com/api/livestream-redirect/CADENA3.mp3
+
+[070] Continental
+http://playerservices.streamtheworld.com/api/livestream-redirect/CONTINENTAL_SC
+
+[071] FM Córdoba
+http://playerservices.streamtheworld.com/api/livestream-redirect/FM_CORDOBA.mp3
+
+[072] Los 40
+http://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_ARGENTINA_SC
+
+[073] Popular
+http://playerservices.streamtheworld.com/api/livestream-redirect/RADIO_POPULAR.mp3
+
+[074] Océano
+http://radio1.oceanofm.com:8010/listen.pls&type=mp3
+
+[075] Radio 2
+http://radio2.radio.rosario3.com:8000/prueba2
+
+[076] Universal
+http://radio.970universal.com:8010/;
+
+[077] Del Sol
+http://radio.dl.uy:9950/radio
+
+[078] Radio Cero
+http://radiolatina.live:7902/stream/1/
+
+[079] Oriental
+http://radiolatina.live:7906/1
+
+[080] 101.9
+http://radio.netyco.com:8712/stream
+
+[081] FM María Ignacia 103.9
+http://radiosar.com:8140/stream
+
+[082] De La Ciudad
+http://radios.argentina.fm:1110/stream
+
+[083] La 2x4
+http://radios.argentina.fm:9270/stream
+
+[084] Cantilo
+http://radio.solumedia.com.ar:7231/stream
+
+[085] LU36
+http://radio.solumedia.com.ar:8014/stream
+
+[086] LT20
+http://radio.solumedia.com.ar:8260/stream
+
+[087] Radio de la Sierra
+http://radio.solumedia.com.ar:8522/stream
+
+[88] Atlántica
+http://s01.bahiahost.com.ar:7468/stream
+
+[089] LV12 Radio Independencia
+http://s1.radiosnethosting.com:8032/stream/;stream.mp3
+
+[090] Onda Horizonte
+http://s1.radiosnethosting.com:9816/;
+
+[091] Radio Nuclear AM 1500
+http://s1.radiosnethosting.com:9830/;stream
+
+[092] Flash 99.9
+http://s1.radiosnethosting.com:9858/;stream.nsv&type=mp3
+
+[093] Del Sol 91.1
+http://s1.radiosnethosting.com:9860/;
+
+[094] LU34
+http://s1.radiosnethosting.com:9876/;stream.nsv&type=mp3
+
+[095] FM Cristal
+http://s1.radiosnethosting.com:9964/;stream.mp3
+
+[096] LU32
+http://s1.radiosnethosting.com:9966/;s.mp3/;stream.mp3
+
+[097] Estación San Pedro 88.7
+http://s2.netradiofm.com:9016/stream
+
+[098] Radio Ciudad de Luján
+http://s2.radiosnethosting.com:9750/;
+
+[099] Trópico
+https://5975e06a1f292.streamlock.net:4443/radio/tropico.stream/playlist.m3u8
+
+[100] La Plata 90.9
+https://alpha.radioplayer.com.ar:9104/stream
+
+[101] Ruta 66
+https://audiohd.sonidosenlared.com:2199/tunein/fmruta66-stream.pls
+
+[102] http//playerservices.streamtheworld.com/api/livestream-redirect/CADENA3.mp3
+https://c3ny1.mediainbox.net/cadena3.mp3
+
+[103] FM Córdoba
+https://c3ny1.mediainbox.net/fmcordoba.mp3
+
+[104] Popular
+https://c3ny1.mediainbox.net/popular.mp3
+
+[105] El Destape
+https://cdn2.instream.audio/:8000/stream
+
+[106] Somos Radio
+https://cdn2.instream.audio/:8001/stream
+
+[107] Street
+https://cdn2.instream.audio/:8008/stream
+
+[108] FM Del Mar
+https://cdn.instream.audio/:9051/stream
+
+[109] http//cdn.instream.audio9069/stream
+https://cdn.instream.audio/:9069/stream
+
+[110] Radio 3
+https://cdn.instream.audio/:9085/stream
+
+[111] Del Bosque
+https://cdn.instream.audio/:9087/stream
+
+[112] News
+http://serv3.veemesoft.com.ar:26545/;
+
+[113] Radio Punto
+http://serv3.veemesoft.com.ar:26619/;
+
+[114] Premier
+http://server1.dainusradio.com:9914/;
+
+[115] Radio Adelia María 100.5
+http://server1.veemesoft.com.ar:6366/;
+
+[116] Hit Music
+http://server1.veemesoft.com.ar:9382/;
+
+[117] FM Sueños
+http://server1.veemesoft.com.ar:9446/stream
+
+[118] Impacto
+http://server3.veemesoft.com.ar:26509/listen.pls
+
+[119] Impacto
+http://server3.veemesoft.com.ar:26509/stream
+
+[120] Radio Carolina
+http://server3.veemesoft.com.ar:26629/;
+
+[121] La Patriada
+http://server4.stweb.tv:1935/lapatriada/live/playlist.m3u8
+
+[122] Radio Zero
+http://server4.veemesoft.com.ar:25758/;
+
+[123] Pop
+http://server4.veemesoft.com.ar:26952/;
+
+[124] Pop
+http://server4.veemesoft.com.ar:26952/stream
+
+[125] Nitro
+http://server.laradio.online:8507/;
+
+[126] Líder
+http://server.laradio.online:8829/;
+
+[127] Clásica
+http://server.ohradio.com.ar:9600/stream
+
+[128] La Radio En Línea
+http://server.ohradio.com.ar:9798/;
+
+[129] La Radio En Línea
+http://server.ohradio.com.ar:9798/stream
+
+[130] El Espectador
+https://espectador1.net.com.uy:8122/stream/
+
+[131] Señal Urbana
+https://hostingystreaming.net/generadornuevo/?pl=winamp&c=urbana98
+
+[132] LU2
+https://icecast2.hostingbahia.com.ar:8040/live
+
+[133] http//cdn2.instream.audio8007/stream
+https://mdstrm.com/audio/5d9d019112cbbb45d6a50960/live.m3u8
+
+[134] Mega
+https://mega.stweb.tv/mega983/live/playlist.m3u8
+
+[135] Buenos Aires
+https://nl.digitalrm.pt:8052/stream
+
+[136] Impacto
+http://sonic.cloudstreaming.eu:9992/;
+
+[137] La 990
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM990AAC.aac
+
+[138] Rivadavia
+https://playerservices.streamtheworld.com/api/livestream-redirect/RIVADAVIAAAC.aac
+
+[139] Radio Uno
+https://playerservices.streamtheworld.com/api/livestream-redirect/UNOAAC.aac
+
+[140] Sapiens
+https://player.transmissaodigital.com/proxy/7438/1/
+
+[141] Rosales
+https://player.transmissaodigital.com/proxy/7622/1/
+
+[142] Viva
+https://radio.datalivehd.com:7100/stream
+
+[143] Rural
+https://radiolatina.live:10959/stream/1/
+
+[144] Monte Carlo
+https://radiolatina.live:10965/;
+
+[145] Carve
+https://radiolatina.live/9202/stream;
+
+[146] La 1010
+https://radiolatina.live/9204/stream.mp3
+
+[147] Voz 106.9
+https://radiovoz.linxserver.net/;
+
+[148] FM La Boca
+https://s24.myradiostream.com/14984/listen.mp3
+
+[149] Vale
+https://s6.stweb.tv/vale/live/playlist.m3u8
+
+[150] Radio Con Vos
+https://server1.stweb.tv/rcvos/live/playlist.m3u8
+
+[151] UNS
+https://sonic.cloudstreaming.eu:10983/;
+
+[152] Ambiente Radio
+https://sonic.dattalive.com/8470/stream
+
+[153] Décadas
+https://sonic.dattalive.com/8474/stream
+
+[154] Milenium
+https://sonicpanel.hostradios.com:7000/stream
+
+[155] Pobre Jonny
+https://stream4.suenas.net/pobrejohnny
+
+[156] LU22
+https://streaming01.shockmedia.com.ar/8170/live
+
+[157] Vida
+https://streaming450tb.locucionar.com/proxy/fmvida979?mp=/stream
+
+[158] La Nueva Radio Suárez
+https://streaming.escuchanosonline.com:7216/stream
+
+[159] Radio Salta
+https://streamingraddios.online/proxy/salta2?mp=/stream
+
+[160] Masters's
+https://streaming.turadioinfo.com/audio/cliente_251669/streaming_token/5860_hash==epoiMeQ==5a631901fc84fa9dfb3e5d83acfd4af9ad7a0d4a_proxy_ssl
+
+[161] La Dorrego AM 1470
+http://stm11.bahiahosting.com:9006/;
+
+[162] Radio Activa
+http://stm14.mfmedios.info:8048/;
+
+[163] Mágica
+http://stm37.mfmedios.info:16102/stream
+
+[164] Fantástico
+http://st.produccionesdha.com:6694/;
+
+[165] LU16 Radio Río Negro
+http://stream01.insidetec.com:8086/radiocoop
+
+[166] LU11
+http://stream01.insidetec.com:9140/lu11
+
+[167] Magic Box
+http://stream01.insidetec.com:9152/magicbox
+
+[168] Acqua
+http://streamall.alsolnet.com:443/acquamdq
+
+[169] Amor
+http://streamall.alsolnet.com:443/amorenelaire
+
+[170] Cadena Cumbia Latina
+http://streamall.alsolnet.com:443/cadenacumbia
+
+[171] Winners 97.1
+http://streamall.alsolnet.com:443/fmdecanuelashd
+
+[172] Mágica
+http://streamall.alsolnet.com:443/magicalobos
+
+[173] Planet Music
+http://streamall.alsolnet.com:443/planetmdq
+
+[174] Cielo
+http://streamall.alsolnet.com:443/radiocielo
+
+[175] Radio Fueguina
+http://streamall.alsolnet.com:443/radiofueguina
+
+[176] Maestra
+http://streamall.alsolnet.com:443/radiomaestra
+
+[177] KLA
+http://streamconex.com:8104/;stream
+
+[178] En Tránsito
+http://stream.fmentransito.org.ar:8002/radio/live.aac
+
+[179] De Paut
+http://streaming01.dwservers.net:8900/;
+
+[180] Radio Campo
+http://streaming01.shockmedia.com.ar:8012/stream
+
+[181] Bahía
+http://streaming01.shockmedia.com.ar:8694/stream
+
+[182] Fantástica
+http://­streaming01.shockmedi­a.com.ar:9186/stream
+
+[183] Vértice
+http://streaming01.shockmedia.com.ar:9270/stream
+
+[184] Onda Uno
+http://­streaming01.shockmedi­a.com.ar:9478/­listen.pls
+
+[185] Onda Uno
+http://­streaming01.shockmedi­a.com.ar:9478/stream
+
+[186] Fenix
+http://streaming01.shockmedia.com.ar:9628/stream
+
+[187] La 97
+http://streaming01.shockmedia.com.ar:9732/stream
+
+[188] Revolución
+http://streaming01.shockmedia.com.ar:9878/stream
+
+[189] La Red
+http://streaming01.shockmedia.com.ar:9926/stream
+
+[190] AM 1210 Radio Las Flores
+http://streaming1.locucionar.com:13402/stream
+
+[191] La Radio 92.3
+http://streaming4.wnpower.com:8080/stream
+
+[192] FM Pringles 100.3
+http://streaming4.wnpower.com:8410/;stream.mp3
+
+[193] Fresh
+http://streaming.escuchanosonline.com:8026/live
+
+[194] Latina
+http://streaming.latina101.com.ar:8080/RadioLatina
+
+[195] 98.1
+http://streaming.localhost.net.ar:8004/;?type=http&nocache=13
+
+[196] LU18 Radio El Valle
+http://streamingraddios.net:7997/listen.pls
+
+[197] LU18 Radio El Valle
+http://streamingraddios.net:7997/stream
+
+[198] FM Ilusiones
+http://streaming.shockmedia.com.ar:9830/listen.pls
+
+[199] Ilusiones
+http://streaming.shockmedia.com.ar:9830/stream
+
+[200] LU24
+http://streaming.shockmedia.com.ar:9832/listen.pls
+
+[201] LU24
+http://streaming.shockmedia.com.ar:9832/stream
+
+[202] Cadena del Sol
+http://streamlky.alsolnet.com:443/fmdelsol
+
+[203] Pasión
+http://streamlky.alsolnet.com:443/fmpasion
+
+[204] FMQ
+http://streamlky.alsolnet.com:443/radiofmq
+
+[205] Shopping
+http://suenas.net:8090/shoppingclassics
+
+[206] Perfil
+https://unlimited4-us.dps.live/perfil/gotardis/audio/now/livestream1.m3u8
+
+[207] Cultura
+https://usa5.fastcast4u.com/proxy/radiocultura?mp=/1
+
+[208] Zeta
+https://www.radios.com.br/players/listen-radio.m3u?radio=21084
+
+[209] Vibra
+https://www.radios.com.br/players/listen-radio.m3u?radio=21125
+
+[210] Radio Más
+https://www.radios.com.br/players/listen-radio.m3u?radio=21732
+
+[211] Cadena del Sol
+https://www.radios.com.br/players/listen-radio.m3u?radio=28957
+
+[212] Sports
+https://www.radios.com.br/players/listen-radio.m3u?radio=41198
+
+[213] Fantástica
+https://www.radios.com.br/players/listen-radio.m3u?radio=42221
+
+[214] Moebius
+https://www.radios.com.br/players/listen-radio.m3u?radio=7801
+
+[215] Sapiens
+https://www.radios.com.br/players/listen-radio.m3u?radio=8018
+
+[216] 103.3
+https://www.radios.com.br/players/listen-radio.m3u?radio=83870
+
+[217] Viva
+https://www.radios.com.br/players/listen-radio.m3u?radio=92845
+
+[218] QSL
+https://www.radios.com.br/players/listen-radio.pls?radio=40547
+
+[219] La Tribu
+http://vivo.fmlatribu.com/latribu.m4a
+
+[220] Cadena Cumbia Latina
+http://www.alsolnet.com/stream/cadenacumbia/listen.pls
+
+[221] Mágica
+http://www.alsolnet.com/stream/magicalobos/listen.pls
+
+[222] Del Aire
+http://www.alsolnet.com/stream/radiodelaire/
+
+[223] City
+http://www.mundostreaming.com/radios/enlaces/64.15.155.49.8405.m3u
+
+[224] City
+http://www.mundostreaming.com/radios/enlaces/64.15.155.49.8405..m3u
+
+[225] Redium (Claromecó)
+http://01.solumedia.com.ar:7840/aac
+
+[226] Vorterix Mendoza FM 104.5 * Mendoza, Argentina
+http://104.131.4.100:8000/stream
+
+[227] Vorterix Mendoza FM 104.5 * Mendoza, Argentina
+http://104.131.4.100:8000/stream/;
+
+[228] Radio Mitre * Bahia Blanca, Argentina
+http://217.172.179.57:8050/MitreBahiaBlanca;
+
+[229] Radio 2 FM 103.1 * Mendoza, Argentina
 http://audio.bustream.com:8004/stream
 
-Radio Andina FM 90.1 * Mendoza, Argentina
+[230] Radio Noticias FM 105.5 * Mendoza, Argentina
+http://audio.bustream.com:8007/stream
+
+[231] LV Diez FM 104.1 * Mendoza, Argentina
+http://audio.bustream.com:8062/stream
+
+[232] Radio Vida FM 105.1 * Mendoza, Argentina
+http://genexservicios.com:8006/stream/;
+
+[233] MDz Radio FM 105.5 * Mendoza, Argentina
+http://latamstreaming-live-os.akamaized.net/live_passthrough_static/ammdz/playlist.m3u8
+
+[234] The Lider Radio * Mendoza, Argentina
+http://radiopanel.com.ar:8100/radio.mp3
+
+[235] Radio Fenix FM 89.1 * Mendoza, Argentina
+http://radio.plandos.com:8040/stream
+
+[236] Aurora Argentina FM 91.3 * Mendoza, Argentina
+http://servidor2.serviciostreaming.com:9512/stream/;
+
+[237] Soomba FM 88.7 * Mendoza, Argentina
+http://srv2.voxon.top:7284/;;
+
+[238] RED 101 FM 101.5 * Mendoza, Argentina
+http://stm3.srvif.com:7190/;;
+
+[239] Radium FM * Mendoza, Argentina
+http://streaming3.locucionar.com:17818/stream/;
+
+[#240] Radio Zero FM 91.1 * Mendoza, Argentina
+http://104.131.4.100:8020/aac
+
+[#241] FM Ayer FM 98.1 * Mendoza, Argentina          
+http://190.113.164.52:8080/ayer
+
+[#242] Emanuel FM 95.7 * Mendoza, Argentina
+http://190.15.210.217:80/;
+
+[#243] Radio Andina FM 90.1 * Mendoza, Argentina
 http://62.210.129.76:9670/;
 
-Radio Mitre * Bahia Blanca, Argentina
-http://217.172.179.57:8050/MitreBahiaBlanca;
+[#244] Fuego Gitano Radio * Mendoza, Argentina
+http://63.247.91.178:13190/stream
+
+[#245] Radio Universidad UNCUYO FM 96.5 * Mendoza, Argentina
+http://fm.uncu.edu.ar:8000/
+
+[#246] Radio Jornada FM 91.9 * Mendoza, Argentina
+http://miradioenlaweb.com:4742/;
+
+[#247] Radio Nacional Argentina AM 780 * Mendoza, Argentina
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad48
+
+[#248] Radio Nacional Argentina AM 960 * Mendoza, Argentina
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad6
+
+[#249] Estación Zafiro FM 89.5 * Mendoza, Argentina
+http://stream.idomo.com.ar/zafiro
+
+[#250] Radio UTN FM 94.5 * Mendoza, Argentina
+http://streaming.fmutn.com.ar:8000/FMUTN
+
+[#251] Radio Conectada * Mendoza, Argentina
+http://stream.zeno.fm/vpw7qtqaa5zuv
+
+[#252] Frecuencia Arena
+http://01.solumedia.com.ar:7074/aacp
+
+[#253] Radio Ciudad
+http://01.solumedia.com.ar:8042/;stream.mp3
+
+[#254] Rosales
+http://01.solumedia.com.ar:8166/;stream.nsv
+
+[#255] Radio Solar 3
+http://01.solumedia.com.ar:8208/;stream.nsv
+
+[#256] Urbana
+http://01.solumedia.com.ar:8306/;stream.nsv
+
+[#257] Nueva 107.3
+http://01.solumedia.com.ar:8390/;
+
+[#258] Universidad
+http://01.solumedia.com.ar:8442/stream
+
+[#259] FM del Sol
+http://01.solumedia.com.ar:8476/aac
+
+[#260] 221
+http://01.solumedia.com.ar:8612/;stream.nsv
+
+[#261] Futuro
+http://01.solumedia.com.ar:8842/;
+
+[#262] Futuro
+http://01.solumedia.com.ar:8886/stream
+
+[#263] One 94.7
+http://01.solumedia.com.ar:8928/aac?fbclid=IwAR045o8PINEPFV3QA-mQoMi6GNOKsEkXKvj2Qq_3_rBaaitnYXFttc0ekbI
+
+[#264] Cool
+http://09.solumedia.com.ar:8996/stream/1/
+
+[#265] Estudio Playa
+http://09.solumedia.com.ar:8998/;stream.nsv
+
+[#266] Flash
+http://109.169.23.95:32637/;
+
+[#267] Paraíso
+http://138.36.96.199:8001/livehd
+
+[#268] LU17Radio Golfo Nuevo AM 540
+http://138.36.96.199:8001/lu17
+
+[#269] Zona
+http://142.44.135.172:8008/live
+
+[#270] LU16 Radio Río Negro
+http://144.217.160.71:8086/radiocoop
+
+[#271] F5
+http://144.217.254.14:8113/live
+
+[#272] LU19
+http://144.217.254.14:8124/stream
+
+[#273] Desire 101.7
+http://144.217.30.219:8055/index.html;
+
+[#274] Monte Carlo
+http://147.135.11.82:7900/;
+
+[#275] Oriental
+http://147.135.11.82:7906/
+
+[#276] La 1010
+http://147.135.11.82:9204/;
+
+[#277] Rural
+http://147.135.11.82:9206/;
+
+[#278] Vorterix
+http://147.135.11.82:9300/
+
+[#279] Mega
+http://149.56.195.94:8041/;
+
+[#280] Aspen
+http://14983.live.streamtheworld.com:3690/ASPENAAC_SC
+
+[#281] M24
+http://159.69.151.3:9324/stream
+
+[#282] Vox
+http://161.47.86.193:9610/;stream.mp3
+
+[#283] Boreal
+http://161.47.86.193:9758/;stream.nsv&type=mp3
+
+[#284] Radio Alegría
+http://162.210.196.140:3505/;stream.mp3
+
+[#285] Buenos Aires
+http://162.210.196.217:8158/Stream.mp3;audio.mp3
+
+[#286] Universidad
+http://163.10.186.71:8001/broadwavehigh.mp3
+
+[#287] FM Provincia
+http://170.155.220.120:3352/fm
+
+[#288] Porteña
+http://173.193.205.96:7136/;stream.mp3
+
+[#289] La Carretera
+http://173.208.220.50:9372/%20%20type=
+
+[#290] LU15
+http://173.208.220.50:9724/;
+
+[#291] Uruguay 1050
+http://173.249.7.231:8084/stream
+
+[#292] Babel
+http://173.249.7.231:8092/stream
+
+[#293] Emisora del Sur
+http://173.249.7.231:8100/stream
+
+[#294] Universo
+http://173.255.205.241:8128
+
+[#295] LU9
+http://173.255.205.241:9000/;
+
+[#296] LU9
+http://173.255.205.241:9000/;stream.mp3
+
+[#297] FM Córdoba
+http://17493.live.streamtheworld.com/FM_CORDOBA.mp3
+
+[#298] Aspen
+http://17803.live.streamtheworld.com:80/ASPENAAC_SC
+
+[#299] Get Back
+http://179.40.41.184:8443/1055.ogg
+
+[#300] Radio Claromecó
+http://179.40.41.184:8443/1069.opus
+
+[#301] 105
+http://179.40.41.184:8443/915.opus
+
+[#302] Radio 3
+http://179.40.41.184:8443/957.opus
+
+[#303] Arpeggio
+http://17973.live.streamtheworld.com:3690/ARPEGGIOAAC_SC
+
+[#304] Del Plata
+http://181.119.157.98:8000/amdelplata.mp3
+
+[#305] Red Puerto Libre
+http://181.170.75.61:8000/;
+
+[#306] Aborigen
+http://181.224.103.52:8053/1053.opus
+
+[#307] FM 105
+http://­181.224.103.55:8915/915.opus
+
+[#308] Radio 3
+http://­181.224.103.55:8957/957.opus
+
+[#309] Red 92
+http://18.130.40.97:8934/;
+
+[#310] Brisas
+http://181.41.240.16:8030/live.mp3
+
+[#311] Amadeus
+http://18.220.84.192:8484/;
+
+[#312] Amadeus
+http://18.220.84.192:8484/stream
+
+[#313] AM 1380
+http://184.107.187.146:8022/am1380
+
+[#314] LU16 Radio Río Negro
+http://184.107.187.146:8086/radiocoop
+
+[#315] Infinito
+http://184.107.187.146:9120/;stream.mp3
+
+[#316] Magic Box
+http://184.107.187.146:9152/magicbox
+
+[#317] Concepto
+http://184.107.240.26:8480/vivo
+
+[#318] LT10
+http://184.107.240.26:8555/vivo?formato=.wav
+
+[#319] Vox
+http://184.107.35.153:9610/tu-punto-de-montaje
+
+[#320] RQP
+http://18433.live.streamtheworld.com:3690/RQPAAC_SC
+
+[#321] Mucha Radio
+http://18543.live.streamtheworld.com/MUCHARADIO_SC
+
+[#322] LT3
+http://188.165.179.141:8000/stream
+
+[#323] Frecuencia Z
+http://190.104.217.181:9794/;
+
+[#324] Universal
+http://190.1.0.5:8000/;stream.mp3
+
+[#325] Music
+http://190.1.0.5:8035/;
+
+[#326] LU3
+http://190.1.0.5:8060/;#.mp3
+
+[#327] De La Calle
+http://190.1.0.5:8072/;stream.mp3
+
+[#328] La red (Mendoza)
+http://190.113.128.139:8080/lared
+
+[#329] Radio Nihuil (Mendoza)
+http://190.113.128.139:8080/nihuilfm
+
+[#330] Radio Claromecó
+http://190.18.209.254:8443/1069.opus
+
+[#331] 105
+http://190.18.209.254:8443/915.opus
+
+[#332] Radio 3
+http://190.18.209.254:8443/957.opus
+
+[#333] City
+http://190.210.182.65:8000/radiocity
+
+[#334] Radio Uno
+http://190.210.197.89:9986/;stream.mp3
+
+[#335] Aspen
+http://19173.live.streamtheworld.com:3690/ASPENAAC_SC
+
+[#336] Cultura
+http://192.95.39.65:5165/;
+
+[#337] Radio Cero
+http://192.99.150.52:7902/;
+
+[#338] Oriental
+http://192.99.150.52:7906/;
+
+[#339] Rural
+http://192.99.150.52:9206/;
+
+[#340] AM 750
+http://192.99.38.174:9342/stream#10516
+
+[#341] FM de las Misiones 89.3
+http://192.99.46.171:9682/;
+
+[#342] Argentina
+http://195.154.182.222:25223/live.mp3
+
+[#343] La La La Radio
+http://195.154.182.222:25311/live?type=.mp3
+
+[#344] JCU
+http://195.154.182.222:25409/live
+
+[#345] Wox
+http://195.154.182.222:25492/live
+
+[#346] Monte Carlo
+http://195.154.182.222:25646/;
+
+[#347] La Red Pampeana
+http://195.154.182.222:25776/live?type=.mp3
+
+[#348] Aire
+http://195.154.182.222:27125/stream
+
+[#349] Radiocracia
+http://195.154.182.222:35355/live
+
+[#350] Carve
+http://195.154.182.222:49037/;
+
+[#351] La 1010
+http://195.154.182.222:49041/;
+
+[#352] Aire
+http://198.204.234.10:27125/stream
+
+[#353] Azul
+http://198.204.234.10:8294/live
+
+[#354] Radio Salta
+http://198.49.65.42:10340/stream
+
+[#355] Simple
+http://198.50.206.239:8022/;
+
+[#356] El Show de Atlanta
+http://198.7.61.133:9982/;
+
+[#357] Altos
+http://199.101.101.202:8616/;
+
+[#358] Altos
+http://199.101.99.130:7820/listen.pls?sid=1
+
+[#359] Vorterix
+http://199.167.150.105:7231/stream
+
+[#360] Radio de la Sierra
+http://199.167.150.105:8522/stream
+
+[#361] Radio ISER
+http://200.43.192.20:8002/;type=mp3
+
+[#362] Lu14
+http://200.5.203.82:8000/lu14.ogg
+
+[#363] Transformación
+http://200.5.72.135:8000/;stream.mp3
+
+[#364] Radio Gol
+http://200.58.106.247:8330/;stream/1
+
+[#365] LU10
+http://200.58.106.247:8414/;#.mp3
+
+[#366] Viva
+http://200.58.106.247:8548/;?type=http&nocache=23152
+
+[#367] Fahrenheit
+http://200.58.106.247:8624/;
+
+[#368] Compacto
+http://201.213.205.23:7040/stream.mp3
+
+[#369] LU37
+http://201.251.240.195:8080/radio.mp3
+
+[#370] FM 2000
+http://207.210.120.98:10085/vivo
+
+[#371] Alfa 91.5
+http://207.210.120.98:8095/vivo
+
+[#372] La 104.5
+http://207.210.120.98:9082/vivo
+
+[#373] https//20833.live.streamtheworld.com/CONTINENTALAAC.aac
+http://20823.live.streamtheworld.com/CONTINENTALAAC.aac
+
+[#374] FM La Boca
+http://208.98.41.72:9304/
+
+[#375] Zona
+http://209.59.171.47:8003/live
+
+[#376] Rivadavia
+http://209.95.35.49:7012/stream
+
+[#377] Radio Uno
+http://209.95.35.49:7013/live
+
+[#378] LT3
+http://209.95.35.49:7076/live
+
+[#379] Porteña
+http://209.95.35.49:7194/stream
+
+[#380] Zero
+http://209.95.35.49:7756/example0-1.aac
+
+[#381] Antena 100 AM 1040
+http://209.95.35.49:9023/;
+
+[#382] LU20 Radio Chubut
+http://209.95.35.49:9192/;
+
+[#383] Impacto
+http://212.83.146.67:7086/;
+
+[#384] La Dorrego AM 1470
+http://217.147.94.171:16555/;
+
+[#385] Radio Z
+http://217.182.239.23:8100/;
+
+[#386] Like
+http://21933.live.streamtheworld.com/FMLIKEAAC.aac
+
+[#387] Fisherton
+http://23.111.184.195:8140/radio.mp3.m3u
+
+[#388] Radio 3
+http://­23.229.34.170:9300/;
+
+[#389] Ciudad
+http://3.220.182.8:8400/stream.mp3
+
+[#390] La Carretera
+http://35.231.161.113:8320/radio.mp3?type=.aac/;
+
+[#391] Hola Radio
+http://46.4.33.73:7092/;
+
+[#392] Hola Radio
+http://46.4.33.73:7092/stream
+
+[#393] UNS
+http://46.4.33.73:7104/;
+
+[#394] Radio de Folclore
+http://50.7.70.43:9910
+
+[#395] Oldies
+http://51.15.152.81:8085/;stream/1
+
+[#396] Metrópolis
+http://51.15.152.81:8141/;stream/0
+
+[#397] Frecuencia Z
+http://51.68.203.132:9332/;
+
+[#398] FM La Radio
+http://51.75.164.42:8024/;
+
+[#399] Cumbia Sport
+http://51.75.164.42:8026/;
+
+[#400] Radio Z
+http://51.75.164.42:8100/;
+
+[#401] Nativa
+http://62.210.129.76:8522/;
+
+[#402] Azul
+http://63.141.252.146:9984/;
+
+[#403] X99
+http://63.143.58.190:8012/;
+
+[#404] LT35 Radio Mon AM 1540
+http://63.247.65.202:8219/stream
+
+[#405] La 105
+http://63.247.65.202:8237/stream
+
+[#406] Cristal Classic
+http://63.247.76.50:8030/;
+
+[#407] Radio 10
+http://63.247.76.50:8054/;
+
+[#408] After
+http://63.247.91.178:13573/stream
+
+[#409] FM Del Mar
+http://65.254.42.234:10020/vivo
+
+[#410] Radio Rock 103.3
+http://65.254.42.234:15090/vivo
+
+[#411] Mega (Bariloche)
+http://66.70.205.110:8056
+
+[#412] El Mundo
+http://66.70.255.8:9368/baires?type=.mp3
+
+[#413] Moebius
+http://66.70.255.8:9408/baires
+
+[#414] Somos Radio
+http://66.70.255.8:9436/baires?type=.mp3
+
+[#415] Fresh
+http://66.70.255.8:9940/baires?type=.mp3
+
+[#416] La Nueva Radio Suárez
+http://66.70.255.8:9968/stream
+
+[#417] Radio Clón 102.5
+http://66.70.255.8:9978/stream
+
+[#418] Rivadavia
+http://67.212.166.178:6204/,stream/1
+
+[#419] Nuevo Día
+http://­67.212.166.178:7208/
+
+[#420] SOS 105.1
+http://67.212.166.178:7458/radioaac
+
+[#421] El Desconcierto de Quique Pesoa
+http://67.212.166.178:7570/stream
+
+[#422] Mágica
+http://67.222.24.62:9994/;
+
+[#423] Magna AM 680
+http://69.64.46.123:8163/;
+
+[#424] Cadena Río
+http://70.38.54.14:7406/;
+
+[#425] Cadena Río
+http://70.38.54.14:7408/;
+
+[#426] LU32
+http://72.251.234.188:9966/stream
+
+[#427] Radio Güemes
+http://74.208.161.86:8700/live
+
+[#428] Música demás
+http://74.208.235.152:8120/demas
+
+[#429] Radio Alegría
+http://78.129.224.21:8825/;stream.mp3
+
+[#430] Kiwik
+http://79.137.68.42:9316/;stream.nsv&type=mp3
+
+[#431] Radio Con vos
+http://79.137.68.42:9948/;
+
+[#432] Mega 90.1
+http://79.137.68.42:9976/;
+
+[#433] Líder
+http://927.servemp3.com:8000/listen.pls
+
+[#434] Radio Alegría
+http://95.154.254.157:19269/;stream.mp3
+
+[#435] Aire de Santa Fé
+http://99.198.110.162:7010/;
+
+[#436] Eco Medios 89.1
+http://ample-zeno-05.radiojar.com/uv3vkhw2qvduv
+
+[#437] Eco Medios
+http://ample-zeno-09.radiojar.com/uv3vkhw2qvduv?rj-ttl=5&rj-token=AAABYfUFSa57nKraxouYhCZCpOP8fzTaPN
+
+[#438] Net 80
+http://argentina.republicahosting.com:8280/live
+
+[#439] Inolvidable
+http://audiohd.sonidosenlared.com:8290/kasandrxs.mp3
+
+[#440] FM La Radio
+http://audiohd.sonidosenlared.com/proxy/fmlaradio?mp=/stream
+
+[#441] Radio Z
+http://audiohd.sonidosenlared.com/proxy/radioz971?mp=/stream
+
+[#442] Centro
+http://audio.productoravisual.com:6228/;
+
+[#443] El Cóndor
+http://audio.productoravisual.com:6266/;
+
+[#444] Masters's
+http://audio.productoravisual.com:6312/;
+
+[#445] Más Vale
+http://audio.questreaming.com:25887/;
+
+[#446] La 100
+http://buecrplb01.cienradios.com.ar/la100.aac
+
+[#447] La 100
+http://buecrplb01.cienradios.com.ar/la100_mdq.mp3
+
+[#448] LU22
+http://cdn.instream.audio:8104/stream
+
+[#449] La 990
+http://colombiawebs.co:9990/;
+
+[#450] Compacto
+http://compactofm.hopto.org:7040/stream.mp3
+
+[#451] ETER
+http://ded23.server54.net:8000/stream111
+
+[#452] Estirpe Nacional AM 1250
+http://ded23.server54.net:8000/stream232
+
+[#453] Voz 106.9
+http://drs.dokkogroup.com.ar/RadioVoz
+
+[#454] Música demás
+http://emisiones.com.uy:8120/demas
+
+[#455] FM Arroyos
+http://envivo.radio.net.ar:8035/stream?icy=https
+
+[#456] El Espectador
+http://espectador2.net.com.uy:8120/stream/5/
+
+[#457] CNN
+http://estudio.cnnradioargentina.com.ar:8000/stream
+
+[#458] 99.9
+http://fm999.info:8000/radio.ogg
+
+[#459] FM de la Montaña
+http://fmdelamontana.ddns.net:8000/stream
+
+[#460] Radio Universidad
+http://fm.mdp.edu.ar:8000/;stream.mp3
+
+[#461] Radio Comunidad Argentina
+http://fmrca.servehttp.com:8000/1017.opus
+
+[#462] Vida
+http://fmvida.radio.rosario3.com:8000/fmvida.mp3
+
+[#463] FM La Radio
+http://fullradio.sonidosenlared.com:8024/;
+
+[#464] Gamba
+http://gambafm.lorini.net:10630/;
+
+[#465] Vibra
+http://hostingystreaming.com:4438/;
+
+[#466] Fantástica
+http://icecasthd.net:25171/live.m3u
+
+[#467] Positiva
+http://icecasthd.net:25563/live.m3u
+
+[#468] LU5
+http://live.lu5am.com:8000/LU5
+
+[#469] Living
+http://livingfm.com.ar:7040/;
+
+[#470] FM Tandil 104.1
+http://mediacontrol.jargon.com.ar:8212/;
+
+[#471] Radio Ancasti
+http://miradioenlaweb.com:10010/;
+
+[#472] Líder 98.9
+http://miradioenlaweb.com:11232/;?1562098026360
+
+[#473] Popular
+http://miradioenlaweb.com:13260/;
+
+[#474] Indie Rock
+http://miradioenlaweb.com:4700/;
+
+[#475] Rebelde
+http://miradioenlaweb.com:6358/
+
+[#476] Metro
+http://mp3.metroaudio1.stream.avstreaming.net:7200/metro
+
+[#477] Metro
+http://mp3.metroaudio1.stream.avstreaming.net:7200/metroMDQ
+
+[#478] Trend Topic
+http://nnvserver.com:8150/live
+
+[#479] Trend Topic
+http://nnvserver.com:8150/stream
+
+[#480] Décadas
+http://nnvserver.com:8200/live
+
+[#481] Rock & Pop
+http://node-02.strongradiohost.com/0xhaqs96us5tv?rj-ttl=5&rj-token=AAABYQRJigcsPWfQOrJ3phWlpA7P5Xu9-ltk8jFh7JktneNFu3YcRA
+
+[#482] FM Full 94.9
+http://nvirred.com:9396/;
+
+[#483] Del Mar
+http://pad20.com:8285/vivo
+
+[#484] Del Sol
+http://phanta-soft.com:8000/radio_fmdelsol.mp3
+
+[#485] La 990
+http://play-am990.cdn.sion.com:1935/rockandpop/radio990/playlist.m3u8
+
+[#486] http//14983.live.streamtheworld.com3690/ASPENAAC_SC
+http://playerservices.streamtheworld.com/api/livestream-redirect/ASPENAAC_SC
+
+[#487] Rock & Pop
+http://play-rockandpop.cdn.sion.com:1935/rockandpop/audioweb/playlist.m3u8
+
+[#488] FM Provincia
+http://provinciaradio.com.ar:3351/
+
+[#489] Provincia
+http://provinciaradio.com.ar:7007/
+
+[#490] 101 Master
+http://questreaming.info:28277/;
+
+[#491] Radio Visión AM 610
+http://radio02.ferozo.com:8728/;stream/1
+
+[#492] Radio Panorama
+http://radio02.ferozo.com/tunein.php/ra02000023/playlist.pls
+
+[#493] JCU
+http://radio.argentinastream.info:25409/live
+
+[#494] Aborigen
+http://radio.argentinastream.info:8446/live
+
+[#495] Radio Top
+http://radio.neonetdigital.com:8028/;
+
+[#496] FM Perfil
+http://radiosar.com:9314/listen.pls
+
+[#497] Palihue
+http://radios.hostingbahia.com.ar:10400/;
+
+[#498] Emisora del Sur
+http://radio.sodreuruguay.com:9160/;
+
+[#499] FM Del Mar
+http://radios.streamingnacional.com:6534/;
+
+[#500] FM Arroyos
+http://radios.streamingnacional.com:9780/;stream.aac
+
+[#501] Cooperativa
+http://rcoop.cnwks.ws:8358/;
+
+[#502] Relatores
+http://relayweb.relatores.com.ar/radio.mp3?fbclid=IwAR3ahYMke5p_3YB9j9sgSPXmtux-J1NIy_SOsSi5y0t0LZ1w4DrLBLuNLN8
+
+[#503] Radio 10
+http://reseller01.shockmedia.com.ar:9480/stream
+
+[#504] La 100
+http://retransmisorasenelpais.cienradios.com.ar:8000/la100.aac
+
+[#505] Mía
+http://retransmisorasenelpais.cienradios.com.ar/Mia.aac
+
+[#506] Altos
+http://s01.bahiahost.com.ar:7466/stream
+
+[#507] Horizonte
+https://14833.live.streamtheworld.com/SAM06AAC243_SC
+
+[#508] Kraken
+http://s1.radiosnethosting.com:12052/;stream.nsv&type=mp3
+
+[#509] LV12
+http://s1.radiosnethosting.com:9692/;stream.nsv&type=mp3
+
+[#510] Mucha Radio
+https://20823.live.streamtheworld.com/MUCHA_RADIO.mp3
+
+[#511] Continental
+https://20833.live.streamtheworld.com/CONTINENTALAAC.aac
+
+[#512] Paraíso
+http://s2.radiosnethosting.com:9752/;stream.nsv&type=mp3
+
+[#513] Futuro
+http://s42.myradiostream.com:32264/;stream.mp3
+
+[#514] Positivo 94.7
+https://alpha.radioplayer.com.ar:9224/fmpositivo947
+
+[#515] Frecuencia Arena
+https://alpha.radioplayer.com.ar:9290/fmarena983
+
+[#516] Nacional
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad1
+
+[#517] Nacional Bahía
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad13
+
+[#518] Nacional Clásica
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad37
+
+[#519] Nacional Folclórica
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad38
+
+[#520] Nacional rock
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad39
+
+[#521] LT14
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad44
+
+[#522] LV8 Radio Libertador
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad48
+
+[#523] LU23
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad49
+
+[#524] Radio Nacional Rosario AM 1300
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad5
+
+[#525] Octubre
+https://arcast.net:8443/oktubre.mp3
+
+[#526] Club Octubre 94.7
+https://arcast.net:8445/FMGOL.MP3
+
+[#527] Blue
+https://blue.secure2.footprint.net/egress/bhandler/streamroot_lsd2latam/blue/chunklist_b98304.m3u8
+
+[#528] Club Radio
+https://cast.emediapp.com/radio/8010/radio.mp3?1569457241
+
+[#529] Sarandí
+https://d1a7butsko8nkd.cloudfront.net/sarandi.mp3
+
+[#530] Sport
+https://d1a7butsko8nkd.cloudfront.net/sport.mp3
+
+[#531] Radio María
+https://dreamsiteradiocp.com/proxy/argentinarm?mp=/stream
+
+[#532] Disney
+https://edge-np.cdn.mdstrm.com/5a9ee26311c043ae48e40bcd.mp3
+
+[#533] Sucesos
+http://server1.dainusradio.com:2341/listen.pls
+
+[#534] Conexión Abierta
+http://server1.mgmultimedios.com:8080/uai/live/icecast.audio
+
+[#535] Ebeneser
+http://server3.veemesoft.com.ar:25624/;
+
+[#536] FM Total 89.5
+http://server3.veemesoft.com.ar:26299/;
+
+[#537] Chañar FM
+http://server3.veemesoft.com.ar:26489/;
+
+[#538] Milenium
+http://server4.hostradios.com:8101/stream
+
+[#539] One
+http://server5.stweb.tv:1935/one/live/playlist.m3u8
+
+[#540] LU15
+http://server8.veemesoft.com.ar:26280/;
+
+[#541] La Cima
+http://server9.veemesoft.com.ar:11010/;
+
+[#542] Fantástica
+http://server.laradio.online:25171/live
+
+[#543] Belgrano 650
+http://server.laradio.online:25223/live.mp3
+
+[#544] Argentina
+http://server.laradio.online:25224/live.mp3
+
+[#545] La La La Radio
+http://server.laradio.online:25311/live
+
+[#546] Wox
+http://server.laradio.online:25492/live
+
+[#547] Cosquín Rock
+http://server.laradio.online:8799/live?1549483639043
+
+[#548] City
+http://server.laradio.online:9024/live?1581989032485
+
+[#549] Frecuencia Vital
+http://server.radiolive.ml:8092/stream
+
+[#550] FM María Ignacia 103.9
+http://servidorderadioar.com:9005/fmmaria
+
+[#551] RCC
+http://servidor.i-live.com.ar:8022/;
+
+[#552] Sports
+http://servidor.ilive.com.ar:8028/;
+
+[#553] Grupo Maradón 104.1
+http://servidor.ilive.com.ar:9234/;
+
+[#554] LU10
+http://servidor.ilive.com.ar:9320/;#.mp3
+
+[#555] Concepto
+http://servidor.ilive.com.ar:9330/;
+
+[#556] El Destape
+https://ipanel.instream.audio/44018/io/get/a2becdb13f77379019e41c81af7b42f6-9r1w9746kgkv8dg7/d1u78w1u5wqpjw31dtjprbk9dttq8wk5c5pjwrbnchmpyehr60r38bvkeht6arbd
+
+[#557] Disney
+https://mdstrm.com/audio/5db1aedcf0829139c07b1285/icecast.audio
+
+[#558] Mega
+https://mega975.radioca.st/live
+
+[#559] Auténtica
+https://node-27.zeno.fm/fmdxk55qgtzuv?rj-ttl=5&rj-tok=AAABcKsiYaAAZ6D-aJKNWdO7xg
+
+[#560] Radio Con vos
+http://sonic.dattalive.com:8260/;
+
+[#561] LT10
+https://pad20.com:8555/vivo
+
+[#562] Urbana
+https://player.xcast.com.br/proxy/8786
+
+[#563] Pop
+https://s11.stweb.tv/popradio/live/playlist.m3u8
+
+[#564] Red 92
+https://s5.voscast.com:9247/stream
+
+[#565] Radio 10
+https://s6.stweb.tv/radio10/live/playlist.m3u8
+
+[#566] Mega 90.1
+https://server.laradio.online:48392/live
+
+[#567] LU9
+https://servidor1.hostradios.com:8110/stream
+
+[#568] Universo
+https://servidor1.hostradios.com:8112/stream
+
+[#569] https//playerservices.streamtheworld.com/api/livestream-redirect/UNOAAC.aac
+https://stream1.305streamcdn.com/radiounofm
+
+[#570] Rock & Pop
+https://stream2.305streamcdn.com/rockandpop
+
+[#571] La 97
+https://streaming02.radiosenlinea.com.ar:9740/stream
+
+[#572] Colonia
+https://streaming1.hostingmontevideo.com:7019/;
+
+[#573] Mágica
+https://streaming2.hostingmontevideo.com:7011/;
+
+[#574] Vida
+https://streaming450tb.locucionar.com/proxy/fmvida979?mp=/stream
+
+[#575] Berlín
+https://streaming.berlin1079.com:8082/stream
+
+[#576] Radio Salta
+https://streamingraddios.online/proxy/salta2?mp=/stream
+
+[#577] La Red
+https://strive-sdn-lsdlive-live.akamaized.net/live_passthrough_static/amlared/playlist.m3u8
+
+[#578] Radio Activa
+http://stm14.mfmedios.info:22350/;?1538696599252
+
+[#579] Sapiens
+http://stm1.bahiastreaming.com:7252/stream
+
+[#580] Géminis
+http://stm3.xcast.com.br:7856/
+
+[#581] Orvital
+http://stm46.mfmedios.info:8164/;
+
+[#582] Urbana
+http://stm4.xcast.com.br:8080/listen.pls?sid=1
+
+[#583] FM Trelew 94.7
+http://st.produccionesdha.com:50095/;
+
+[#584] Top
+http://st.produccionesdha.com:6696/;
+
+[#585] Estación Marina
+http://st.produccionesdha.com:9438/;
+
+[#586] Tiempo
+http://st.produccionesdha.com:9532/;
+
+[#587] Record Estación
+http://st.produccionesdha.com:9562/;
+
+[#588] Cielo
+http://st.produccionesdha.com:9790/;
+
+[#589] Infinito
+http://stream01.insidetec.com:9120/;stream.mp3
+
+[#590] Viva
+http://stream3.painel-stm.com:7926/stream
+
+[#591] Dakota
+http://streamall.alsolnet.com:443/fmdakotahd
+
+[#592] Sonido
+http://streamall.alsolnet.com:443/fmsonidohd
+
+[#593] Estación K2
+http://streamall.alsolnet.com:443/k2hd
+
+[#594] Klimax
+http://streamall.alsolnet.com:443/klimaxok
+
+[#595] La Colifata
+http://streamall.alsolnet.com:443/lacolifata
+
+[#596] Radio 3
+http://streamall.alsolnet.com:443/radio3hd
+
+[#597] Pasión
+http://streamall.alsolnet.com:8080/cadenapasion
+
+[#598] Futura
+http://streamer.fmfutura.com.ar:8000/vivo.mp3
+
+[#599] Latina 94.5
+http://streaming01.shockmedia.com.ar:9058/stream
+
+[#600] RBD
+http://streaming01.shockmedia.com.ar:9156/;stream/1
+
+[#601] La Nueva Generación
+http://streaming01.shockmedia.com.ar:9590/;
+
+[#602] Radio de Folclore
+http://streaming01.shockmedia.com.ar:9910/;
+
+[#603] FM Barra 96.1
+http://streaming01.shockmedia.com.ar:9964/;
+
+[#604] Golden Radio (San Luis
+http://streaming1.locucionar.com:13270/stream
+
+[#605] Platinum
+http://streaming2.locucionar.com:8106/stream
+
+[#606] La 90
+http://streaming2.locucionar.com:8107/stream
+
+[#607] Keops
+http://streaming2.locucionar.com:8128/stream
+
+[#608] X102
+http://streaming2.locucionar.com:8156/stream
+
+[#609] FM Del Sol
+http://streaming2.locucionar.com:8179/stream
+
+[#610] FM Ciudad Pringles
+http://streaming2.locucionar.com:8187/stream
+
+[#611] Urbana
+http://streaming2.locucionar.com:8255/stream
+
+[#612] FM Roque Pérez 91.9
+http://streaming2.locucionar.com:8527/stream
+
+[#613] La Troupe 90.5
+http://streaming2.locucionar.com:8659/stream
+
+[#614] Radio Libertad AM 1090
+http://streaming2.locucionar.com:8669/stream
+
+[#615] Cadena Wave
+http://­streamingargentino2.c­om.ar:7046/;
+
+[#616] Concierto Urbana
+http://streaming.conciertourbana.com/conciertourbana
+
+[#617] Berlín
+http://streaming.margendelmundo.com.ar:8000/stream
+
+[#618] Provincia
+http://streaming.provinciaradio.com.ar:7007/am
+
+[#619] Auténtica
+http://streamingraddios.net:10396/stream
+
+[#620] Radio Salta
+http://streamingraddios.net:10514/stream
+
+[#621] LU18 Radio El Valle
+http://streamingraddios.net:7997/stream
+
+[#622] De La Azotea
+http://streaming.radiodelaazotea.com.ar:8000/delaazotea
+
+[#623] Urbana
+http://streaming.radiolinksmedia.com:7145/;
+
+[#624] Del Pueblo
+http://streaming.radiolinksmedia.com:7830/;
+
+[#625] Génesis
+http://streaming.radiolinksmedia.com:7890/;
+
+[#626] Génesis
+http://streaming.radiolinksmedia.com:7890/stream
+
+[#627] Mix
+http://streaming.radiolinksmedia.com:7931/;
+
+[#628] Estudio 107.7
+http://streaming.radiolinksmedia.com:8218/;
+
+[#629] Estudio 107.7
+http://streaming.radiolinksmedia.com:8218/stream
+
+[#630] Late
+http://streaming.radiolinksmedia.com:8252/;stream
+
+[#631] Blue
+http://streamingv2.shoutcast.com/FMBLUE965TRESARROYOS
+
+[#632] Blue
+http://streaming.zonalaplata.com.ar:8200/;stream.mp3
+
+[#633] Jai
+http://streamlky.alsolnet.com:443/radiojai
+
+[#634] Del Siglo
+http://stream.lt8.com.ar:8080/delsiglo995.mp3
+
+[#635] La red
+http://stream.lt8.com.ar:8080/laredrosario.mp3
+
+[#636] LT8
+http://stream.lt8.com.ar:8080/lt8radio.mp3
+
+[#637] Rivadavia
+http://streammax.alsolnet.com/radiorivadavia
+
+[#638] La 1035
+http://stream.zeno.fm/bt18614dvhruv
+
+[#639] SOS 105.1
+https://tupanel.info:7458/stream
+
+[#640] La Carretera
+http://subituradio.com:8320/radio.mp3?type=.aac/;
+
+[#641] Disney
+https://us-b4-p-e-az1-audio.cdn.mdstrm.com/live-audio/5b7dcf9b7f880d076b1ed74d/5db1aedcf0829139c07b1285/icecast.audio
+
+[#642] Radio Claromecó
+https://www.radio3.online:8443/1069.opus
+
+[#643] Feeling
+http://turadioenvivo.com:8430/stream
+
+[#644] Sudamericana
+http://turadioenvivo.com:8530/stream?1562165478826
+
+[#645] Net Ochenta radio
+http://turadioonline.xyz:8261/stream
+
+[#646] 90.1 La Radio del Deporte
+http://us7.maindigitalstream.com/2548/?pl=winamp&c=La%20Radio%20del%20Deporte
+
+[#647] Clarín
+http://usa15.ciudaddigital.com.uy:8032/ClarinAM
+
+[#648] La Tribu
+http://vivo.fmlatribu.com:8000/latribu.mp3
+
+[#649] Malena
+http://vivo.radioam750.com.ar/vivofm.mp3
+
+[#650] Relatores
+http://web.relatores.com.ar/radio.mp3
+
+[#651] La 97
+http://www.alsolnet.com/stream/fm97/listen.pls
+
+[#652] LU37
+http://www.radiolu37.com.ar/vivo/listen.pls
+
+[#653] Colonia
+http://www.servidorstreaming1.com:9962/
+
+[#654] Mix
+http://www.servidorstreaming1.com:9962/;stream.mp3
+
+[#655] Colonia
+http://www.servidorstreaming2.com:9962/;stream.mp3
+
+[#656] Feeling
+http://www.turadioenvivo.com:8430/stream
+
