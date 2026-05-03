@@ -339,59 +339,50 @@ if ($filtro !== '') {
     return raw;
   }
 
-  // ── Estado visual de una fila ───────────────────────────────────────────────
-  function setActive(el, estado) {
-    if (activeEl && activeEl !== el) {
-      activeEl.classList.remove('active', 'loading', 'error');
-      activeEl.querySelector('.btn-play').textContent = '▶';
-    }
-    activeEl = el;
+  function markEl(el, estado) {
     el.classList.remove('active', 'loading', 'error');
-    el.classList.add(estado);
+    if (estado) el.classList.add(estado);
     el.querySelector('.btn-play').textContent =
       estado === 'active'  ? '⏸' :
       estado === 'loading' ? '⏳' :
       estado === 'error'   ? '✕' : '▶';
   }
 
-  // Limpia estado anterior SIN borrar audio.src (evita error-event espurio)
-  function resetPrev() {
-    clearTimeout(loadTimer);
-    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-    audio.pause();
-    if (activeEl) {
-      activeEl.classList.remove('active', 'loading', 'error');
-      activeEl.querySelector('.btn-play').textContent = '▶';
-      activeEl = null;
-    }
-  }
+  document.getElementById('lista').addEventListener('click', function(e) {
+    const el = e.target.closest('.station');
+    if (!el) return;
 
-  // ── Reproducción ────────────────────────────────────────────────────────────
-  function play(el) {
     const rawUrl = el.dataset.url;
     const nombre = el.dataset.nombre;
-    const prov   = el.dataset.prov;
 
-    // Toggle: pausar si es la misma emisora activa
+    // Toggle pause
     if (activeEl === el && !audio.paused) {
       audio.pause();
-      el.classList.remove('active');
-      el.querySelector('.btn-play').textContent = '▶';
+      markEl(el, null);
       activeEl = null;
       return;
     }
 
-    resetPrev();
+    // Limpiar estado anterior (null ANTES de tocar audio para que error-handler lo ignore)
+    clearTimeout(loadTimer);
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (activeEl) { markEl(activeEl, null); }
+    activeEl = null;
 
+    // Pausar audio viejo
+    audio.pause();
+
+    // Activar nueva emisora
     activeEl = el;
-    setActive(el, 'loading');
+    markEl(el, 'loading');
     playerTitle.textContent = nombre;
-    playerProv.textContent  = prov;
+    playerProv.textContent  = el.dataset.prov || '';
     playerBar.classList.add('visible');
 
-    loadTimer = setTimeout(() => {
-      if (activeEl === el && el.classList.contains('loading')) {
-        setActive(el, 'error');
+    // Timeout 12s
+    loadTimer = setTimeout(function() {
+      if (activeEl === el) {
+        markEl(el, 'error');
         playerTitle.textContent = nombre + ' — sin señal';
         audio.pause();
       }
@@ -400,39 +391,57 @@ if ($filtro !== '') {
     const url   = resolveUrl(rawUrl);
     const isHls = /\.m3u8(\?|$)/i.test(rawUrl);
 
-    function onOk()  { clearTimeout(loadTimer); if (activeEl === el) setActive(el, 'active'); }
-    function onFail(){ clearTimeout(loadTimer); if (activeEl === el) { setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; } }
-
     if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
       hlsInstance = new Hls({ maxBufferLength: 20 });
       hlsInstance.loadSource(url);
       hlsInstance.attachMedia(audio);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => audio.play().then(onOk).catch(onFail));
-      hlsInstance.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) onFail(); });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
+        audio.play().then(function() {
+          clearTimeout(loadTimer);
+          if (activeEl === el) markEl(el, 'active');
+        }).catch(function() {
+          clearTimeout(loadTimer);
+          if (activeEl === el) { markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
+        });
+      });
+      hlsInstance.on(Hls.Events.ERROR, function(_, d) {
+        if (d.fatal && activeEl === el) { clearTimeout(loadTimer); markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
+      });
     } else {
       audio.src = url;
-      audio.play().then(onOk).catch(onFail);
+      audio.play().then(function() {
+        clearTimeout(loadTimer);
+        if (activeEl === el) markEl(el, 'active');
+      }).catch(function() {
+        clearTimeout(loadTimer);
+        if (activeEl === el) { markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
+      });
     }
-  }
-
-  // ── Eventos ─────────────────────────────────────────────────────────────────
-  document.getElementById('lista').addEventListener('click', e => {
-    const el = e.target.closest('.station');
-    if (el) play(el);
   });
 
-  // Botón detener: acá sí limpiamos el src por completo
-  btnStop.addEventListener('click', () => {
-    resetPrev();
-    audio.removeAttribute('src');
-    audio.load();
+  btnStop.addEventListener('click', function() {
+    clearTimeout(loadTimer);
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (activeEl) { markEl(activeEl, null); activeEl = null; }
+    audio.pause();
+    audio.src = '';
     playerBar.classList.remove('visible');
   });
 
-  // Ignorar eventos si no hay emisora activa (cubre el error del src vacío al detener)
-  audio.addEventListener('error',   () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'error'); playerTitle.textContent = activeEl.dataset.nombre + ' — sin señal'; } });
-  audio.addEventListener('waiting', () => { if (activeEl && activeEl.classList.contains('active')) setActive(activeEl, 'loading'); });
-  audio.addEventListener('playing', () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'active'); } });
+  // Solo responder a eventos si hay emisora activa Y no estamos en transición
+  audio.addEventListener('playing', function() {
+    if (activeEl) { clearTimeout(loadTimer); markEl(activeEl, 'active'); }
+  });
+  audio.addEventListener('error', function() {
+    // activeEl puede ser null si el error viene del src='' del botón Detener — ignorar
+    if (!activeEl) return;
+    clearTimeout(loadTimer);
+    markEl(activeEl, 'error');
+    playerTitle.textContent = activeEl.dataset.nombre + ' — sin señal';
+  });
+  audio.addEventListener('waiting', function() {
+    if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
+  });
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', function() {
