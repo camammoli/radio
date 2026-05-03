@@ -141,6 +141,31 @@ if ($filtro !== '') {
     }
     .badge:hover { background: rgba(255,255,255,.14); color: var(--text); }
 
+    /* ── Filtros de estado ── */
+    .filtros {
+      display: none;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .filtros.visible { display: flex; }
+    .filter-btn {
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      border-radius: 20px;
+      padding: 4px 11px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .filter-btn:hover { background: rgba(255,255,255,.10); color: var(--text); }
+    .filter-btn.active { background: rgba(59,130,246,.18); border-color: var(--accent); color: var(--text); }
+    .filter-btn.f-ok.active      { background: rgba(34,197,94,.15); border-color: #22c55e; color: #86efac; }
+    .filter-btn.f-timeout.active { background: rgba(245,158,11,.15); border-color: #f59e0b; color: #fcd34d; }
+    .filter-btn.f-muerto.active  { background: rgba(239,68,68,.15);  border-color: #ef4444; color: #fca5a5; }
+
     /* ── Buscador ── */
     .search-wrap {
       position: sticky;
@@ -286,8 +311,11 @@ if ($filtro !== '') {
 
 <div class="search-wrap">
   <input id="buscador" type="search" placeholder="Buscar por nombre o provincia..." autocomplete="off" autofocus>
-  <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
-  <div style="font-size:11px;color:#6b7280;margin-top:3px" id="status-gen"></div>
+  <div class="filtros" id="filtros"></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+    <div style="font-size:11px;color:#6b7280" id="status-gen"></div>
+    <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
+  </div>
 </div>
 
 <div class="lista" id="lista">
@@ -452,39 +480,72 @@ if ($filtro !== '') {
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
   });
 
+  // ── Filtros de estado ─────────────────────────────────────────────────────────
+  var currentFilter = 'all';
+
+  function applyFilters() {
+    var q     = buscador.value.toLowerCase().trim();
+    var items = document.querySelectorAll('.station');
+    var vis   = 0;
+    items.forEach(function(el) {
+      var textMatch   = !q || el.dataset.search.includes(q);
+      var statusMatch = currentFilter === 'all' || el.dataset.status === currentFilter;
+      var show        = textMatch && statusMatch;
+      el.classList.toggle('hidden', !show);
+      if (show) vis++;
+    });
+    var base = currentFilter === 'all' ? total : document.querySelectorAll('.station[data-status="' + currentFilter + '"]').length;
+    counter.textContent = (q || currentFilter !== 'all') ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
+  }
+
   // ── Estado de streams (status.json generado por verificar_urls.sh) ──────────
   fetch('/radio/status.json')
     .then(function(r) { return r.ok ? r.json() : null; })
     .then(function(data) {
       if (!data || !data.streams) return;
+
       document.querySelectorAll('.station').forEach(function(el) {
         var s = data.streams[el.dataset.url];
         if (!s) return;
+        el.dataset.status = s.estado;
         var dot = el.querySelector('.dot');
         if (!dot) return;
         dot.classList.add('dot-' + s.estado);
-        dot.title = s.estado === 'ok'     ? '✓ activa (' + (s.ms || '?') + ' ms)' :
-                    s.estado === 'timeout' ? '⏱ sin respuesta' :
+        dot.title = s.estado === 'ok'      ? '✓ activa (' + (s.ms || '?') + ' ms)' :
+                    s.estado === 'timeout'  ? '⏱ sin respuesta' :
                     '✗ caída' + (s.codigo ? ' (HTTP ' + s.codigo + ')' : '');
       });
+
+      // Mostrar línea de verificación
       var genEl = document.getElementById('status-gen');
-      if (genEl) genEl.textContent = 'Verificado: ' + data.generado +
-        ' · ✓ ' + data.ok + '  ✗ ' + data.muertos + '  ⏱ ' + data.timeout;
+      if (genEl) genEl.textContent = 'Verificado: ' + data.generado;
+
+      // Construir botones de filtro
+      var filtrosEl = document.getElementById('filtros');
+      var btns = [
+        { f: 'all',     cls: '',           label: 'Todas',       n: total },
+        { f: 'ok',      cls: 'f-ok',       label: '✓ Activas',   n: data.ok },
+        { f: 'timeout', cls: 'f-timeout',  label: '⏱ Dudosas',   n: data.timeout },
+        { f: 'muerto',  cls: 'f-muerto',   label: '✗ Caídas',    n: data.muertos },
+      ];
+      btns.forEach(function(b) {
+        var btn = document.createElement('button');
+        btn.className = 'filter-btn ' + b.cls + (b.f === 'all' ? ' active' : '');
+        btn.textContent = b.label + ' ' + b.n;
+        btn.addEventListener('click', function() {
+          currentFilter = b.f;
+          document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
+          btn.classList.add('active');
+          applyFilters();
+        });
+        filtrosEl.appendChild(btn);
+      });
+      filtrosEl.classList.add('visible');
     })
     .catch(function() {}); // sin status.json todavía — silencioso
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
-  buscador.addEventListener('input', function() {
-    const q     = this.value.toLowerCase().trim();
-    const items = document.querySelectorAll('.station');
-    let vis = 0;
-    items.forEach(el => {
-      const match = !q || el.dataset.search.includes(q);
-      el.classList.toggle('hidden', !match);
-      if (match) vis++;
-    });
-    counter.textContent = q ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
-  });
+  buscador.addEventListener('input', applyFilters);
 })();
 </script>
 </body>
