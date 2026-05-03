@@ -302,10 +302,11 @@ if ($filtro !== '') {
 <!-- Player fijo -->
 <div id="player-bar">
   <button id="btn-stop" title="Detener">✕</button>
-  <div>
+  <div style="flex:1;min-width:0">
     <div id="player-title">—</div>
     <div id="player-prov"></div>
   </div>
+  <a id="btn-vlc" style="display:none;font-size:12px;color:#93c5fd;white-space:nowrap;text-decoration:none;padding:4px 8px;border:1px solid #374151;border-radius:6px" target="_blank">▶ VLC</a>
   <audio id="audio-elem" controls preload="none"></audio>
 </div>
 
@@ -319,6 +320,7 @@ if ($filtro !== '') {
   const buscador    = document.getElementById('buscador');
   const counter     = document.getElementById('result-count');
   const btnStop     = document.getElementById('btn-stop');
+  const btnVlc      = document.getElementById('btn-vlc');
   const total       = <?= $total ?>;
   const isHttps     = location.protocol === 'https:';
   const PROXY       = '/radio/proxy.php?url=';
@@ -330,12 +332,10 @@ if ($filtro !== '') {
 
   // ── Determina la URL a reproducir ──────────────────────────────────────────
   function resolveUrl(raw) {
-    const isPls  = /\.pls(\?|$)/i.test(raw);
-    const isM3u  = /\.m3u(\?|$)/i.test(raw) && !/\.m3u8(\?|$)/i.test(raw);
-    const isHttp = raw.startsWith('http://');
-    if (isPls || isM3u || (isHttps && isHttp)) {
-      return PROXY + encodeURIComponent(raw);
-    }
+    if (/\.pls(\?|$)/i.test(raw)) return PROXY + encodeURIComponent(raw);
+    if (/\.m3u(\?|$)/i.test(raw) && !/\.m3u8(\?|$)/i.test(raw)) return PROXY + encodeURIComponent(raw);
+    // HTTP en HTTPS → auto-upgrade (muchos servidores AR soportan ambos)
+    if (isHttps && raw.startsWith('http://')) return raw.replace('http://', 'https://');
     return raw;
   }
 
@@ -379,11 +379,12 @@ if ($filtro !== '') {
     playerProv.textContent  = el.dataset.prov || '';
     playerBar.classList.add('visible');
 
+    btnVlc.style.display = 'none';
+
     // Timeout 12s
     loadTimer = setTimeout(function() {
       if (activeEl === el) {
-        markEl(el, 'error');
-        playerTitle.textContent = nombre + ' — sin señal';
+        showError(el, rawUrl, nombre, 'sin señal (timeout)');
         audio.pause();
       }
     }, TIMEOUT_MS);
@@ -396,28 +397,27 @@ if ($filtro !== '') {
       hlsInstance.loadSource(url);
       hlsInstance.attachMedia(audio);
       hlsInstance.on(Hls.Events.MANIFEST_PARSED, function() {
-        audio.play().then(function() {
-          clearTimeout(loadTimer);
-          if (activeEl === el) markEl(el, 'active');
-        }).catch(function() {
-          clearTimeout(loadTimer);
-          if (activeEl === el) { markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
-        });
+        audio.play()
+          .then(function() { clearTimeout(loadTimer); if (activeEl === el) markEl(el, 'active'); })
+          .catch(function() { clearTimeout(loadTimer); if (activeEl === el) showError(el, rawUrl, nombre, 'no disponible'); });
       });
       hlsInstance.on(Hls.Events.ERROR, function(_, d) {
-        if (d.fatal && activeEl === el) { clearTimeout(loadTimer); markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
+        if (d.fatal && activeEl === el) { clearTimeout(loadTimer); showError(el, rawUrl, nombre, 'no disponible'); }
       });
     } else {
       audio.src = url;
-      audio.play().then(function() {
-        clearTimeout(loadTimer);
-        if (activeEl === el) markEl(el, 'active');
-      }).catch(function() {
-        clearTimeout(loadTimer);
-        if (activeEl === el) { markEl(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
-      });
+      audio.play()
+        .then(function() { clearTimeout(loadTimer); if (activeEl === el) markEl(el, 'active'); })
+        .catch(function() { clearTimeout(loadTimer); if (activeEl === el) showError(el, rawUrl, nombre, 'no disponible en web'); });
     }
   });
+
+  function showError(el, rawUrl, nombre, msg) {
+    markEl(el, 'error');
+    playerTitle.textContent = nombre + ' — ' + msg;
+    btnVlc.href = 'vlc://' + rawUrl;
+    btnVlc.style.display = 'inline-block';
+  }
 
   btnStop.addEventListener('click', function() {
     clearTimeout(loadTimer);
@@ -425,19 +425,17 @@ if ($filtro !== '') {
     if (activeEl) { markEl(activeEl, null); activeEl = null; }
     audio.pause();
     audio.src = '';
+    btnVlc.style.display = 'none';
     playerBar.classList.remove('visible');
   });
 
-  // Solo responder a eventos si hay emisora activa Y no estamos en transición
   audio.addEventListener('playing', function() {
-    if (activeEl) { clearTimeout(loadTimer); markEl(activeEl, 'active'); }
+    if (activeEl) { clearTimeout(loadTimer); markEl(activeEl, 'active'); btnVlc.style.display = 'none'; }
   });
   audio.addEventListener('error', function() {
-    // activeEl puede ser null si el error viene del src='' del botón Detener — ignorar
     if (!activeEl) return;
     clearTimeout(loadTimer);
-    markEl(activeEl, 'error');
-    playerTitle.textContent = activeEl.dataset.nombre + ' — sin señal';
+    showError(activeEl, activeEl.dataset.url, activeEl.dataset.nombre, 'no disponible en web');
   });
   audio.addEventListener('waiting', function() {
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
