@@ -1,8 +1,10 @@
 # radio
 
-Escuchar 600+ radios argentinas desde la terminal con una línea de comando.
+Escuchar 600+ radios argentinas desde la terminal, o desde el navegador sin instalar nada.
 
-## Uso
+**🌐 Player web:** [mammoli.ar/radio](https://mammoli.ar/radio/) — funciona en el celular, buscador en tiempo real, descarga M3U para VLC/apps IPTV.
+
+## Uso — Terminal
 
 ```bash
 # Buscar y reproducir (mplayer por default)
