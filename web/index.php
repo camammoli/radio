@@ -32,8 +32,8 @@ function parsear_emisoras(string $texto): array {
     for ($i = 0; $i < $total; $i++) {
         $linea = trim($lineas[$i]);
 
-        // Solo líneas activas: [NNN] Nombre
-        if (!preg_match('/^\[(\d+)\]\s+(.+)/', $linea, $m)) continue;
+        // Líneas activas: [NNN] o [#NNN] — el # dentro de [] NO es comentario
+        if (!preg_match('/^\[#?(\d+)\]\s+(.+)/', $linea, $m)) continue;
 
         $numero = (int)$m[1];
         $nombre = trim($m[2]);
@@ -186,6 +186,15 @@ if ($filtro !== '') {
     .station.active      { background: var(--playing-bg); border-color: var(--accent); }
     .station.hidden      { display: none; }
 
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #374151; flex-shrink: 0; margin-top: 2px;
+      title: attr(title);
+    }
+    .dot-ok      { background: #22c55e; }
+    .dot-muerto  { background: #ef4444; }
+    .dot-timeout { background: #f59e0b; }
+
     .station-num {
       font-size: 11px;
       color: var(--muted);
@@ -278,6 +287,7 @@ if ($filtro !== '') {
 <div class="search-wrap">
   <input id="buscador" type="search" placeholder="Buscar por nombre o provincia..." autocomplete="off" autofocus>
   <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
+  <div style="font-size:11px;color:#6b7280;margin-top:3px" id="status-gen"></div>
 </div>
 
 <div class="lista" id="lista">
@@ -287,6 +297,7 @@ if ($filtro !== '') {
        data-nombre="<?= htmlspecialchars($s['nombre']) ?>"
        data-prov="<?= htmlspecialchars($s['provincia']) ?>"
        data-search="<?= strtolower($s['nombre'] . ' ' . $s['provincia']) ?>">
+    <span class="dot" title="sin verificar"></span>
     <span class="station-num"><?= $s['n'] ?></span>
     <div class="station-info">
       <div class="station-name"><?= htmlspecialchars($s['nombre']) ?></div>
@@ -440,6 +451,27 @@ if ($filtro !== '') {
   audio.addEventListener('waiting', function() {
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
   });
+
+  // ── Estado de streams (status.json generado por verificar_urls.sh) ──────────
+  fetch('/radio/status.json')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(data) {
+      if (!data || !data.streams) return;
+      document.querySelectorAll('.station').forEach(function(el) {
+        var s = data.streams[el.dataset.url];
+        if (!s) return;
+        var dot = el.querySelector('.dot');
+        if (!dot) return;
+        dot.classList.add('dot-' + s.estado);
+        dot.title = s.estado === 'ok'     ? '✓ activa (' + (s.ms || '?') + ' ms)' :
+                    s.estado === 'timeout' ? '⏱ sin respuesta' :
+                    '✗ caída' + (s.codigo ? ' (HTTP ' + s.codigo + ')' : '');
+      });
+      var genEl = document.getElementById('status-gen');
+      if (genEl) genEl.textContent = 'Verificado: ' + data.generado +
+        ' · ✓ ' + data.ok + '  ✗ ' + data.muertos + '  ⏱ ' + data.timeout;
+    })
+    .catch(function() {}); // sin status.json todavía — silencioso
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', function() {
