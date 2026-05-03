@@ -354,17 +354,16 @@ if ($filtro !== '') {
       estado === 'error'   ? '✕' : '▶';
   }
 
-  function stopAll() {
+  // Limpia estado anterior SIN borrar audio.src (evita error-event espurio)
+  function resetPrev() {
     clearTimeout(loadTimer);
-    audio.pause();
-    audio.src = '';
     if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    audio.pause();
     if (activeEl) {
       activeEl.classList.remove('active', 'loading', 'error');
       activeEl.querySelector('.btn-play').textContent = '▶';
       activeEl = null;
     }
-    playerBar.classList.remove('visible');
   }
 
   // ── Reproducción ────────────────────────────────────────────────────────────
@@ -373,7 +372,7 @@ if ($filtro !== '') {
     const nombre = el.dataset.nombre;
     const prov   = el.dataset.prov;
 
-    // Pausa si ya está activo
+    // Toggle: pausar si es la misma emisora activa
     if (activeEl === el && !audio.paused) {
       audio.pause();
       el.classList.remove('active');
@@ -382,45 +381,37 @@ if ($filtro !== '') {
       return;
     }
 
-    stopAll();
+    resetPrev();
+
+    activeEl = el;
     setActive(el, 'loading');
     playerTitle.textContent = nombre;
     playerProv.textContent  = prov;
     playerBar.classList.add('visible');
-    activeEl = el;
 
-    // Timeout de seguridad: si no arrancó en 12s → error
     loadTimer = setTimeout(() => {
       if (activeEl === el && el.classList.contains('loading')) {
         setActive(el, 'error');
         playerTitle.textContent = nombre + ' — sin señal';
         audio.pause();
-        audio.src = '';
       }
     }, TIMEOUT_MS);
 
-    const url    = resolveUrl(rawUrl);
-    const isHls  = /\.m3u8(\?|$)/i.test(rawUrl);
+    const url   = resolveUrl(rawUrl);
+    const isHls = /\.m3u8(\?|$)/i.test(rawUrl);
 
-    // HLS nativo (Safari) o vía hls.js
+    function onOk()  { clearTimeout(loadTimer); if (activeEl === el) setActive(el, 'active'); }
+    function onFail(){ clearTimeout(loadTimer); if (activeEl === el) { setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; } }
+
     if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
       hlsInstance = new Hls({ maxBufferLength: 20 });
       hlsInstance.loadSource(url);
       hlsInstance.attachMedia(audio);
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-        audio.play()
-          .then(() => { clearTimeout(loadTimer); setActive(el, 'active'); })
-          .catch(() => { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; });
-      });
-      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
-      });
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => audio.play().then(onOk).catch(onFail));
+      hlsInstance.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) onFail(); });
     } else {
-      // Resto de streams (MP3/AAC/OGG, o HLS nativo en Safari)
       audio.src = url;
-      audio.play()
-        .then(() => { clearTimeout(loadTimer); setActive(el, 'active'); })
-        .catch(() => { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; });
+      audio.play().then(onOk).catch(onFail);
     }
   }
 
@@ -430,10 +421,17 @@ if ($filtro !== '') {
     if (el) play(el);
   });
 
-  btnStop.addEventListener('click', stopAll);
+  // Botón detener: acá sí limpiamos el src por completo
+  btnStop.addEventListener('click', () => {
+    resetPrev();
+    audio.removeAttribute('src');
+    audio.load();
+    playerBar.classList.remove('visible');
+  });
 
+  // Ignorar eventos si no hay emisora activa (cubre el error del src vacío al detener)
   audio.addEventListener('error',   () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'error'); playerTitle.textContent = activeEl.dataset.nombre + ' — sin señal'; } });
-  audio.addEventListener('waiting', () => { if (activeEl && !activeEl.classList.contains('loading')) setActive(activeEl, 'loading'); });
+  audio.addEventListener('waiting', () => { if (activeEl && activeEl.classList.contains('active')) setActive(activeEl, 'loading'); });
   audio.addEventListener('playing', () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'active'); } });
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
