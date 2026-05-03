@@ -309,25 +309,44 @@ if ($filtro !== '') {
   <audio id="audio-elem" controls preload="none"></audio>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
 <script>
 (function() {
-  const audio      = document.getElementById('audio-elem');
-  const playerBar  = document.getElementById('player-bar');
+  const audio       = document.getElementById('audio-elem');
+  const playerBar   = document.getElementById('player-bar');
   const playerTitle = document.getElementById('player-title');
   const playerProv  = document.getElementById('player-prov');
-  const buscador   = document.getElementById('buscador');
-  const counter    = document.getElementById('result-count');
-  const btnStop    = document.getElementById('btn-stop');
-  const total      = <?= $total ?>;
-  let activeEl     = null;
+  const buscador    = document.getElementById('buscador');
+  const counter     = document.getElementById('result-count');
+  const btnStop     = document.getElementById('btn-stop');
+  const total       = <?= $total ?>;
+  const isHttps     = location.protocol === 'https:';
+  const PROXY       = '/radio/proxy.php?url=';
+  const TIMEOUT_MS  = 12000;
 
+  let activeEl    = null;
+  let hlsInstance = null;
+  let loadTimer   = null;
+
+  // ── Determina la URL a reproducir ──────────────────────────────────────────
+  function resolveUrl(raw) {
+    const isPls  = /\.pls(\?|$)/i.test(raw);
+    const isM3u  = /\.m3u(\?|$)/i.test(raw) && !/\.m3u8(\?|$)/i.test(raw);
+    const isHttp = raw.startsWith('http://');
+    if (isPls || isM3u || (isHttps && isHttp)) {
+      return PROXY + encodeURIComponent(raw);
+    }
+    return raw;
+  }
+
+  // ── Estado visual de una fila ───────────────────────────────────────────────
   function setActive(el, estado) {
     if (activeEl && activeEl !== el) {
-      activeEl.classList.remove('active','loading','error');
+      activeEl.classList.remove('active', 'loading', 'error');
       activeEl.querySelector('.btn-play').textContent = '▶';
     }
     activeEl = el;
-    el.classList.remove('active','loading','error');
+    el.classList.remove('active', 'loading', 'error');
     el.classList.add(estado);
     el.querySelector('.btn-play').textContent =
       estado === 'active'  ? '⏸' :
@@ -335,58 +354,89 @@ if ($filtro !== '') {
       estado === 'error'   ? '✕' : '▶';
   }
 
+  function stopAll() {
+    clearTimeout(loadTimer);
+    audio.pause();
+    audio.src = '';
+    if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+    if (activeEl) {
+      activeEl.classList.remove('active', 'loading', 'error');
+      activeEl.querySelector('.btn-play').textContent = '▶';
+      activeEl = null;
+    }
+    playerBar.classList.remove('visible');
+  }
+
+  // ── Reproducción ────────────────────────────────────────────────────────────
   function play(el) {
-    const url    = el.dataset.url;
+    const rawUrl = el.dataset.url;
     const nombre = el.dataset.nombre;
     const prov   = el.dataset.prov;
 
+    // Pausa si ya está activo
     if (activeEl === el && !audio.paused) {
       audio.pause();
-      setActive(el, 'active');
       el.classList.remove('active');
       el.querySelector('.btn-play').textContent = '▶';
       activeEl = null;
       return;
     }
 
+    stopAll();
     setActive(el, 'loading');
     playerTitle.textContent = nombre;
     playerProv.textContent  = prov;
     playerBar.classList.add('visible');
+    activeEl = el;
 
-    audio.src = url;
-    audio.play().then(() => {
-      setActive(el, 'active');
-    }).catch(() => {
-      setActive(el, 'error');
-      playerTitle.textContent = nombre + ' — sin señal';
-    });
+    // Timeout de seguridad: si no arrancó en 12s → error
+    loadTimer = setTimeout(() => {
+      if (activeEl === el && el.classList.contains('loading')) {
+        setActive(el, 'error');
+        playerTitle.textContent = nombre + ' — sin señal';
+        audio.pause();
+        audio.src = '';
+      }
+    }, TIMEOUT_MS);
+
+    const url    = resolveUrl(rawUrl);
+    const isHls  = /\.m3u8(\?|$)/i.test(rawUrl);
+
+    // HLS nativo (Safari) o vía hls.js
+    if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
+      hlsInstance = new Hls({ maxBufferLength: 20 });
+      hlsInstance.loadSource(url);
+      hlsInstance.attachMedia(audio);
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        audio.play()
+          .then(() => { clearTimeout(loadTimer); setActive(el, 'active'); })
+          .catch(() => { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; });
+      });
+      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; }
+      });
+    } else {
+      // Resto de streams (MP3/AAC/OGG, o HLS nativo en Safari)
+      audio.src = url;
+      audio.play()
+        .then(() => { clearTimeout(loadTimer); setActive(el, 'active'); })
+        .catch(() => { clearTimeout(loadTimer); setActive(el, 'error'); playerTitle.textContent = nombre + ' — sin señal'; });
+    }
   }
 
-  // Click en la fila o el botón
-  document.getElementById('lista').addEventListener('click', function(e) {
+  // ── Eventos ─────────────────────────────────────────────────────────────────
+  document.getElementById('lista').addEventListener('click', e => {
     const el = e.target.closest('.station');
     if (el) play(el);
   });
 
-  // Detener
-  btnStop.addEventListener('click', function() {
-    audio.pause();
-    audio.src = '';
-    if (activeEl) {
-      activeEl.classList.remove('active','loading','error');
-      activeEl.querySelector('.btn-play').textContent = '▶';
-      activeEl = null;
-    }
-    playerBar.classList.remove('visible');
-  });
+  btnStop.addEventListener('click', stopAll);
 
-  audio.addEventListener('ended',  () => activeEl && setActive(activeEl, 'active'));
-  audio.addEventListener('error',  () => activeEl && setActive(activeEl, 'error'));
-  audio.addEventListener('waiting',() => activeEl && setActive(activeEl, 'loading'));
-  audio.addEventListener('playing',() => activeEl && setActive(activeEl, 'active'));
+  audio.addEventListener('error',   () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'error'); playerTitle.textContent = activeEl.dataset.nombre + ' — sin señal'; } });
+  audio.addEventListener('waiting', () => { if (activeEl && !activeEl.classList.contains('loading')) setActive(activeEl, 'loading'); });
+  audio.addEventListener('playing', () => { if (activeEl) { clearTimeout(loadTimer); setActive(activeEl, 'active'); } });
 
-  // Buscador
+  // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', function() {
     const q     = this.value.toLowerCase().trim();
     const items = document.querySelectorAll('.station');
