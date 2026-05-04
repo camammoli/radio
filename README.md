@@ -60,4 +60,4 @@ chmod +x verificar_urls.sh
 
 ## Licencia
 
-CC BY-SA 4.0 — Carlos Ariel Mammoli (LU2MCA), Mendoza, Argentina
+MIT License — Carlos Ariel Mammoli (LU2MCA), Mendoza, Argentina
