@@ -50,7 +50,7 @@ http://­108.59.9.147:8078/
 http://157nus.nuestrasradios.com/ymxu1k1gus5tv
 
 [016] Los 40
-http://16613.live.streamtheworld.com/LOS40_ARGENTINA_SC
+https://radios.solumedia.com:6158/stream?icy=http
 
 [017] Estación Vinilo
 http://173.255.205.241:1127/;
@@ -152,7 +152,7 @@ http://audio.questreaming.com:20038/;
 http://audio.questreaming.com:25859/;
 
 [050] 99.1 (repetidora Cadena 3)
-http://c3live-sm.mediainbox.net/cadena3.mp3
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM700.mp3
 
 [051] Futurock
 http://cdn2.instream.audio:8007/stream
@@ -209,19 +209,19 @@ http://icecast.hostingbahia.com.ar:8024/live
 http://nvradios.com:9396/;
 
 [069] Cadena 3
-http://playerservices.streamtheworld.com/api/livestream-redirect/CADENA3.mp3
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM700.mp3
 
 [070] Continental
-http://playerservices.streamtheworld.com/api/livestream-redirect/CONTINENTAL_SC
+https://edge02.radiohdvivo.com/continental
 
 [071] FM Córdoba
-http://playerservices.streamtheworld.com/api/livestream-redirect/FM_CORDOBA.mp3
+https://liveradio.mediainbox.net/fmcordoba.mp3
 
 [072] Los 40
-http://playerservices.streamtheworld.com/api/livestream-redirect/LOS40_ARGENTINA_SC
+https://radios.solumedia.com:6158/stream?icy=http
 
 [073] Popular
-http://playerservices.streamtheworld.com/api/livestream-redirect/RADIO_POPULAR.mp3
+https://liveradio.mediainbox.net/popular.mp3
 
 [074] Océano
 http://radio1.oceanofm.com:8010/listen.pls&type=mp3
@@ -308,16 +308,16 @@ https://alpha.radioplayer.com.ar:9104/stream
 https://audiohd.sonidosenlared.com:2199/tunein/fmruta66-stream.pls
 
 [102] http//playerservices.streamtheworld.com/api/livestream-redirect/CADENA3.mp3
-https://c3ny1.mediainbox.net/cadena3.mp3
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM700.mp3
 
 [103] FM Córdoba
-https://c3ny1.mediainbox.net/fmcordoba.mp3
+https://liveradio.mediainbox.net/fmcordoba.mp3
 
 [104] Popular
-https://c3ny1.mediainbox.net/popular.mp3
+https://liveradio.mediainbox.net/popular.mp3
 
 [105] El Destape
-https://cdn2.instream.audio/:8000/stream
+https://ipanel.instream.audio/8004/stream
 
 [106] Somos Radio
 https://cdn2.instream.audio/:8001/stream
@@ -626,28 +626,28 @@ https://unlimited4-us.dps.live/perfil/gotardis/audio/now/livestream1.m3u8
 https://usa5.fastcast4u.com/proxy/radiocultura?mp=/1
 
 [208] Zeta
-https://www.radios.com.br/players/listen-radio.m3u?radio=21084
+https://sslstream.online/8184/stream
 
 [209] Vibra
-https://www.radios.com.br/players/listen-radio.m3u?radio=21125
+https://playerservices.streamtheworld.com/api/livestream-redirect/VIBRA_SC
 
 [210] Radio Más
-https://www.radios.com.br/players/listen-radio.m3u?radio=21732
+https://streaming2.locucionar.com/proxy/radiomas971?mp=/stream
 
 [211] Cadena del Sol
-https://www.radios.com.br/players/listen-radio.m3u?radio=28957
+http://streamlky.alsolnet.com:443/fmdelsol
 
 [212] Sports
-https://www.radios.com.br/players/listen-radio.m3u?radio=41198
+http://streaming.gostreaming.com.ar:8004/;
 
 [213] Fantástica
-https://www.radios.com.br/players/listen-radio.m3u?radio=42221
+http://streaming01.shockmedia.com.ar:9186/stream
 
 [214] Moebius
-https://www.radios.com.br/players/listen-radio.m3u?radio=7801
+https://streaming.escuchanosonline.com:7220/stream
 
 [215] Sapiens
-https://www.radios.com.br/players/listen-radio.m3u?radio=8018
+https://player.xcast.com.br/proxy/10198/;
 
 [216] 103.3
 https://www.radios.com.br/players/listen-radio.m3u?radio=83870
@@ -659,7 +659,7 @@ https://www.radios.com.br/players/listen-radio.m3u?radio=92845
 https://www.radios.com.br/players/listen-radio.pls?radio=40547
 
 [219] La Tribu
-http://vivo.fmlatribu.com/latribu.m4a
+https://streamer.radio.co/s3a3c12873/listen
 
 [220] Cadena Cumbia Latina
 http://www.alsolnet.com/stream/cadenacumbia/listen.pls
@@ -743,10 +743,10 @@ http://fm.uncu.edu.ar:8000/
 http://miradioenlaweb.com:4742/;
 
 [#247] Radio Nacional Argentina AM 780 * Mendoza, Argentina
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad48
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad48
 
 [#248] Radio Nacional Argentina AM 960 * Mendoza, Argentina
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad6
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad6
 
 [#249] Estación Zafiro FM 89.5 * Mendoza, Argentina
 http://stream.idomo.com.ar/zafiro
@@ -965,7 +965,7 @@ http://184.107.35.153:9610/tu-punto-de-montaje
 http://18433.live.streamtheworld.com:3690/RQPAAC_SC
 
 [#321] Mucha Radio
-http://18543.live.streamtheworld.com/MUCHARADIO_SC
+https://playerservices.streamtheworld.com/api/livestream-redirect/MUCHA_RADIO.mp3
 
 [#322] LT3
 http://188.165.179.141:8000/stream
@@ -1373,7 +1373,7 @@ http://envivo.radio.net.ar:8035/stream?icy=https
 http://espectador2.net.com.uy:8120/stream/5/
 
 [#457] CNN
-http://estudio.cnnradioargentina.com.ar:8000/stream
+https://unlimited2-ar.dps.live/cnn-ar/aac/icecast.audio
 
 [#458] 99.9
 http://fm999.info:8000/radio.ogg
@@ -1451,7 +1451,7 @@ http://node-02.strongradiohost.com/0xhaqs96us5tv?rj-ttl=5&rj-token=AAABYQRJigcsP
 http://nvirred.com:9396/;
 
 [#483] Del Mar
-http://pad20.com:8285/vivo
+https://radio.arcast.net:1060/stream
 
 [#484] Del Sol
 http://phanta-soft.com:8000/radio_fmdelsol.mp3
@@ -1523,7 +1523,7 @@ http://retransmisorasenelpais.cienradios.com.ar/Mia.aac
 http://s01.bahiahost.com.ar:7466/stream
 
 [#507] Horizonte
-https://14833.live.streamtheworld.com/SAM06AAC243_SC
+https://playerservices.streamtheworld.com/api/livestream-redirect/SAM06AAC243_SC
 
 [#508] Kraken
 http://s1.radiosnethosting.com:12052/;stream.nsv&type=mp3
@@ -1532,7 +1532,7 @@ http://s1.radiosnethosting.com:12052/;stream.nsv&type=mp3
 http://s1.radiosnethosting.com:9692/;stream.nsv&type=mp3
 
 [#510] Mucha Radio
-https://20823.live.streamtheworld.com/MUCHA_RADIO.mp3
+https://playerservices.streamtheworld.com/api/livestream-redirect/MUCHA_RADIO.mp3
 
 [#511] Continental
 https://20833.live.streamtheworld.com/CONTINENTALAAC.aac
@@ -1550,31 +1550,31 @@ https://alpha.radioplayer.com.ar:9224/fmpositivo947
 https://alpha.radioplayer.com.ar:9290/fmarena983
 
 [#516] Nacional
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad1
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad1
 
 [#517] Nacional Bahía
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad13
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad13
 
 [#518] Nacional Clásica
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad37
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad37
 
 [#519] Nacional Folclórica
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad38
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad38
 
 [#520] Nacional rock
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad39
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad39
 
 [#521] LT14
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad44
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad44
 
 [#522] LV8 Radio Libertador
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad48
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad48
 
 [#523] LU23
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad49
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad49
 
 [#524] Radio Nacional Rosario AM 1300
-http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad5
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad5
 
 [#525] Octubre
 https://arcast.net:8443/oktubre.mp3
@@ -1598,7 +1598,7 @@ https://d1a7butsko8nkd.cloudfront.net/sport.mp3
 https://dreamsiteradiocp.com/proxy/argentinarm?mp=/stream
 
 [#532] Disney
-https://edge-np.cdn.mdstrm.com/5a9ee26311c043ae48e40bcd.mp3
+https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.m3u8
 
 [#533] Sucesos
 http://server1.dainusradio.com:2341/listen.pls
@@ -1670,10 +1670,10 @@ http://servidor.ilive.com.ar:9320/;#.mp3
 http://servidor.ilive.com.ar:9330/;
 
 [#556] El Destape
-https://ipanel.instream.audio/44018/io/get/a2becdb13f77379019e41c81af7b42f6-9r1w9746kgkv8dg7/d1u78w1u5wqpjw31dtjprbk9dttq8wk5c5pjwrbnchmpyehr60r38bvkeht6arbd
+https://ipanel.instream.audio/8004/stream
 
 [#557] Disney
-https://mdstrm.com/audio/5db1aedcf0829139c07b1285/icecast.audio
+https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.m3u8
 
 [#558] Mega
 https://mega975.radioca.st/live
@@ -1727,13 +1727,13 @@ https://streaming2.hostingmontevideo.com:7011/;
 https://streaming450tb.locucionar.com/proxy/fmvida979?mp=/stream
 
 [#575] Berlín
-https://streaming.berlin1079.com:8082/stream
+https://unlimited5-us.dps.live/berlin/aac/icecast.audio
 
 [#576] Radio Salta
 https://streamingraddios.online/proxy/salta2?mp=/stream
 
 [#577] La Red
-https://strive-sdn-lsdlive-live.akamaized.net/live_passthrough_static/amlared/playlist.m3u8
+https://playerservices.streamtheworld.com/api/livestream-redirect/LA_RED_AM910AAC.aac
 
 [#578] Radio Activa
 http://stm14.mfmedios.info:22350/;?1538696599252
@@ -1925,7 +1925,7 @@ https://tupanel.info:7458/stream
 http://subituradio.com:8320/radio.mp3?type=.aac/;
 
 [#641] Disney
-https://us-b4-p-e-az1-audio.cdn.mdstrm.com/live-audio/5b7dcf9b7f880d076b1ed74d/5db1aedcf0829139c07b1285/icecast.audio
+https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.m3u8
 
 [#642] Radio Claromecó
 https://www.radio3.online:8443/1069.opus
@@ -1946,7 +1946,7 @@ http://us7.maindigitalstream.com/2548/?pl=winamp&c=La%20Radio%20del%20Deporte
 http://usa15.ciudaddigital.com.uy:8032/ClarinAM
 
 [#648] La Tribu
-http://vivo.fmlatribu.com:8000/latribu.mp3
+https://streamer.radio.co/s3a3c12873/listen
 
 [#649] Malena
 http://vivo.radioam750.com.ar/vivofm.mp3
@@ -1973,4 +1973,34 @@ http://www.servidorstreaming2.com:9962/;stream.mp3
 http://www.turadioenvivo.com:8430/stream
 
 [657] Aspen (102.3) (¡Gracias cristianmiranda!)
-https://mdstrm.com/audio/60a2745ff943100826374a70/icecast.audio
+https://playerservices.streamtheworld.com/api/livestream-redirect/ASPEN.mp3
+
+[#658] Andes Latina * Mendoza, Argentina
+https://streamserver-2.xyz:8010/radio.aac
+
+[#659] Vinilo Mix * Mendoza, Argentina
+https://audiopanel.com.ar:8010/radio.aac
+
+[#660] Radio Metropolitana FM 95.3 * Mendoza, Argentina
+https://masservidor.net:7176/;
+
+[#661] Radio A FM 105.7 * Mendoza, Argentina
+https://masservidor.net:7180/;
+
+[#662] Radio Zónica AM 820 * Buenos Aires, Argentina
+https://streamlky.alsolnet.com/radiozonica
+
+[#663] Radio Sur * Buenos Aires, Argentina
+https://stream.xweb.ar:8008/;
+
+[#664] Sonido FM 103.5 * Buenos Aires, Argentina
+https://streaming.radiosenlinea.com.ar/8780/stream/1/
+
+[#665] LU6 Radio Atlántica AM 760 * Mar del Plata, Argentina
+https://streaming.escuchanosonline.com:7056/stream
+
+[#666] Milenium FM * Rosario, Argentina
+http://23.111.184.195:8020/mileniumrosario.mp3
+
+[#667] FM del Mar * Trelew, Argentina
+https://icecast.gesatel.com.ar:8443/vivo
