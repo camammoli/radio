@@ -12,6 +12,8 @@
  *   /radio/proxy.php?url=https%3A%2F%2F...listen.m3u%3Fradio%3D123
  */
 
+require_once __DIR__ . '/log.php';
+
 $url = rawurldecode($_GET['url'] ?? '');
 
 // ── Validación básica ─────────────────────────────────────────────────────────
@@ -110,6 +112,7 @@ curl_setopt_array($ch, [
     },
 ]);
 
+radio_log('stream', $url);
 $ok = curl_exec($ch);
 if (!$ok && !connection_aborted()) {
     http_response_code(502);
