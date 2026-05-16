@@ -146,6 +146,8 @@ radio_log('visit', '');
       text-decoration: none;
     }
     .badge:hover { background: rgba(255,255,255,.14); color: var(--text); }
+    .badge-cafe { border-color: #92400e; color: #fbbf24; }
+    .badge-cafe:hover { background: rgba(251,191,36,.12); color: #fde68a; }
 
     /* ── Filtros de estado ── */
     .filtros {
@@ -312,6 +314,7 @@ radio_log('visit', '');
     <a class="badge" href="?m3u=1">⬇ Bajar M3U</a>
     <a class="badge" href="https://github.com/camammoli/radio" target="_blank">GitHub</a>
     <a class="badge" href="https://mammoli.ar">mammoli.ar</a>
+    <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>
   </div>
 </header>
 
