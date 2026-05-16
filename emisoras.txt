@@ -2004,3 +2004,244 @@ http://23.111.184.195:8020/mileniumrosario.mp3
 
 [#667] FM del Mar * Trelew, Argentina
 https://icecast.gesatel.com.ar:8443/vivo
+
+[#668] La 100 - 99.9 FM - Grupo Clarín - Buenos Aires, Argentina * Buenos Aires
+https://playerservices.streamtheworld.com/api/livestream-redirect/FM999_56.mp3
+
+[#669] Radio Disney 94.3 - Buenos Aires, Argentina * Ciudad de Buenos Aires
+https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.aac
+
+[#670] Radio Mitre * Argentina
+http://playerservices.streamtheworld.com/api/livestream-redirect/AM790_56AAC_SC
+
+[#671] Blue 100.7 FM * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/BLUE_FM_100_7AAC.aac
+
+[#672] Radio 10 * Argentina
+https://radio10.stweb.tv/radio10/live/playlist.m3u8
+
+[#673] AM 530 Somos radio * Argentina
+https://ipanel.instream.audio:7000/stream
+
+[#674] Mitre AM 790. AAC Alta. Ciudad de Buenos Aires * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM790_56AAC.aac
+
+[#675] Cadena 3 Cordoba * Córdoba(Argentina)
+https://liveradio.mediainbox.net/radio3.mp3
+
+[#676] La 100 Clásicos - Disco Retro Clásicos * Ciudad autonoma de Buenos Aires
+https://27323.live.streamtheworld.com/FCLASICOS_56AAC.aac?
+
+[#677] Urbana Play 104.4 * Buenos Aires
+https://cdn.instream.audio:9660/stream
+
+[#678] 107.9 El Observador * Ciudad Autonoma de Buenos Aires
+https://s8.stweb.tv/observador/live/playlist.m3u8
+
+[#679] Pop Radio 101.5 * Buenos Aires
+https://popradio.stweb.tv/popradio/live/chunks.m3u8
+
+[#680] Metro 95.1 * Buenos Aires
+https://playerservices.streamtheworld.com/api/livestream-redirect/METRO.mp3
+
+[#681] Vale 97.1 * Buenos Aires
+http://vale.stweb.tv:1935/vale/live/playlist.m3u8
+
+[#682] Rock And Pop FM 95.9 (Rock & Pop) Ciudad de Buenos Aires * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/ROCKANDPOPAAC.aac
+
+[#683] 89.5 La 100 * Argentina
+http://radios.agusticomunicacion.com:3000/LA100
+
+[#684] Radio Bicentenario Tucumán * Tucumán
+http://01.solumedia.com.ar:7792/;stream/1
+
+[#685] Radio Cristiana FM 88.3 * Argentina
+https://rr5100.globalhost1.com/8540/;
+
+[#686] FM Centro Basavilbaso 105.1 * Argentina
+https://streamconex.com:8030/stream
+
+[#687] RPM Oldies & Retro Hits * Buenos Aires
+https://radios.solumedia.com/6118/stream
+
+[#688] UnDinamo * Capital Federal
+https://cdn.instream.audio/:9339/stream?in_device_id=WPU32ffbfaa3cd8ebaaa8f64ec868bf4b88XY177fdfd79a7
+
+[#689] Radio 5: Mitre AM790 * Argentina
+https://radio.eduneu.eu:8040/radio.mp3
+
+[#690] La Radio 104.7 FM. Resistencia Chaco. Julio Wajcman * Chaco
+https://server.laradio.online/proxy/laradio1047
+
+[#691] Radio Centinela * Argentina
+https://01.solumedia.com.ar:8050/stream
+
+[#692] Radio Nacional Folklorica 98.7 * Argentina
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad38
+
+[#693] LA NACION 104.9 * Ciudad autonoma de Buenos Aires
+https://stream.radio.co/s2ed3bec0a/listen
+
+[#694] Rock & Pop 95.9 FM * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/ROCKANDPOP.mp3
+
+[#695] 107.9 El Observador version 2 * Ciudad Autonoma de Buenos Aires
+http://s8.stweb.tv:1935/observador/live/playlist.m3u8
+
+[#696] 221Radio (FM 103.1) * Argentina
+https://radios.solumedia.com:10815/stream
+
+[#697] Radio Provincia AM 1270 * Argentina
+https://streaming.provinciaradio.com.ar:7008/am
+
+[#698] FM en Transito * CAstelar - Provincia de Buenos Aires
+https://cdn.instream.audio/:9110/stream
+
+[#699] La Popu 92.3 * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/lapopu.mp3?dist=c3-web
+
+[#700] Cosquín Rock 95.5 * Córdoba(Argentina)
+https://playerservices.streamtheworld.com/api/livestream-redirect/cosquinrock.mp3
+
+[#701] Radio DeeJay 92.5 * Salta
+http://streaming.radiosenlinea.com.ar:9640/
+
+[#702] Radio Rivadavia * Buenos Aires
+https://playerservices.streamtheworld.com/api/livestream-redirect/RIVADAVIA.mp3
+
+[#703] 96.1 Shopping Classics * Argentina
+https://stream4.suenas.net/shoppingclassics
+
+[#704] Radio Concierto 96.5 FM * Argentina
+https://vivohd.fmradioconcierto.com.ar:8000/radio.mp3
+
+[#705] neverland * Argentina
+https://stream-166.zeno.fm/oaqigxpfjzqvv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJvYXFpZ3hwZmp6cXZ2IiwiaG9zdCI6InN0cmVhbS0xNjYuemVuby5mbSIsInJ0dGwiOjUsImp0aSI6IjFnRWVwSWpIUXJXVElZSU1pLVlrenciLCJpYXQiOjE3NDgxMzU4OTUsImV4cCI6MTc0ODEzNTk1NX0.b4Llu6iAJk1NPa2U9OhIjm_3CZQyLuRJZWiNecQWBdY
+
+[#706] 90.1 MHz FM EL CHUBUT * Argentina
+https://radios.streamingdha.com.ar:9382/;
+
+[#707] 221 Radio 103.1 FM * Argentina
+http://radio.solumedia.com.ar:8612/stream
+
+[#708] 88.9 FM Radio Light * Misiones
+http://streamall.alsolnet.com/radiolightfm
+
+[#709] Radio Splendid AM 900 * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM990.mp3
+
+[#710] 90 Radio (FM 90.1) * Córdoba
+http://sonicpanel.hostradios.com:8108/;
+
+[#711] EDI RADIO * Argentina
+https://radio.forensedigital.gt:8090/stream
+
+[#712] FM BAND NEWS 89.5 * Argentina
+https://streaming01.shockmedia.com.ar:10486/
+
+[#713] Rio FM 96.9 Rosario * Santa Fe
+https://streaming.redboing.com/radio/8070/radio.mp3
+
+[#714] Somos Radio - AM 530 (Radio de las Madres de Plaza de Mayo) * Ciudad autonoma de Buenos Aires
+https://cdn.instream.audio:9288/stream
+
+[#715] planeta cuarteto, Villa Carlos Paz 100.3 FM * Córdoba(Argentina)
+https://streaming.radiosenlinea.com.ar:10763/live
+
+[#716] 92.5 FM Radio 2000 * Argentina
+https://server6.hostradios.com/8390/stream
+
+[#717] Rock And Blues * Argentina
+https://radio.wiz.com.ar/listen/rock_and_blues/radio.mp3
+
+[#718] FM Latidos 95.1 - General Pico * Argentina
+https://streamconex.com:8150/stream
+
+[#719] Classic Hits - Éxitos que no pasan de moda * Bahía Blanca, Pcia. de Buenos Aires
+https://stream-151.zeno.fm/7st5b8derm0uv?
+
+[#720] Achala * Mina Clavero, Córdoba
+https://streaming2.mundoradio.com.ar/9134/stream
+
+[#721] Radio Rivadavia * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/RIVADAVIAAAC_SC?dist=triton-widget&pname=tdwidgets
+
+[#722] Radio One 103.7 * Ciudad autonoma de Buenos Aires
+https://one.stweb.tv/one/live/playlist.m3u8
+
+[#723] FM Dimension 100.3 * Argentina
+https://streaming2.locucionar.com/proxy/fmdimension1003?mp=/stream
+
+[#724] Radio Verdad Villa Dolores * Argentina
+https://streaming1.locucionar.com/proxy/radioverdad?mp=/stream
+
+[#725] RADIODJ * Buenos Aires
+https://pulsedeck.org/listen/radiodj/radio.mp3
+
+[#726] Radio City juy * Argentina
+https://5cd577a3dd8ec.streamlock.net/radiocity/live_1/chunklist_w1831978817.m3u8
+
+[#727] FM DEL VALLE 99.9 * Argentina
+https://01.solumedia.com.ar:8764/stream
+
+[#728] FM Universidad 98.7 - Universidad Nacional de Misiones * Misiones
+https://fm.unam.edu.ar/fm
+
+[#729] XRADIO 99.1 * San Bernardo, Pcia. de Buenos Aires
+https://radios.streamingdha.com.ar/9826/;
+
+[#730] Radio Amanecer AM 1290 - FM 92.7 * Argentina
+https://streaming2.locucionar.com/proxy/radioamanecer?mp=/stream
+
+[#731] Concepto FM 95.5 MHz * Ciudad Autonoma de Buenos Aires
+http://radios.solumedia.com:6002/stream
+
+[#732] FM La Boca 90.1 Buenos Aires * Ciudad Autonoma de Buenos Aires
+https://s24.myradiostream.com/:14984/listen.mp3?nocache=1674464727
+
+[#733] Radio UNR * Argentina
+https://cdn.instream.audio/:9202/stream
+
+[#734] Cadena Alegría - Córdoba * Córdoba(Argentina)
+https://streaming.escuchanosonline.com:7101/stream
+
+[#735] FM CERES  98.7 * Argentina
+https://streaming.escuchanosonline.com/8410/stream
+
+[#736] Radio Cadena 3 * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/RADIO3_SC
+
+[#737] The Musical Box Radio * Argentina
+http://albireo.shoutca.st:9740/stream
+
+[#738] TMB The Musical Box * Ciudad autonoma de Buenos Aires
+https://tmbradio.radioca.st/stream
+
+[#739] Radio Rebelde AM 740 * Argentina
+http://stream.radiojar.com/qkxht62hy8hvv
+
+[#740] Cadena AM 1470 * Buenos Aires
+https://sonicpanel.hostradios.com/8060/stream%22%20streamType=%22mp3%22%20radioId=%22ar.cadena1470%22
+
+[#741] FM Eclipse 90.5 * Argentina
+https://streaming2.locucionar.com/proxy/fmeclipse905?mp=/stream
+
+[#742] Radiofonica 100.7 * Argentina
+https://edge04.radiohdvivo.com/radiofonica
+
+[#743] RADIO CONCIERTO 97.1 MHZ * Argentina
+https://vivohd.fmradioconcierto.com.ar:8000/status-json.xsl//radio.mp3
+
+[#744] Rock And More * Posadas, Misiones
+https://streaming01.shockmedia.com.ar/8616/;
+
+[#745] antena libre 89.1 argentina universidad conahue * Argentina
+http://cdn.instream.audio:9140/stream
+
+[#746] Radio Cristiana fm 88.3 * Buenos Aires
+https://rr5100.globalhost1.com/8540/stream;
+
+[#747] rock and pop 89.7 FM * Mar del Plata
+https://streamlky.alsolnet.com/rockandpop_128k
+
