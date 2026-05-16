@@ -313,8 +313,8 @@ radio_log('visit', '');
       border: 1px solid #374151;
       border-left: 3px solid #fbbf24;
       border-radius: 8px;
-      padding: 12px 38px 12px 16px;
-      font-size: 13px;
+      padding: 13px 40px 13px 17px;
+      font-size: 14px;
       color: #d1d5db;
       line-height: 1.5;
       z-index: 200;
@@ -591,12 +591,12 @@ radio_log('visit', '');
       var toast = document.createElement('div');
       toast.id = 'support-toast';
       toast.innerHTML =
-        'Si encontrás útil esta radio, considerá <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">invitar un café</a> —' +
+        'Si esta herramienta te resultó útil, considerá <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">invitar un café</a> —' +
         ' ayuda a mantener esta y otras herramientas online. ☕' +
         '<button onclick="this.parentNode.classList.add(\'hide\')" title="Cerrar">✕</button>';
       document.body.appendChild(toast);
       sessionStorage.setItem('toast_shown', '1');
-      setTimeout(function() { toast.classList.add('hide'); }, 15000);
+      setTimeout(function() { toast.classList.add('hide'); }, 25000);
     }, 25000);
   }
 })();
