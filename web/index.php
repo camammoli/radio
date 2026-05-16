@@ -303,6 +303,35 @@ radio_log('visit', '');
       padding: 4px;
     }
     #btn-stop:hover { color: var(--red); }
+
+    /* ── Toast de apoyo ── */
+    #support-toast {
+      position: fixed;
+      bottom: 140px; right: 16px;
+      max-width: 260px;
+      background: #1f2937ee;
+      border: 1px solid #374151;
+      border-left: 3px solid #fbbf24;
+      border-radius: 8px;
+      padding: 10px 36px 10px 14px;
+      font-size: 12px;
+      color: #d1d5db;
+      line-height: 1.5;
+      z-index: 200;
+      opacity: 1;
+      transition: opacity .6s ease;
+    }
+    #support-toast.hide { opacity: 0; pointer-events: none; }
+    #support-toast a { color: #fbbf24; text-decoration: none; }
+    #support-toast a:hover { text-decoration: underline; }
+    #support-toast button {
+      position: absolute;
+      top: 6px; right: 8px;
+      background: none; border: none;
+      color: #6b7280; font-size: 13px;
+      cursor: pointer; padding: 2px;
+    }
+    #support-toast button:hover { color: #d1d5db; }
   </style>
 </head>
 <body>
@@ -555,6 +584,21 @@ radio_log('visit', '');
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', applyFilters);
+
+  // ── Toast de apoyo (una vez por sesión, después de 25s) ───────────────────────
+  if (!sessionStorage.getItem('toast_shown')) {
+    setTimeout(function() {
+      var toast = document.createElement('div');
+      toast.id = 'support-toast';
+      toast.innerHTML =
+        'Si encontrás útil esta radio, considerá <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">invitar un café</a> —' +
+        ' ayuda a mantener esta y otras herramientas online. ☕' +
+        '<button onclick="this.parentNode.classList.add(\'hide\')" title="Cerrar">✕</button>';
+      document.body.appendChild(toast);
+      sessionStorage.setItem('toast_shown', '1');
+      setTimeout(function() { toast.classList.add('hide'); }, 7000);
+    }, 25000);
+  }
 })();
 </script>
 </body>
