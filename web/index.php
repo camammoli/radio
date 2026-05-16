@@ -6,6 +6,8 @@
  * ?buscar=texto → filtra por nombre (server-side, útil para bots/curl)
  */
 
+require_once __DIR__ . '/log.php';
+
 define('EMISORAS_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.txt');
 define('CACHE_FILE',   sys_get_temp_dir() . '/radio_emisoras_cache.txt');
 define('CACHE_TTL',    3600); // 1 hora
@@ -73,6 +75,7 @@ $total    = count($stations);
 
 // ── Modo M3U ─────────────────────────────────────────────────────────────────
 if (isset($_GET['m3u'])) {
+    radio_log('m3u', '');
     header('Content-Type: audio/x-mpegurl; charset=utf-8');
     header('Content-Disposition: attachment; filename="radio-argentina.m3u"');
     echo "#EXTM3U\n";
@@ -86,11 +89,14 @@ if (isset($_GET['m3u'])) {
 // ── Filtro server-side (para curl/bots) ──────────────────────────────────────
 $filtro = trim($_GET['buscar'] ?? '');
 if ($filtro !== '') {
+    radio_log('search', $filtro);
     $stations = array_values(array_filter($stations, fn($s) =>
         stripos($s['nombre'], $filtro) !== false ||
         stripos($s['provincia'], $filtro) !== false
     ));
 }
+
+radio_log('visit', '');
 ?>
 <!DOCTYPE html>
 <html lang="es">
