@@ -208,8 +208,6 @@ http://icecast.hostingbahia.com.ar:8024/live
 [068] FM Full 94.9
 http://nvradios.com:9396/;
 
-[069] Cadena 3
-https://playerservices.streamtheworld.com/api/livestream-redirect/AM700.mp3
 
 [070] Continental
 https://edge02.radiohdvivo.com/continental
@@ -217,8 +215,6 @@ https://edge02.radiohdvivo.com/continental
 [071] FM Córdoba
 https://liveradio.mediainbox.net/fmcordoba.mp3
 
-[072] Los 40
-https://radios.solumedia.com:6158/stream?icy=http
 
 [073] Popular
 https://liveradio.mediainbox.net/popular.mp3
@@ -307,14 +303,8 @@ https://alpha.radioplayer.com.ar:9104/stream
 [101] Ruta 66
 https://audiohd.sonidosenlared.com:2199/tunein/fmruta66-stream.pls
 
-[102] http//playerservices.streamtheworld.com/api/livestream-redirect/CADENA3.mp3
-https://playerservices.streamtheworld.com/api/livestream-redirect/AM700.mp3
 
-[103] FM Córdoba
-https://liveradio.mediainbox.net/fmcordoba.mp3
 
-[104] Popular
-https://liveradio.mediainbox.net/popular.mp3
 
 [105] El Destape
 https://ipanel.instream.audio/8004/stream
@@ -634,14 +624,10 @@ https://playerservices.streamtheworld.com/api/livestream-redirect/VIBRA_SC
 [210] Radio Más
 https://streaming2.locucionar.com/proxy/radiomas971?mp=/stream
 
-[211] Cadena del Sol
-http://streamlky.alsolnet.com:443/fmdelsol
 
 [212] Sports
 http://streaming.gostreaming.com.ar:8004/;
 
-[213] Fantástica
-http://streaming01.shockmedia.com.ar:9186/stream
 
 [214] Moebius
 https://streaming.escuchanosonline.com:7220/stream
@@ -679,11 +665,7 @@ http://www.mundostreaming.com/radios/enlaces/64.15.155.49.8405..m3u
 [225] Redium (Claromecó)
 http://01.solumedia.com.ar:7840/aac
 
-[226] Vorterix Mendoza FM 104.5 * Mendoza, Argentina
-http://104.131.4.100:8000/stream
 
-[227] Vorterix Mendoza FM 104.5 * Mendoza, Argentina
-http://104.131.4.100:8000/stream/;
 
 [228] Radio Mitre * Bahia Blanca, Argentina
 http://217.172.179.57:8050/MitreBahiaBlanca;
@@ -694,8 +676,6 @@ http://audio.bustream.com:8004/stream
 [230] Radio Noticias FM 105.5 * Mendoza, Argentina
 http://audio.bustream.com:8007/stream
 
-[231] LV Diez FM 104.1 * Mendoza, Argentina
-http://audio.bustream.com:8062/stream
 
 [232] Radio Vida FM 105.1 * Mendoza, Argentina
 http://genexservicios.com:8006/stream/;
@@ -1324,8 +1304,6 @@ http://audiohd.sonidosenlared.com:8290/kasandrxs.mp3
 [#440] FM La Radio
 http://audiohd.sonidosenlared.com/proxy/fmlaradio?mp=/stream
 
-[#441] Radio Z
-http://audiohd.sonidosenlared.com/proxy/radioz971?mp=/stream
 
 [#442] Centro
 http://audio.productoravisual.com:6228/;
@@ -1531,8 +1509,6 @@ http://s1.radiosnethosting.com:12052/;stream.nsv&type=mp3
 [#509] LV12
 http://s1.radiosnethosting.com:9692/;stream.nsv&type=mp3
 
-[#510] Mucha Radio
-https://playerservices.streamtheworld.com/api/livestream-redirect/MUCHA_RADIO.mp3
 
 [#511] Continental
 https://20833.live.streamtheworld.com/CONTINENTALAAC.aac
@@ -1567,8 +1543,6 @@ https://sa.mp3.icecast.magma.edge-access.net/sc_rad39
 [#521] LT14
 https://sa.mp3.icecast.magma.edge-access.net/sc_rad44
 
-[#522] LV8 Radio Libertador
-https://sa.mp3.icecast.magma.edge-access.net/sc_rad48
 
 [#523] LU23
 https://sa.mp3.icecast.magma.edge-access.net/sc_rad49
@@ -1669,11 +1643,7 @@ http://servidor.ilive.com.ar:9320/;#.mp3
 [#555] Concepto
 http://servidor.ilive.com.ar:9330/;
 
-[#556] El Destape
-https://ipanel.instream.audio/8004/stream
 
-[#557] Disney
-https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.m3u8
 
 [#558] Mega
 https://mega975.radioca.st/live
@@ -1723,14 +1693,10 @@ https://streaming1.hostingmontevideo.com:7019/;
 [#573] Mágica
 https://streaming2.hostingmontevideo.com:7011/;
 
-[#574] Vida
-https://streaming450tb.locucionar.com/proxy/fmvida979?mp=/stream
 
 [#575] Berlín
 https://unlimited5-us.dps.live/berlin/aac/icecast.audio
 
-[#576] Radio Salta
-https://streamingraddios.online/proxy/salta2?mp=/stream
 
 [#577] La Red
 https://playerservices.streamtheworld.com/api/livestream-redirect/LA_RED_AM910AAC.aac
@@ -1864,8 +1830,6 @@ http://streamingraddios.net:10396/stream
 [#620] Radio Salta
 http://streamingraddios.net:10514/stream
 
-[#621] LU18 Radio El Valle
-http://streamingraddios.net:7997/stream
 
 [#622] De La Azotea
 http://streaming.radiodelaazotea.com.ar:8000/delaazotea
@@ -1924,8 +1888,6 @@ https://tupanel.info:7458/stream
 [#640] La Carretera
 http://subituradio.com:8320/radio.mp3?type=.aac/;
 
-[#641] Disney
-https://playerservices.streamtheworld.com/api/livestream-redirect/DISNEY_ARG_BA_ADP.m3u8
 
 [#642] Radio Claromecó
 https://www.radio3.online:8443/1069.opus
@@ -1945,8 +1907,6 @@ http://us7.maindigitalstream.com/2548/?pl=winamp&c=La%20Radio%20del%20Deporte
 [#647] Clarín
 http://usa15.ciudaddigital.com.uy:8032/ClarinAM
 
-[#648] La Tribu
-https://streamer.radio.co/s3a3c12873/listen
 
 [#649] Malena
 http://vivo.radioam750.com.ar/vivofm.mp3
