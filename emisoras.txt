@@ -325,7 +325,7 @@ https://cdn.instream.audio/:9069/stream
 https://cdn.instream.audio/:9085/stream
 
 [111] Del Bosque
-https://cdn.instream.audio/:9087/stream
+https://radio01.ferozo.com/proxy/ra01000983?mp=/stream
 
 [112] News
 http://serv3.veemesoft.com.ar:26545/;
@@ -427,7 +427,7 @@ https://radiolatina.live:10959/stream/1/
 https://radiolatina.live:10965/;
 
 [145] Carve
-https://radiolatina.live/9202/stream;
+https://streamingcasazorrilla.innovanexo.com:8000/radiocarve850.mp3
 
 [146] La 1010
 https://radiolatina.live/9204/stream.mp3
@@ -511,7 +511,7 @@ http://streamall.alsolnet.com:443/fmdecanuelashd
 http://streamall.alsolnet.com:443/magicalobos
 
 [173] Planet Music
-http://streamall.alsolnet.com:443/planetmdq
+https://strcdn.klm99.com:10984/planetpinamar
 
 [174] Cielo
 http://streamall.alsolnet.com:443/radiocielo
@@ -741,7 +741,7 @@ http://stream.zeno.fm/vpw7qtqaa5zuv
 http://01.solumedia.com.ar:7074/aacp
 
 [#253] Radio Ciudad
-http://01.solumedia.com.ar:8042/;stream.mp3
+https://media.radios.ar:1110/
 
 [#254] Rosales
 http://01.solumedia.com.ar:8166/;stream.nsv
@@ -759,7 +759,7 @@ http://01.solumedia.com.ar:8390/;
 http://01.solumedia.com.ar:8442/stream
 
 [#259] FM del Sol
-http://01.solumedia.com.ar:8476/aac
+https://streaming.radiosenlinea.com.ar/9026/stream
 
 [#260] 221
 http://01.solumedia.com.ar:8612/;stream.nsv
@@ -1915,7 +1915,7 @@ http://vivo.radioam750.com.ar/vivofm.mp3
 http://web.relatores.com.ar/radio.mp3
 
 [#651] La 97
-http://www.alsolnet.com/stream/fm97/listen.pls
+https://streaming01.shockmedia.com.ar:10586/stream
 
 [#652] LU37
 http://www.radiolu37.com.ar/vivo/listen.pls
