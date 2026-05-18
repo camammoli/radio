@@ -357,6 +357,35 @@ radio_log('visit', '');
     }
     #qr-close:hover { background: #e5e7eb; }
 
+    /* ── Link compartido ── */
+    @keyframes pulse-border {
+      0%, 100% { border-color: var(--accent); }
+      50%       { border-color: #93c5fd; box-shadow: 0 0 0 3px rgba(59,130,246,.25); }
+    }
+    .station.shared-highlight {
+      border-color: var(--accent);
+      animation: pulse-border 1.4s ease-in-out infinite;
+    }
+    #shared-banner {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      background: var(--accent);
+      color: #fff;
+      text-align: center;
+      padding: 10px 40px 10px 16px;
+      font-size: 14px;
+      z-index: 200;
+    }
+    #shared-banner button {
+      position: absolute;
+      right: 10px; top: 50%;
+      transform: translateY(-50%);
+      background: none; border: none;
+      color: rgba(255,255,255,.8);
+      font-size: 15px; cursor: pointer;
+      padding: 4px 6px;
+    }
+
     /* ── Toast de apoyo ── */
     #support-toast {
       position: fixed;
@@ -698,13 +727,27 @@ radio_log('visit', '');
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', applyFilters);
 
-  // ── Auto-play por ?n= ────────────────────────────────────────────────────────
+  // ── Abrir desde link compartido (?n=) ────────────────────────────────────────
   var urlN = new URLSearchParams(location.search).get('n');
   if (urlN) {
     var target = document.querySelector('.station[data-n="' + urlN + '"]');
     if (target) {
+      target.classList.add('shared-highlight');
       target.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setTimeout(function() { target.click(); }, 400);
+
+      var banner = document.createElement('div');
+      banner.id = 'shared-banner';
+      banner.innerHTML =
+        '▶ Tocá para escuchar <strong>' + target.dataset.nombre + '</strong>' +
+        '<button onclick="document.getElementById(\'shared-banner\').remove()">✕</button>';
+      document.body.appendChild(banner);
+
+      target.addEventListener('click', function onSharedClick() {
+        target.classList.remove('shared-highlight');
+        var b = document.getElementById('shared-banner');
+        if (b) b.remove();
+        target.removeEventListener('click', onSharedClick);
+      }, { once: true });
     }
   }
 
