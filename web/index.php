@@ -304,6 +304,59 @@ radio_log('visit', '');
     }
     #btn-stop:hover { color: var(--red); }
 
+    /* ── Share row ── */
+    #share-row {
+      display: none;
+      gap: 8px;
+      align-items: center;
+    }
+    #share-row.visible { display: flex; }
+    .share-btn {
+      background: rgba(255,255,255,.07);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      padding: 5px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all .15s;
+    }
+    .share-btn:hover { background: rgba(255,255,255,.13); color: var(--text); border-color: #6b7280; }
+    #btn-copy.copied { border-color: var(--green); color: #86efac; }
+
+    /* ── QR modal ── */
+    #qr-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.65);
+      z-index: 300;
+      align-items: center;
+      justify-content: center;
+    }
+    #qr-modal.visible { display: flex; }
+    #qr-box {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      max-width: 260px;
+      width: 90%;
+    }
+    #qr-box img { width: 200px; height: 200px; display: block; margin: 0 auto 12px; }
+    #qr-name { font-size: 14px; color: #111; font-weight: 600; margin-bottom: 4px; }
+    #qr-url  { font-size: 11px; color: #6b7280; word-break: break-all; margin-bottom: 12px; }
+    #qr-close {
+      background: #f3f4f6; border: none; border-radius: 6px;
+      padding: 7px 18px; font-size: 13px; cursor: pointer; color: #374151;
+    }
+    #qr-close:hover { background: #e5e7eb; }
+
     /* ── Toast de apoyo ── */
     #support-toast {
       position: fixed;
@@ -360,6 +413,7 @@ radio_log('visit', '');
 <?php foreach ($stations as $s): ?>
   <div class="station"
        data-url="<?= htmlspecialchars($s['url']) ?>"
+       data-n="<?= $s['n'] ?>"
        data-nombre="<?= htmlspecialchars($s['nombre']) ?>"
        data-prov="<?= htmlspecialchars($s['provincia']) ?>"
        data-search="<?= strtolower($s['nombre'] . ' ' . $s['provincia']) ?>">
@@ -384,7 +438,22 @@ radio_log('visit', '');
     <div id="player-prov"></div>
   </div>
   <a id="btn-vlc" style="display:none;font-size:12px;color:#93c5fd;white-space:nowrap;text-decoration:none;padding:4px 8px;border:1px solid #374151;border-radius:6px" target="_blank">▶ VLC</a>
+  <div id="share-row">
+    <button class="share-btn" id="btn-copy">🔗 Link</button>
+    <a class="share-btn" id="btn-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+    <button class="share-btn" id="btn-qr">⬛ QR</button>
+  </div>
   <audio id="audio-elem" controls preload="none"></audio>
+</div>
+
+<!-- QR modal -->
+<div id="qr-modal">
+  <div id="qr-box">
+    <img id="qr-img" src="" alt="QR">
+    <div id="qr-name"></div>
+    <div id="qr-url"></div>
+    <button id="qr-close">Cerrar</button>
+  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/hls.js@1/dist/hls.min.js"></script>
@@ -398,6 +467,11 @@ radio_log('visit', '');
   const counter     = document.getElementById('result-count');
   const btnStop     = document.getElementById('btn-stop');
   const btnVlc      = document.getElementById('btn-vlc');
+  const shareRow    = document.getElementById('share-row');
+  const btnCopy     = document.getElementById('btn-copy');
+  const btnWa       = document.getElementById('btn-wa');
+  const btnQr       = document.getElementById('btn-qr');
+  const qrModal     = document.getElementById('qr-modal');
   const total       = <?= $total ?>;
   const isHttps     = location.protocol === 'https:';
   const PROXY       = '/radio/proxy.php?url=';
@@ -406,6 +480,43 @@ radio_log('visit', '');
   let activeEl    = null;
   let hlsInstance = null;
   let loadTimer   = null;
+  let currentN    = null;
+
+  // ── Share ─────────────────────────────────────────────────────────────────────
+  function shareUrl(n) {
+    return 'https://mammoli.ar/radio/?n=' + n;
+  }
+
+  function updateShare(n, nombre) {
+    currentN = n;
+    var url  = shareUrl(n);
+    shareRow.classList.add('visible');
+
+    btnCopy.onclick = function() {
+      navigator.clipboard.writeText(url).then(function() {
+        btnCopy.textContent = '✓ Copiado';
+        btnCopy.classList.add('copied');
+        setTimeout(function() { btnCopy.textContent = '🔗 Link'; btnCopy.classList.remove('copied'); }, 2000);
+      });
+    };
+
+    var waText = encodeURIComponent('📻 Estoy escuchando ' + nombre + '\n👉 ' + url);
+    btnWa.href = 'https://wa.me/?text=' + waText;
+
+    btnQr.onclick = function() {
+      document.getElementById('qr-img').src = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+      document.getElementById('qr-name').textContent = nombre;
+      document.getElementById('qr-url').textContent  = url;
+      qrModal.classList.add('visible');
+    };
+  }
+
+  document.getElementById('qr-close').addEventListener('click', function() {
+    qrModal.classList.remove('visible');
+  });
+  qrModal.addEventListener('click', function(e) {
+    if (e.target === qrModal) qrModal.classList.remove('visible');
+  });
 
   // ── Determina la URL a reproducir ──────────────────────────────────────────
   function resolveUrl(raw) {
@@ -456,6 +567,7 @@ radio_log('visit', '');
     playerProv.textContent  = el.dataset.prov || '';
     playerBar.classList.add('visible');
 
+    updateShare(el.dataset.n, nombre);
     btnVlc.style.display = 'none';
 
     // Timeout 12s
@@ -503,6 +615,7 @@ radio_log('visit', '');
     audio.pause();
     audio.src = '';
     btnVlc.style.display = 'none';
+    shareRow.classList.remove('visible');
     playerBar.classList.remove('visible');
   });
 
@@ -584,6 +697,16 @@ radio_log('visit', '');
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', applyFilters);
+
+  // ── Auto-play por ?n= ────────────────────────────────────────────────────────
+  var urlN = new URLSearchParams(location.search).get('n');
+  if (urlN) {
+    var target = document.querySelector('.station[data-n="' + urlN + '"]');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(function() { target.click(); }, 400);
+    }
+  }
 
   // ── Toast de apoyo (una vez por sesión, después de 25s) ───────────────────────
   if (!sessionStorage.getItem('toast_shown')) {
