@@ -73,6 +73,9 @@ $raw      = cargar_emisoras();
 $stations = parsear_emisoras($raw);
 $total    = count($stations);
 
+// Escribe el conteo en temp para que otras páginas puedan leerlo sin HTTP
+@file_put_contents(sys_get_temp_dir() . '/radio_count.json', json_encode(['total' => $total, 'ts' => time()]));
+
 // ── Modo M3U ─────────────────────────────────────────────────────────────────
 if (isset($_GET['m3u'])) {
     radio_log('m3u', '');
