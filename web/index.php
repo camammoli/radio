@@ -861,6 +861,7 @@ radio_log('visit', '');
   // ── Filtros ───────────────────────────────────────────────────────────────────
   var currentStatus = 'all';
   var currentGenre  = null;
+  var urlN = new URLSearchParams(location.search).get('n');
 
   function applyFilters() {
     var q   = buscador.value.toLowerCase().trim();
@@ -1041,35 +1042,44 @@ radio_log('visit', '');
           genrePanel.appendChild(btn);
         });
       }
+      // Scroll a emisora compartida — después de applyFilters para que el layout esté correcto
+      if (urlN) {
+        var st = document.querySelector('.station[data-n="' + urlN + '"]');
+        if (st) requestAnimationFrame(function() { st.scrollIntoView({ behavior: 'smooth', block: 'center' }); });
+      }
     })
-    .catch(function() {}); // sin status.json todavía — silencioso
+    .catch(function() {
+      // Sin status.json: hacer scroll igual como fallback
+      if (urlN) {
+        var st = document.querySelector('.station[data-n="' + urlN + '"]');
+        if (st) st.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
 
   // ── Buscador ─────────────────────────────────────────────────────────────────
   buscador.addEventListener('input', applyFilters);
 
   // ── Abrir desde link compartido (?n=) ────────────────────────────────────────
-  var urlN = new URLSearchParams(location.search).get('n');
+  // urlN ya declarado arriba. Banner inmediato; scroll ocurre dentro del fetch status.json
   if (urlN) {
-    var target = document.querySelector('.station[data-n="' + urlN + '"]');
-    if (target) {
-      target.classList.add('shared-highlight');
-      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    var sharedTarget = document.querySelector('.station[data-n="' + urlN + '"]');
+    if (sharedTarget) {
+      sharedTarget.classList.add('shared-highlight');
 
       var banner = document.createElement('div');
       banner.id = 'shared-banner';
       banner.innerHTML =
-        '▶ Tocá para escuchar <strong>' + target.dataset.nombre + '</strong>' +
+        '▶ Tocá para escuchar <strong>' + sharedTarget.dataset.nombre + '</strong>' +
         '<button onclick="document.getElementById(\'shared-banner\').remove()">✕</button>';
       document.body.appendChild(banner);
 
       function hideBanner() {
-        target.classList.remove('shared-highlight');
+        sharedTarget.classList.remove('shared-highlight');
         banner.classList.add('hide');
         setTimeout(function() { banner.remove(); }, 650);
       }
       setTimeout(hideBanner, 6000);
-
-      target.addEventListener('click', hideBanner, { once: true });
+      sharedTarget.addEventListener('click', hideBanner, { once: true });
     }
   }
 
