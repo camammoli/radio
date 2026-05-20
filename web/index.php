@@ -189,6 +189,19 @@ radio_log('visit', '');
     .filter-btn.f-muerto.active  { background: rgba(239,68,68,.15);  border-color: #ef4444; color: #fca5a5; }
     .filter-btn.f-top.active     { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fde68a; }
     .filter-btn.f-genre.active   { background: rgba(167,139,250,.15); border-color: #a78bfa; color: #ddd6fe; }
+    .filter-btn.f-cat            { border-style: dashed; }
+    .filter-btn.f-cat.has-genre  { border-color: #a78bfa; color: #ddd6fe; border-style: solid; }
+    #genre-panel {
+      display: none;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: rgba(255,255,255,.03);
+    }
+    #genre-panel.open { display: flex; }
 
     .station-logo {
       width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
@@ -462,6 +475,7 @@ radio_log('visit', '');
 <div class="search-wrap">
   <input id="buscador" type="search" placeholder="Buscar por nombre o provincia..." autocomplete="off" autofocus>
   <div class="filtros" id="filtros"></div>
+  <div id="genre-panel"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
     <div style="font-size:11px;color:#6b7280" id="status-gen"></div>
     <div style="display:flex;align-items:center;gap:12px">
@@ -870,23 +884,40 @@ radio_log('visit', '');
       else if (okBtn) { okBtn.classList.add('active'); currentStatus = 'ok'; }
       applyFilters();
 
-      // Botones de género — segunda fila, independientes del estado
+      // Botón "Categorías" — despliega panel de géneros
       if (genreTags.length > 0) {
-        var sep = document.createElement('span');
-        sep.className = 'genre-sep';
-        sep.style.cssText = 'display:block;width:100%;height:0;margin:4px 0 0';
-        filtrosEl.appendChild(sep);
-        // Botón "Todos" para limpiar el filtro de género
+        var genrePanel  = document.getElementById('genre-panel');
+        var catBtn = document.createElement('button');
+        catBtn.className = 'filter-btn f-cat';
+        catBtn.textContent = 'Categorías ▾';
+        catBtn.addEventListener('click', function() {
+          genrePanel.classList.toggle('open');
+        });
+        filtrosEl.appendChild(catBtn);
+
+        function updateCatBtn() {
+          if (currentGenre) {
+            catBtn.textContent = currentGenre + ' ✕';
+            catBtn.classList.add('has-genre');
+          } else {
+            catBtn.textContent = 'Categorías ▾';
+            catBtn.classList.remove('has-genre');
+          }
+        }
+
+        // Botón "Todas" dentro del panel
         var allGenreBtn = document.createElement('button');
         allGenreBtn.className = 'filter-btn f-genre active';
-        allGenreBtn.textContent = 'Todos';
+        allGenreBtn.textContent = 'Todas';
         allGenreBtn.addEventListener('click', function() {
           currentGenre = null;
           document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
           allGenreBtn.classList.add('active');
+          updateCatBtn();
           applyFilters();
         });
-        filtrosEl.appendChild(allGenreBtn);
+        genrePanel.appendChild(allGenreBtn);
+
         genreTags.forEach(function(tag) {
           var btn = document.createElement('button');
           btn.className = 'filter-btn f-genre';
@@ -894,23 +925,25 @@ radio_log('visit', '');
           btn.addEventListener('click', function() {
             if (currentGenre === tag) {
               currentGenre = null;
-              btn.classList.remove('active');
+              document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
+              allGenreBtn.classList.add('active');
             } else {
               currentGenre = tag;
               document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
               btn.classList.add('active');
-              // "Todos" pierde el active cuando se elige un género
-              allGenreBtn.classList.remove('active');
             }
+            updateCatBtn();
             applyFilters();
           });
           if (initGenre && initGenre === tag) {
             currentGenre = tag;
-            allGenreBtn.classList.remove('active');
+            document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
             btn.classList.add('active');
+            genrePanel.classList.add('open');
+            updateCatBtn();
             applyFilters();
           }
-          filtrosEl.appendChild(btn);
+          genrePanel.appendChild(btn);
         });
       }
     })
