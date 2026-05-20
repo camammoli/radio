@@ -164,6 +164,17 @@ radio_log('visit', '');
     body.light .station-tag { background: rgba(109,40,217,.10); color: #6d28d9; }
     /* Hover de emisora */
     body.light .station:hover { background: #e5e7eb; border-color: #9ca3af; }
+    /* Player bar */
+    body.light #player-bar { background: #ffffff; border-top-color: #d1d5db; }
+    /* Badges del header */
+    body.light .badge { background: rgba(0,0,0,.06); color: #374151; }
+    body.light .badge:hover { background: rgba(0,0,0,.11); color: #111827; }
+    body.light .badge-cafe { border-color: #b45309; color: #92400e; }
+    body.light .badge-cafe:hover { background: rgba(180,83,9,.10); color: #78350f; }
+    /* Botones de compartir */
+    body.light .share-btn { background: rgba(0,0,0,.05); color: #374151; }
+    body.light .share-btn:hover { background: rgba(0,0,0,.10); color: #111827; border-color: #9ca3af; }
+    body.light #btn-copy.copied { color: #15803d; border-color: #16a34a; }
     /* Toast */
     body.light #support-toast {
       background: #ffffffee;
@@ -387,6 +398,11 @@ radio_log('visit', '');
       text-overflow: ellipsis;
     }
     #player-prov { font-size: 11px; color: var(--muted); }
+    #btn-vlc {
+      font-size: 12px; color: #93c5fd; white-space: nowrap; text-decoration: none;
+      padding: 4px 8px; border: 1px solid #374151; border-radius: 6px;
+    }
+    body.light #btn-vlc { color: #2563eb; border-color: #93c5fd; }
     #audio-elem  { width: 100%; height: 36px; }
     audio::-webkit-media-controls-panel { background: var(--surface); }
 
@@ -592,7 +608,7 @@ radio_log('visit', '');
     <div id="player-title">—</div>
     <div id="player-prov"></div>
   </div>
-  <a id="btn-vlc" style="display:none;font-size:12px;color:#93c5fd;white-space:nowrap;text-decoration:none;padding:4px 8px;border:1px solid #374151;border-radius:6px" target="_blank">▶ VLC</a>
+  <a id="btn-vlc" style="display:none" target="_blank">▶ VLC</a>
   <div id="share-row">
     <button class="share-btn" id="btn-copy">🔗 Link</button>
     <a class="share-btn" id="btn-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
