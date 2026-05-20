@@ -437,7 +437,10 @@ radio_log('visit', '');
   <div class="filtros" id="filtros"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
     <div style="font-size:11px;color:#6b7280" id="status-gen"></div>
-    <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <span id="listeners-badge" style="display:none;font-size:11px;color:#22c55e">● <span id="listeners-count"></span> escuchando</span>
+      <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
+    </div>
   </div>
 </div>
 
@@ -504,6 +507,43 @@ radio_log('visit', '');
   const btnWa       = document.getElementById('btn-wa');
   const btnQr       = document.getElementById('btn-qr');
   const qrModal     = document.getElementById('qr-modal');
+
+  // ── Oyentes en tiempo real ───────────────────────────────────────────────
+  var listenerSid = sessionStorage.getItem('radio_sid');
+  if (!listenerSid) { listenerSid = Math.random().toString(36).slice(2); sessionStorage.setItem('radio_sid', listenerSid); }
+  var heartbeatTID = 0;
+  var listenerBadge = document.getElementById('listeners-badge');
+  var listenerCount = document.getElementById('listeners-count');
+
+  function updateListenerBadge(n) {
+    if (n > 0) { listenerCount.textContent = n === 1 ? '1 persona' : n + ' personas'; listenerBadge.style.display = ''; }
+    else { listenerBadge.style.display = 'none'; }
+  }
+
+  function pingListeners(station) {
+    fetch('/radio/listeners.php?action=ping&sid=' + listenerSid + '&station=' + encodeURIComponent(station))
+      .then(function(r) { return r.json(); }).then(function(d) { updateListenerBadge(d.count); }).catch(function() {});
+  }
+
+  function stopListeners() {
+    clearInterval(heartbeatTID); heartbeatTID = 0;
+    navigator.sendBeacon('/radio/listeners.php?action=stop&sid=' + listenerSid);
+  }
+
+  function startListeners(station) {
+    clearInterval(heartbeatTID);
+    pingListeners(station);
+    heartbeatTID = setInterval(function() { pingListeners(station); }, 30000);
+  }
+
+  // Poll pasivo (ver si otros están escuchando aunque vos no estés reproduciendo)
+  setInterval(function() {
+    if (!heartbeatTID) {
+      fetch('/radio/listeners.php').then(function(r) { return r.json(); }).then(function(d) { updateListenerBadge(d.count); }).catch(function() {});
+    }
+  }, 30000);
+
+  window.addEventListener('beforeunload', stopListeners);
   const total       = <?= $total ?>;
   const isHttps     = location.protocol === 'https:';
   const PROXY       = '/radio/proxy.php?url=';
@@ -638,6 +678,7 @@ radio_log('visit', '');
     playerTitle.textContent = nombre + ' — ' + msg;
     btnVlc.href = 'vlc://' + rawUrl;
     btnVlc.style.display = 'inline-block';
+    stopListeners();
   }
 
   btnStop.addEventListener('click', function() {
@@ -649,10 +690,11 @@ radio_log('visit', '');
     btnVlc.style.display = 'none';
     shareRow.classList.remove('visible');
     playerBar.classList.remove('visible');
+    stopListeners();
   });
 
   audio.addEventListener('playing', function() {
-    if (activeEl) { clearTimeout(loadTimer); markEl(activeEl, 'active'); btnVlc.style.display = 'none'; }
+    if (activeEl) { clearTimeout(loadTimer); markEl(activeEl, 'active'); btnVlc.style.display = 'none'; startListeners(activeEl.dataset.nombre); }
   });
   audio.addEventListener('error', function() {
     if (!activeEl) return;
@@ -713,7 +755,7 @@ radio_log('visit', '');
       ];
       btns.forEach(function(b) {
         var btn = document.createElement('button');
-        btn.className = 'filter-btn ' + b.cls + (b.f === 'all' ? ' active' : '');
+        btn.className = 'filter-btn ' + b.cls;
         btn.textContent = b.label + ' ' + b.n;
         btn.addEventListener('click', function() {
           currentFilter = b.f;
@@ -724,6 +766,9 @@ radio_log('visit', '');
         filtrosEl.appendChild(btn);
       });
       filtrosEl.classList.add('visible');
+      // Activar filtro "Activas" por defecto una vez que el status ya está cargado
+      var okBtn = filtrosEl.querySelector('.f-ok');
+      if (okBtn) { currentFilter = 'ok'; okBtn.classList.add('active'); applyFilters(); }
     })
     .catch(function() {}); // sin status.json todavía — silencioso
 
