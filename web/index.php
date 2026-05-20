@@ -795,7 +795,7 @@ radio_log('visit', '');
       var statusMatch = currentStatus === 'all'
           || (currentStatus === 'top' ? (el.dataset.top === '1' && el.dataset.status === 'ok')
           : el.dataset.status === currentStatus);
-      var genreMatch  = !currentGenre
+      var genreMatch  = currentStatus === 'top' || !currentGenre
           || (el.dataset.tags || '').split(',').includes(currentGenre);
       var show = textMatch && statusMatch && genreMatch;
       el.classList.toggle('hidden', !show);
@@ -926,7 +926,6 @@ radio_log('visit', '');
 
         function clearGenre() {
           currentGenre = null;
-          buscador.value = '';
           document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
           allGenreBtn.classList.add('active');
           updateCatBtn();
@@ -949,17 +948,15 @@ radio_log('visit', '');
               clearGenre();
             } else {
               currentGenre = tag;
-              buscador.value = tag;
               document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
               btn.classList.add('active');
-              activarOk();
+              if (currentStatus === 'top') activarOk();
               updateCatBtn();
               applyFilters();
             }
           });
           if (initGenre && initGenre === tag) {
             currentGenre = tag;
-            buscador.value = tag;
             document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
             btn.classList.add('active');
             genrePanel.classList.add('open');
