@@ -12,7 +12,7 @@ header('Cache-Control: no-store');
 
 $fileListeners = __DIR__ . '/listeners.json';
 $filePlays     = __DIR__ . '/plays.json';
-$ttl           = 60;
+$ttl           = 90;
 
 $action  = $_GET['action'] ?? 'count';
 $sid     = substr(preg_replace('/[^a-z0-9]/i', '', $_GET['sid'] ?? ''), 0, 32);

@@ -560,7 +560,8 @@ radio_log('visit', '');
   // ── Oyentes en tiempo real ───────────────────────────────────────────────
   var listenerSid = sessionStorage.getItem('radio_sid');
   if (!listenerSid) { listenerSid = Math.random().toString(36).slice(2); sessionStorage.setItem('radio_sid', listenerSid); }
-  var heartbeatTID = 0;
+  var heartbeatTID  = 0;
+  var currentStation = null;
   var listenerBadge = document.getElementById('listeners-badge');
   var listenerCount = document.getElementById('listeners-count');
 
@@ -575,21 +576,30 @@ radio_log('visit', '');
   }
 
   function stopListeners() {
+    currentStation = null;
     clearInterval(heartbeatTID); heartbeatTID = 0;
     navigator.sendBeacon('/radio/listeners.php?action=stop&sid=' + listenerSid);
   }
 
   function startListeners(station) {
+    currentStation = station;
     clearInterval(heartbeatTID);
     pingListeners(station);
     heartbeatTID = setInterval(function() { pingListeners(station); }, 30000);
   }
 
+  // Page Visibility API: ping inmediato al ocultar/mostrar la pestaña
+  // Cubre el caso de móvil donde setInterval se pausa en background
+  document.addEventListener('visibilitychange', function() {
+    if (!currentStation) return;
+    pingListeners(currentStation);
+  });
+
   // Poll pasivo (ver si otros están escuchando aunque vos no estés reproduciendo)
   function pollListeners() {
     fetch('/radio/listeners.php').then(function(r) { return r.json(); }).then(function(d) { updateListenerBadge(d.count); }).catch(function() {});
   }
-  pollListeners(); // inmediato al cargar
+  pollListeners();
   setInterval(function() { if (!heartbeatTID) pollListeners(); }, 30000);
 
   window.addEventListener('beforeunload', stopListeners);
