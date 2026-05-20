@@ -899,7 +899,11 @@ radio_log('visit', '');
         catBtn.className = 'filter-btn f-cat';
         catBtn.textContent = 'Categorías ▾';
         catBtn.addEventListener('click', function() {
-          genrePanel.classList.toggle('open');
+          if (currentGenre) {
+            clearGenre();
+          } else {
+            genrePanel.classList.toggle('open');
+          }
         });
         filtrosEl.appendChild(catBtn);
 
@@ -913,17 +917,27 @@ radio_log('visit', '');
           }
         }
 
-        // Botón "Todas" dentro del panel
-        var allGenreBtn = document.createElement('button');
-        allGenreBtn.className = 'filter-btn f-genre active';
-        allGenreBtn.textContent = 'Todas';
-        allGenreBtn.addEventListener('click', function() {
+        function activarOk() {
+          currentStatus = 'ok';
+          document.querySelectorAll('.filter-btn:not(.f-genre):not(.f-cat)').forEach(function(x) { x.classList.remove('active'); });
+          var okB = filtrosEl.querySelector('.f-ok');
+          if (okB) okB.classList.add('active');
+        }
+
+        function clearGenre() {
           currentGenre = null;
+          buscador.value = '';
           document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
           allGenreBtn.classList.add('active');
           updateCatBtn();
           applyFilters();
-        });
+        }
+
+        // Botón "Todas" dentro del panel
+        var allGenreBtn = document.createElement('button');
+        allGenreBtn.className = 'filter-btn f-genre active';
+        allGenreBtn.textContent = 'Todas';
+        allGenreBtn.addEventListener('click', clearGenre);
         genrePanel.appendChild(allGenreBtn);
 
         genreTags.forEach(function(tag) {
@@ -932,19 +946,20 @@ radio_log('visit', '');
           btn.textContent = tag;
           btn.addEventListener('click', function() {
             if (currentGenre === tag) {
-              currentGenre = null;
-              document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
-              allGenreBtn.classList.add('active');
+              clearGenre();
             } else {
               currentGenre = tag;
+              buscador.value = tag;
               document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
               btn.classList.add('active');
+              activarOk();
+              updateCatBtn();
+              applyFilters();
             }
-            updateCatBtn();
-            applyFilters();
           });
           if (initGenre && initGenre === tag) {
             currentGenre = tag;
+            buscador.value = tag;
             document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
             btn.classList.add('active');
             genrePanel.classList.add('open');
