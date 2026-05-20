@@ -866,6 +866,14 @@ radio_log('visit', '');
             currentStatus = 'top';
             document.querySelectorAll('.filter-btn:not(.f-genre)').forEach(function(x) { x.classList.remove('active'); });
             topBtn.classList.add('active');
+            // Limpiar género al activar ranking global
+            if (currentGenre) {
+              currentGenre = null;
+              document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
+              allGenreBtn.classList.add('active');
+              genrePanel.classList.remove('open');
+              updateCatBtn();
+            }
             applyFilters();
           });
           // Insertar antes del separador de género para quedar en la fila de estado
@@ -897,7 +905,7 @@ radio_log('visit', '');
 
         function updateCatBtn() {
           if (currentGenre) {
-            catBtn.textContent = currentGenre + ' ✕';
+            catBtn.textContent = 'Categorías: ' + currentGenre + ' ✕';
             catBtn.classList.add('has-genre');
           } else {
             catBtn.textContent = 'Categorías ▾';
