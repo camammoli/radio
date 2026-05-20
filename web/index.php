@@ -117,8 +117,22 @@ radio_log('visit', '');
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radio Argentina · <?= $total ?> emisoras</title>
-  <meta name="description" content="<?= $total ?> radios argentinas en streaming — escuchá desde el navegador sin instalar nada.">
+  <title>Radio Argentina en vivo · <?= $total ?> emisoras online</title>
+  <meta name="description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada. Noticias, música, deportes, folklore y más.">
+  <link rel="canonical" href="https://mammoli.ar/radio/">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://mammoli.ar/radio/">
+  <meta property="og:site_name"   content="Radio Argentina">
+  <meta property="og:title"       content="Radio Argentina en vivo · <?= $total ?> emisoras online">
+  <meta property="og:description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada. Noticias, música, deportes, folklore y más.">
+  <meta name="twitter:card"        content="summary">
+  <meta name="twitter:title"       content="Radio Argentina en vivo · <?= $total ?> emisoras online">
+  <meta name="twitter:description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada."><?php
+  // Canonical por emisora compartida (?n=) para mejorar indexación de páginas compartidas
+  if (!empty($_GET['n']) && ctype_digit($_GET['n'])) {
+    echo "\n  <link rel=\"canonical\" href=\"https://mammoli.ar/radio/?n=" . $_GET['n'] . "\">";
+  }
+  ?>
   <style>
     :root {
       --bg:      #111827;
