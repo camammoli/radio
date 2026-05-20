@@ -958,8 +958,8 @@ radio_log('visit', '');
         })
         .catch(function() {});
 
-      // Estado inicial: por URL o por defecto 'ok'
-      var defaultStatus = initStatus || 'ok';
+      // Estado inicial: 'all' si viene por link compartido, sino URL param o 'ok'
+      var defaultStatus = urlN ? 'all' : (initStatus || 'ok');
       currentStatus = defaultStatus;
       var okBtn = filtrosEl.querySelector('.f-ok');
       var activeStatusBtn = filtrosEl.querySelector('.f-' + defaultStatus);
@@ -1083,8 +1083,9 @@ radio_log('visit', '');
     localStorage.setItem('radio_theme', isLight ? 'light' : 'dark');
   });
 
-  // ── Toast de apoyo (una vez por sesión, después de 25s) ───────────────────────
-  if (!sessionStorage.getItem('toast_v2')) {
+  // ── Toast de apoyo (una vez por día) ─────────────────────────────────────────
+  var toastTs = parseInt(localStorage.getItem('toast_ts') || '0');
+  if (Date.now() - toastTs > 86400000) {
     setTimeout(function() {
       var toast = document.createElement('div');
       toast.id = 'support-toast';
@@ -1093,9 +1094,9 @@ radio_log('visit', '');
         ' ayuda a mantener esta y otras herramientas online. ☕' +
         '<button onclick="this.parentNode.classList.add(\'hide\')" title="Cerrar">✕</button>';
       document.body.appendChild(toast);
-      sessionStorage.setItem('toast_v2', '1');
-      setTimeout(function() { toast.classList.add('hide'); }, 25000);
-    }, 25000);
+      localStorage.setItem('toast_ts', Date.now().toString());
+      setTimeout(function() { toast.classList.add('hide'); }, 12000);
+    }, 20000);
   }
 })();
 </script>
