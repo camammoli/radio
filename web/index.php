@@ -145,6 +145,26 @@ radio_log('visit', '');
     body.light header {
       background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 70%);
     }
+    /* Botones de filtro en tema claro */
+    body.light .filter-btn {
+      background: rgba(0,0,0,.04);
+      color: #374151;
+    }
+    body.light .filter-btn:hover { background: rgba(0,0,0,.09); color: #111827; }
+    body.light .filter-btn.active { background: rgba(37,99,235,.12); color: #1e40af; }
+    body.light .filter-btn.f-ok.active      { background: rgba(22,163,74,.12); border-color: #16a34a; color: #15803d; }
+    body.light .filter-btn.f-timeout.active { background: rgba(217,119,6,.12); border-color: #d97706; color: #b45309; }
+    body.light .filter-btn.f-muerto.active  { background: rgba(220,38,38,.12); border-color: #dc2626; color: #b91c1c; }
+    body.light .filter-btn.f-top.active     { background: rgba(180,83,9,.12);  border-color: #d97706; color: #92400e; }
+    body.light .filter-btn.f-genre.active   { background: rgba(109,40,217,.12); border-color: #7c3aed; color: #5b21b6; }
+    body.light .filter-btn.f-cat.has-genre  { border-color: #7c3aed; color: #5b21b6; }
+    /* Panel de géneros */
+    body.light #genre-panel { background: rgba(0,0,0,.03); }
+    /* Tags y badges */
+    body.light .station-tag { background: rgba(109,40,217,.10); color: #6d28d9; }
+    /* Hover de emisora */
+    body.light .station:hover { background: #e5e7eb; border-color: #9ca3af; }
+    /* Toast */
     body.light #support-toast {
       background: #ffffffee;
       color: #374151;
