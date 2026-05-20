@@ -489,7 +489,9 @@ radio_log('visit', '');
       padding: 10px 40px 10px 16px;
       font-size: 14px;
       z-index: 200;
+      transition: opacity .6s ease;
     }
+    #shared-banner.hide { opacity: 0; pointer-events: none; }
     #shared-banner button {
       position: absolute;
       right: 10px; top: 50%;
@@ -1060,12 +1062,14 @@ radio_log('visit', '');
         '<button onclick="document.getElementById(\'shared-banner\').remove()">✕</button>';
       document.body.appendChild(banner);
 
-      target.addEventListener('click', function onSharedClick() {
+      function hideBanner() {
         target.classList.remove('shared-highlight');
-        var b = document.getElementById('shared-banner');
-        if (b) b.remove();
-        target.removeEventListener('click', onSharedClick);
-      }, { once: true });
+        banner.classList.add('hide');
+        setTimeout(function() { banner.remove(); }, 650);
+      }
+      setTimeout(hideBanner, 6000);
+
+      target.addEventListener('click', hideBanner, { once: true });
     }
   }
 
