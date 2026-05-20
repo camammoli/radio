@@ -754,11 +754,14 @@ radio_log('visit', '');
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
   });
 
-  var genreTags = <?= json_encode(array_values($genre_tags)) ?>;
+  var genreTags   = <?= json_encode(array_values($genre_tags)) ?>;
+  var urlParams   = new URLSearchParams(location.search);
+  var initGenre   = urlParams.get('genero') ? urlParams.get('genero').toLowerCase() : null;
+  var initStatus  = urlParams.get('estado') || null; // all|ok|timeout|muerto
 
   // ── Filtros ───────────────────────────────────────────────────────────────────
-  var currentStatus = 'all';   // all | ok | timeout | muerto | top
-  var currentGenre  = null;    // null | 'noticias' | 'pop' | ...
+  var currentStatus = 'all';
+  var currentGenre  = null;
 
   function applyFilters() {
     var q   = buscador.value.toLowerCase().trim();
@@ -820,9 +823,14 @@ radio_log('visit', '');
         filtrosEl.appendChild(btn);
       });
       filtrosEl.classList.add('visible');
-      // Activar "Activas" por defecto
+      // Estado inicial: por URL o por defecto 'ok'
+      var defaultStatus = initStatus || 'ok';
+      currentStatus = defaultStatus;
+      var activeStatusBtn = filtrosEl.querySelector(defaultStatus === 'all' ? '.filter-btn:not(.f-genre)' : '.f-' + defaultStatus) || okBtn;
       var okBtn = filtrosEl.querySelector('.f-ok');
-      if (okBtn) { currentStatus = 'ok'; okBtn.classList.add('active'); applyFilters(); }
+      if (activeStatusBtn) activeStatusBtn.classList.add('active');
+      else if (okBtn) { okBtn.classList.add('active'); currentStatus = 'ok'; }
+      applyFilters();
 
       // Botones de género — independientes del filtro de estado
       if (genreTags.length > 0) {
@@ -844,6 +852,11 @@ radio_log('visit', '');
             }
             applyFilters();
           });
+          if (initGenre && initGenre === tag) {
+            currentGenre = tag;
+            btn.classList.add('active');
+            applyFilters();
+          }
           filtrosEl.appendChild(btn);
         });
       }
