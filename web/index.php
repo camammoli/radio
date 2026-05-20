@@ -91,13 +91,22 @@ if (isset($_GET['m3u'])) {
     exit;
 }
 
-// ── Filtro server-side (para curl/bots) ──────────────────────────────────────
+// ── Filtros server-side (para curl/bots/M3U) ─────────────────────────────────
 $filtro = trim($_GET['buscar'] ?? '');
 if ($filtro !== '') {
     radio_log('search', $filtro);
     $stations = array_values(array_filter($stations, fn($s) =>
-        stripos($s['nombre'], $filtro) !== false ||
-        stripos($s['provincia'], $filtro) !== false
+        stripos($s['nombre'],   $filtro) !== false ||
+        stripos($s['provincia'],$filtro) !== false ||
+        in_array(strtolower($filtro), array_map('strtolower', $s['tags'] ?? []))
+    ));
+}
+
+$genero = strtolower(trim($_GET['genero'] ?? ''));
+if ($genero !== '') {
+    radio_log('search', 'genero:' . $genero);
+    $stations = array_values(array_filter($stations, fn($s) =>
+        in_array($genero, array_map('strtolower', $s['tags'] ?? []))
     ));
 }
 
@@ -747,25 +756,25 @@ radio_log('visit', '');
 
   var genreTags = <?= json_encode(array_values($genre_tags)) ?>;
 
-  // ── Filtros de estado ─────────────────────────────────────────────────────────
-  var currentFilter = 'all';
+  // ── Filtros ───────────────────────────────────────────────────────────────────
+  var currentStatus = 'all';   // all | ok | timeout | muerto | top
+  var currentGenre  = null;    // null | 'noticias' | 'pop' | ...
 
   function applyFilters() {
-    var q     = buscador.value.toLowerCase().trim();
-    var items = document.querySelectorAll('.station');
-    var vis   = 0;
-    items.forEach(function(el) {
+    var q   = buscador.value.toLowerCase().trim();
+    var vis = 0;
+    document.querySelectorAll('.station').forEach(function(el) {
       var textMatch   = !q || el.dataset.search.includes(q);
-      var statusMatch = currentFilter === 'all'
-          || (currentFilter === 'top'   ? el.dataset.top === '1'
-          : currentFilter.startsWith('g:') ? (el.dataset.tags || '').split(',').includes(currentFilter.slice(2))
-          : el.dataset.status === currentFilter);
-      var show        = textMatch && statusMatch;
+      var statusMatch = currentStatus === 'all'
+          || (currentStatus === 'top' ? el.dataset.top === '1' : el.dataset.status === currentStatus);
+      var genreMatch  = !currentGenre
+          || (el.dataset.tags || '').split(',').includes(currentGenre);
+      var show = textMatch && statusMatch && genreMatch;
       el.classList.toggle('hidden', !show);
       if (show) vis++;
     });
-    var base = currentFilter === 'all' ? total : document.querySelectorAll('.station[data-status="' + currentFilter + '"]').length;
-    counter.textContent = (q || currentFilter !== 'all') ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
+    counter.textContent = (q || currentStatus !== 'all' || currentGenre)
+      ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
   }
 
   // ── Estado de streams (status.json generado por verificar_urls.sh) ──────────
@@ -803,19 +812,19 @@ radio_log('visit', '');
         btn.className = 'filter-btn ' + b.cls;
         btn.textContent = b.label + ' ' + b.n;
         btn.addEventListener('click', function() {
-          currentFilter = b.f;
-          document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
+          currentStatus = b.f;
+          document.querySelectorAll('.filter-btn:not(.f-genre)').forEach(function(x) { x.classList.remove('active'); });
           btn.classList.add('active');
           applyFilters();
         });
         filtrosEl.appendChild(btn);
       });
       filtrosEl.classList.add('visible');
-      // Activar filtro "Activas" por defecto una vez que el status ya está cargado
+      // Activar "Activas" por defecto
       var okBtn = filtrosEl.querySelector('.f-ok');
-      if (okBtn) { currentFilter = 'ok'; okBtn.classList.add('active'); applyFilters(); }
+      if (okBtn) { currentStatus = 'ok'; okBtn.classList.add('active'); applyFilters(); }
 
-      // Botones de género
+      // Botones de género — independientes del filtro de estado
       if (genreTags.length > 0) {
         var sep = document.createElement('span');
         sep.style.cssText = 'display:block;width:100%;height:0;margin:4px 0 0';
@@ -824,11 +833,15 @@ radio_log('visit', '');
           var btn = document.createElement('button');
           btn.className = 'filter-btn f-genre';
           btn.textContent = tag;
-          btn.dataset.genre = tag;
           btn.addEventListener('click', function() {
-            currentFilter = 'g:' + tag;
-            document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
-            btn.classList.add('active');
+            if (currentGenre === tag) {
+              currentGenre = null;
+              btn.classList.remove('active');
+            } else {
+              currentGenre = tag;
+              document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
+              btn.classList.add('active');
+            }
             applyFilters();
           });
           filtrosEl.appendChild(btn);
@@ -851,8 +864,8 @@ radio_log('visit', '');
           btn.className = 'filter-btn f-top';
           btn.textContent = '★ Más escuchadas';
           btn.addEventListener('click', function() {
-            currentFilter = 'top';
-            document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
+            currentStatus = 'top';
+            document.querySelectorAll('.filter-btn:not(.f-genre)').forEach(function(x) { x.classList.remove('active'); });
             btn.classList.add('active');
             applyFilters();
           });
