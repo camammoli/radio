@@ -176,6 +176,7 @@ radio_log('visit', '');
     .filter-btn.f-ok.active      { background: rgba(34,197,94,.15); border-color: #22c55e; color: #86efac; }
     .filter-btn.f-timeout.active { background: rgba(245,158,11,.15); border-color: #f59e0b; color: #fcd34d; }
     .filter-btn.f-muerto.active  { background: rgba(239,68,68,.15);  border-color: #ef4444; color: #fca5a5; }
+    .filter-btn.f-top.active     { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fde68a; }
 
     /* ── Buscador ── */
     .search-wrap {
@@ -537,11 +538,11 @@ radio_log('visit', '');
   }
 
   // Poll pasivo (ver si otros están escuchando aunque vos no estés reproduciendo)
-  setInterval(function() {
-    if (!heartbeatTID) {
-      fetch('/radio/listeners.php').then(function(r) { return r.json(); }).then(function(d) { updateListenerBadge(d.count); }).catch(function() {});
-    }
-  }, 30000);
+  function pollListeners() {
+    fetch('/radio/listeners.php').then(function(r) { return r.json(); }).then(function(d) { updateListenerBadge(d.count); }).catch(function() {});
+  }
+  pollListeners(); // inmediato al cargar
+  setInterval(function() { if (!heartbeatTID) pollListeners(); }, 30000);
 
   window.addEventListener('beforeunload', stopListeners);
   const total       = <?= $total ?>;
@@ -714,7 +715,8 @@ radio_log('visit', '');
     var vis   = 0;
     items.forEach(function(el) {
       var textMatch   = !q || el.dataset.search.includes(q);
-      var statusMatch = currentFilter === 'all' || el.dataset.status === currentFilter;
+      var statusMatch = currentFilter === 'all'
+          || (currentFilter === 'top' ? el.dataset.top === '1' : el.dataset.status === currentFilter);
       var show        = textMatch && statusMatch;
       el.classList.toggle('hidden', !show);
       if (show) vis++;
@@ -769,6 +771,32 @@ radio_log('visit', '');
       // Activar filtro "Activas" por defecto una vez que el status ya está cargado
       var okBtn = filtrosEl.querySelector('.f-ok');
       if (okBtn) { currentFilter = 'ok'; okBtn.classList.add('active'); applyFilters(); }
+
+      // Cargar top emisoras y agregar botón si hay datos
+      fetch('/radio/listeners.php?action=top&limit=10')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.top || d.top.length < 2) return;
+          // Marcar estaciones top con data-top="1"
+          d.top.forEach(function(name) {
+            document.querySelectorAll('.station').forEach(function(el) {
+              if (el.dataset.nombre === name) el.dataset.top = '1';
+            });
+          });
+          // Agregar botón al final
+          var btn = document.createElement('button');
+          btn.className = 'filter-btn f-top';
+          btn.textContent = '★ Más escuchadas';
+          btn.addEventListener('click', function() {
+            currentFilter = 'top';
+            document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
+            btn.classList.add('active');
+            applyFilters();
+          });
+          filtrosEl.appendChild(btn);
+        })
+        .catch(function() {});
+    });
     })
     .catch(function() {}); // sin status.json todavía — silencioso
 
