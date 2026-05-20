@@ -823,18 +823,46 @@ radio_log('visit', '');
         filtrosEl.appendChild(btn);
       });
       filtrosEl.classList.add('visible');
+
+      // Top emisoras — fetch arranca ya, botón va en la fila de estado
+      fetch('/radio/listeners.php?action=top&limit=10')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (!d.top || d.top.length < 1) return;
+          d.top.forEach(function(name) {
+            document.querySelectorAll('.station').forEach(function(el) {
+              if (el.dataset.nombre === name) el.dataset.top = '1';
+            });
+          });
+          var topBtn = document.createElement('button');
+          topBtn.className = 'filter-btn f-top';
+          topBtn.textContent = '★ Más escuchadas';
+          topBtn.addEventListener('click', function() {
+            currentStatus = 'top';
+            document.querySelectorAll('.filter-btn:not(.f-genre)').forEach(function(x) { x.classList.remove('active'); });
+            topBtn.classList.add('active');
+            applyFilters();
+          });
+          // Insertar antes del separador de género para quedar en la fila de estado
+          var genreSep = filtrosEl.querySelector('.genre-sep');
+          if (genreSep) filtrosEl.insertBefore(topBtn, genreSep);
+          else filtrosEl.appendChild(topBtn);
+        })
+        .catch(function() {});
+
       // Estado inicial: por URL o por defecto 'ok'
       var defaultStatus = initStatus || 'ok';
       currentStatus = defaultStatus;
-      var activeStatusBtn = filtrosEl.querySelector(defaultStatus === 'all' ? '.filter-btn:not(.f-genre)' : '.f-' + defaultStatus) || okBtn;
       var okBtn = filtrosEl.querySelector('.f-ok');
+      var activeStatusBtn = filtrosEl.querySelector('.f-' + defaultStatus);
       if (activeStatusBtn) activeStatusBtn.classList.add('active');
       else if (okBtn) { okBtn.classList.add('active'); currentStatus = 'ok'; }
       applyFilters();
 
-      // Botones de género — independientes del filtro de estado
+      // Botones de género — segunda fila, independientes del estado
       if (genreTags.length > 0) {
         var sep = document.createElement('span');
+        sep.className = 'genre-sep';
         sep.style.cssText = 'display:block;width:100%;height:0;margin:4px 0 0';
         filtrosEl.appendChild(sep);
         genreTags.forEach(function(tag) {
@@ -860,31 +888,6 @@ radio_log('visit', '');
           filtrosEl.appendChild(btn);
         });
       }
-
-      // Cargar top emisoras y agregar botón si hay datos
-      fetch('/radio/listeners.php?action=top&limit=10')
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-          if (!d.top || d.top.length < 1) return;
-          // Marcar estaciones top con data-top="1"
-          d.top.forEach(function(name) {
-            document.querySelectorAll('.station').forEach(function(el) {
-              if (el.dataset.nombre === name) el.dataset.top = '1';
-            });
-          });
-          // Agregar botón al final
-          var btn = document.createElement('button');
-          btn.className = 'filter-btn f-top';
-          btn.textContent = '★ Más escuchadas';
-          btn.addEventListener('click', function() {
-            currentStatus = 'top';
-            document.querySelectorAll('.filter-btn:not(.f-genre)').forEach(function(x) { x.classList.remove('active'); });
-            btn.classList.add('active');
-            applyFilters();
-          });
-          filtrosEl.appendChild(btn);
-        })
-        .catch(function() {});
     })
     .catch(function() {}); // sin status.json todavía — silencioso
 
