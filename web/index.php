@@ -865,6 +865,17 @@ radio_log('visit', '');
         sep.className = 'genre-sep';
         sep.style.cssText = 'display:block;width:100%;height:0;margin:4px 0 0';
         filtrosEl.appendChild(sep);
+        // Botón "Todos" para limpiar el filtro de género
+        var allGenreBtn = document.createElement('button');
+        allGenreBtn.className = 'filter-btn f-genre active';
+        allGenreBtn.textContent = 'Todos';
+        allGenreBtn.addEventListener('click', function() {
+          currentGenre = null;
+          document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
+          allGenreBtn.classList.add('active');
+          applyFilters();
+        });
+        filtrosEl.appendChild(allGenreBtn);
         genreTags.forEach(function(tag) {
           var btn = document.createElement('button');
           btn.className = 'filter-btn f-genre';
@@ -877,11 +888,14 @@ radio_log('visit', '');
               currentGenre = tag;
               document.querySelectorAll('.filter-btn.f-genre').forEach(function(x) { x.classList.remove('active'); });
               btn.classList.add('active');
+              // "Todos" pierde el active cuando se elige un género
+              allGenreBtn.classList.remove('active');
             }
             applyFilters();
           });
           if (initGenre && initGenre === tag) {
             currentGenre = tag;
+            allGenreBtn.classList.remove('active');
             btn.classList.add('active');
             applyFilters();
           }
