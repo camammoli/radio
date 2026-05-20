@@ -183,20 +183,7 @@ radio_log('visit', '');
     }
     body.light #support-toast button { color: #9ca3af; }
     body.light #support-toast button:hover { color: #374151; }
-    #theme-btn {
-      position: fixed;
-      top: 12px; right: 12px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      width: 34px; height: 34px;
-      font-size: 16px;
-      cursor: pointer;
-      z-index: 300;
-      display: flex; align-items: center; justify-content: center;
-      transition: background .2s;
-    }
-    #theme-btn:hover { background: var(--border); }
+    #theme-btn { cursor: pointer; font-size: 12px; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
@@ -534,8 +521,6 @@ radio_log('visit', '');
 </head>
 <body>
 
-<button id="theme-btn" title="Cambiar tema">🌙</button>
-
 <header>
   <h1>📻 Radio Argentina</h1>
   <p class="sub"><?= $total ?> emisoras en streaming · escuchá sin instalar nada</p>
@@ -544,6 +529,7 @@ radio_log('visit', '');
     <a class="badge" href="https://github.com/camammoli/radio" target="_blank">GitHub</a>
     <a class="badge" href="https://mammoli.ar">mammoli.ar</a>
     <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>
+    <button id="theme-btn" class="badge" title="Cambiar tema" style="margin-left:10px">☀️ Modo claro</button>
   </div>
 </header>
 
@@ -779,6 +765,9 @@ radio_log('visit', '');
 
     // Pausar audio viejo
     audio.pause();
+
+    // Limpiar highlight de link compartido al reproducir cualquier emisora
+    if (window._sharedTarget) { window._sharedTarget.classList.remove('shared-highlight'); window._sharedTarget = null; }
 
     // Activar nueva emisora
     activeEl = el;
@@ -1073,23 +1062,25 @@ radio_log('visit', '');
         '<button onclick="document.getElementById(\'shared-banner\').remove()">✕</button>';
       document.body.appendChild(banner);
 
+      window._sharedTarget = sharedTarget;
       function hideBanner() {
-        sharedTarget.classList.remove('shared-highlight');
         banner.classList.add('hide');
         setTimeout(function() { banner.remove(); }, 650);
       }
       setTimeout(hideBanner, 6000);
-      sharedTarget.addEventListener('click', hideBanner, { once: true });
     }
   }
 
   // ── Tema claro / oscuro ───────────────────────────────────────────────────────
   var themeBtn = document.getElementById('theme-btn');
   var savedTheme = localStorage.getItem('radio_theme');
-  if (savedTheme === 'light') { document.body.classList.add('light'); themeBtn.textContent = '☀️'; }
+  function setThemeBtn(isLight) {
+    themeBtn.textContent = isLight ? '🌙 Modo oscuro' : '☀️ Modo claro';
+  }
+  if (savedTheme === 'light') { document.body.classList.add('light'); setThemeBtn(true); }
   themeBtn.addEventListener('click', function() {
     var isLight = document.body.classList.toggle('light');
-    themeBtn.textContent = isLight ? '☀️' : '🌙';
+    setThemeBtn(isLight);
     localStorage.setItem('radio_theme', isLight ? 'light' : 'dark');
   });
 
