@@ -473,7 +473,7 @@ radio_log('visit', '');
 </header>
 
 <div class="search-wrap">
-  <input id="buscador" type="search" placeholder="Buscar por nombre o provincia..." autocomplete="off" autofocus>
+  <input id="buscador" type="search" placeholder="Buscar por nombre, provincia o género..." autocomplete="off" autofocus>
   <div class="filtros" id="filtros"></div>
   <div id="genre-panel"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
