@@ -4,6 +4,21 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## Nota operativa — Ancho de banda del hosting
+
+El stream de audio va **directo** desde el servidor de la radio al navegador del oyente.
+mammoli.ar NO actúa como proxy ni retransmite el audio.
+
+Lo único que pasa por el hosting es:
+- Carga inicial de la página (~50KB, una vez por visita)
+- Heartbeats cada 30s (~200 bytes por request)
+- Consultas a listeners.php y status.json
+
+Una persona escuchando 5 horas genera menos de 1MB en el hosting.
+Con 1000 oyentes simultáneos el impacto en ancho de banda sería igualmente insignificante.
+
+---
+
 ## TKT-0680 — 2026-05-19/20 — Player web: oyentes, ranking, géneros, tema claro
 
 ### Contexto
