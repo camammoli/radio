@@ -131,6 +131,41 @@ radio_log('visit', '');
       --red:     #ef4444;
       --playing-bg: #1e3a5f;
     }
+    body.light {
+      --bg:      #f3f4f6;
+      --surface: #ffffff;
+      --border:  #d1d5db;
+      --text:    #111827;
+      --muted:   #6b7280;
+      --accent:  #2563eb;
+      --green:   #16a34a;
+      --red:     #dc2626;
+      --playing-bg: #dbeafe;
+    }
+    body.light header {
+      background: linear-gradient(135deg, #dbeafe 0%, #f3f4f6 70%);
+    }
+    body.light #support-toast {
+      background: #ffffffee;
+      color: #374151;
+      border-color: #d1d5db;
+    }
+    body.light #support-toast button { color: #9ca3af; }
+    body.light #support-toast button:hover { color: #374151; }
+    #theme-btn {
+      position: fixed;
+      top: 12px; right: 12px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 34px; height: 34px;
+      font-size: 16px;
+      cursor: pointer;
+      z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .2s;
+    }
+    #theme-btn:hover { background: var(--border); }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: var(--bg);
@@ -460,6 +495,8 @@ radio_log('visit', '');
   </style>
 </head>
 <body>
+
+<button id="theme-btn" title="Cambiar tema">🌙</button>
 
 <header>
   <h1>📻 Radio Argentina</h1>
@@ -996,8 +1033,18 @@ radio_log('visit', '');
     }
   }
 
+  // ── Tema claro / oscuro ───────────────────────────────────────────────────────
+  var themeBtn = document.getElementById('theme-btn');
+  var savedTheme = localStorage.getItem('radio_theme');
+  if (savedTheme === 'light') { document.body.classList.add('light'); themeBtn.textContent = '☀️'; }
+  themeBtn.addEventListener('click', function() {
+    var isLight = document.body.classList.toggle('light');
+    themeBtn.textContent = isLight ? '☀️' : '🌙';
+    localStorage.setItem('radio_theme', isLight ? 'light' : 'dark');
+  });
+
   // ── Toast de apoyo (una vez por sesión, después de 25s) ───────────────────────
-  if (!sessionStorage.getItem('toast_shown')) {
+  if (!sessionStorage.getItem('toast_v2')) {
     setTimeout(function() {
       var toast = document.createElement('div');
       toast.id = 'support-toast';
@@ -1006,7 +1053,7 @@ radio_log('visit', '');
         ' ayuda a mantener esta y otras herramientas online. ☕' +
         '<button onclick="this.parentNode.classList.add(\'hide\')" title="Cerrar">✕</button>';
       document.body.appendChild(toast);
-      sessionStorage.setItem('toast_shown', '1');
+      sessionStorage.setItem('toast_v2', '1');
       setTimeout(function() { toast.classList.add('hide'); }, 25000);
     }, 25000);
   }
