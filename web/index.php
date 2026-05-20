@@ -769,7 +769,8 @@ radio_log('visit', '');
     document.querySelectorAll('.station').forEach(function(el) {
       var textMatch   = !q || el.dataset.search.includes(q);
       var statusMatch = currentStatus === 'all'
-          || (currentStatus === 'top' ? el.dataset.top === '1' : el.dataset.status === currentStatus);
+          || (currentStatus === 'top' ? (el.dataset.top === '1' && el.dataset.status === 'ok')
+          : el.dataset.status === currentStatus);
       var genreMatch  = !currentGenre
           || (el.dataset.tags || '').split(',').includes(currentGenre);
       var show = textMatch && statusMatch && genreMatch;
