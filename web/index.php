@@ -8,70 +8,72 @@
 
 require_once __DIR__ . '/log.php';
 
-define('EMISORAS_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.txt');
-define('CACHE_FILE',   sys_get_temp_dir() . '/radio_emisoras_cache.txt');
-define('CACHE_TTL',    3600); // 1 hora
+define('EMISORAS_JSON_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.json');
+define('EMISORAS_TXT_URL',  'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.txt');
+define('CACHE_JSON', sys_get_temp_dir() . '/radio_emisoras_cache.json');
+define('CACHE_TXT',  sys_get_temp_dir() . '/radio_emisoras_cache.txt');
+define('CACHE_TTL',  3600);
 
-function cargar_emisoras(): string {
-    if (file_exists(CACHE_FILE) && (time() - filemtime(CACHE_FILE)) < CACHE_TTL) {
-        return file_get_contents(CACHE_FILE);
+function cargar_emisoras_json(): ?array {
+    if (file_exists(CACHE_JSON) && (time() - filemtime(CACHE_JSON)) < CACHE_TTL) {
+        $data = json_decode(file_get_contents(CACHE_JSON), true);
+        if (is_array($data)) return $data;
     }
     $ctx = stream_context_create(['http' => ['timeout' => 8]]);
-    $raw = @file_get_contents(EMISORAS_URL, false, $ctx);
+    $raw = @file_get_contents(EMISORAS_JSON_URL, false, $ctx);
     if ($raw !== false) {
-        file_put_contents(CACHE_FILE, $raw);
-        return $raw;
+        $data = json_decode($raw, true);
+        if (is_array($data)) {
+            file_put_contents(CACHE_JSON, $raw);
+            return $data;
+        }
     }
-    // Fallback: usar caché aunque esté vencido
-    return file_exists(CACHE_FILE) ? file_get_contents(CACHE_FILE) : '';
+    if (file_exists(CACHE_JSON)) {
+        $data = json_decode(file_get_contents(CACHE_JSON), true);
+        if (is_array($data)) return $data;
+    }
+    return null;
 }
 
-function parsear_emisoras(string $texto): array {
-    $lineas   = explode("\n", $texto);
-    $total    = count($lineas);
-    $stations = [];
-
+function cargar_emisoras_txt(): array {
+    if (file_exists(CACHE_TXT) && (time() - filemtime(CACHE_TXT)) < CACHE_TTL) {
+        $raw = file_get_contents(CACHE_TXT);
+    } else {
+        $ctx = stream_context_create(['http' => ['timeout' => 8]]);
+        $raw = @file_get_contents(EMISORAS_TXT_URL, false, $ctx);
+        if ($raw !== false) file_put_contents(CACHE_TXT, $raw);
+        else $raw = file_exists(CACHE_TXT) ? file_get_contents(CACHE_TXT) : '';
+    }
+    $lineas = explode("\n", $raw); $total = count($lineas); $stations = [];
     for ($i = 0; $i < $total; $i++) {
         $linea = trim($lineas[$i]);
-
-        // Líneas activas: [NNN] o [#NNN] — el # dentro de [] NO es comentario
         if (!preg_match('/^\[#?(\d+)\]\s+(.+)/', $linea, $m)) continue;
-
-        $numero = (int)$m[1];
-        $nombre = trim($m[2]);
-
-        // Buscar URL en la siguiente línea no vacía
-        $url = '';
-        for ($j = $i + 1; $j < min($i + 3, $total); $j++) {
+        $numero = (int)$m[1]; $nombre = trim($m[2]); $url = '';
+        for ($j = $i+1; $j < min($i+3,$total); $j++) {
             $sig = trim($lineas[$j]);
-            if ($sig !== '' && preg_match('#^https?://#', $sig)) {
-                $url = $sig;
-                break;
-            }
+            if ($sig !== '' && preg_match('#^https?://#', $sig)) { $url = $sig; break; }
         }
-        if ($url === '') continue;
-
-        // Separar nombre de "* Provincia, País"
+        if (!$url) continue;
         $provincia = '';
         if (preg_match('/^(.+?)\s*\*\s*(.+)$/', $nombre, $pm)) {
-            $nombre    = trim($pm[1]);
-            $provincia = trim($pm[2]);
+            $nombre = trim($pm[1]); $provincia = trim($pm[2]);
         }
-
-        $stations[] = [
-            'n'         => $numero,
-            'nombre'    => $nombre,
-            'provincia' => $provincia,
-            'url'       => $url,
-        ];
+        $stations[] = ['n'=>$numero,'nombre'=>$nombre,'provincia'=>$provincia,'url'=>$url,
+                        'logo'=>null,'tags'=>[],'homepage'=>null,'codec'=>null,'bitrate'=>null];
     }
-
     return $stations;
 }
 
-$raw      = cargar_emisoras();
-$stations = parsear_emisoras($raw);
+$stations = cargar_emisoras_json() ?? cargar_emisoras_txt();
 $total    = count($stations);
+
+// Géneros para filtro (top 12 tags con al menos 3 emisoras)
+$tag_counts = [];
+foreach ($stations as $s) {
+    foreach (($s['tags'] ?? []) as $t) $tag_counts[$t] = ($tag_counts[$t] ?? 0) + 1;
+}
+arsort($tag_counts);
+$genre_tags = array_keys(array_filter(array_slice($tag_counts, 0, 12, true), fn($c) => $c >= 3));
 
 // Escribe el conteo para que mammoli.ar/index.php lo lea sin HTTP request
 @file_put_contents(__DIR__ . '/count.json', json_encode(['total' => $total, 'ts' => time()]));
@@ -177,6 +179,21 @@ radio_log('visit', '');
     .filter-btn.f-timeout.active { background: rgba(245,158,11,.15); border-color: #f59e0b; color: #fcd34d; }
     .filter-btn.f-muerto.active  { background: rgba(239,68,68,.15);  border-color: #ef4444; color: #fca5a5; }
     .filter-btn.f-top.active     { background: rgba(251,191,36,.15); border-color: #fbbf24; color: #fde68a; }
+    .filter-btn.f-genre.active   { background: rgba(167,139,250,.15); border-color: #a78bfa; color: #ddd6fe; }
+
+    .station-logo {
+      width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
+      flex-shrink: 0; background: var(--border);
+    }
+    .station-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 3px; }
+    .station-tag  {
+      font-size: 10px; padding: 1px 5px; border-radius: 10px;
+      background: rgba(167,139,250,.12); color: #a78bfa; white-space: nowrap;
+    }
+    .codec-badge {
+      font-size: 10px; color: var(--muted); white-space: nowrap;
+      align-self: flex-start; padding-top: 2px; flex-shrink: 0;
+    }
 
     /* ── Buscador ── */
     .search-wrap {
@@ -447,20 +464,42 @@ radio_log('visit', '');
 
 <div class="lista" id="lista">
 <?php foreach ($stations as $s): ?>
+  <?php
+    $tags     = $s['tags']    ?? [];
+    $codec    = $s['codec']   ?? null;
+    $bitrate  = $s['bitrate'] ?? null;
+    $logo     = $s['logo']    ?? null;
+    $homepage = $s['homepage']?? null;
+    $codec_str = $codec ? ($codec . ($bitrate ? " {$bitrate}k" : '')) : '';
+    $search_str = strtolower($s['nombre'] . ' ' . $s['provincia'] . ' ' . implode(' ', $tags));
+    $tags_str   = implode(',', $tags);
+  ?>
   <div class="station"
        data-url="<?= htmlspecialchars($s['url']) ?>"
        data-n="<?= $s['n'] ?>"
        data-nombre="<?= htmlspecialchars($s['nombre']) ?>"
        data-prov="<?= htmlspecialchars($s['provincia']) ?>"
-       data-search="<?= strtolower($s['nombre'] . ' ' . $s['provincia']) ?>">
+       data-search="<?= htmlspecialchars($search_str) ?>"
+       data-tags="<?= htmlspecialchars($tags_str) ?>">
     <span class="dot" title="sin verificar"></span>
+    <?php if ($logo): ?>
+      <img class="station-logo" src="<?= htmlspecialchars($logo) ?>" alt="" loading="lazy" onerror="this.style.display='none'">
+    <?php endif; ?>
     <span class="station-num"><?= $s['n'] ?></span>
     <div class="station-info">
       <div class="station-name"><?= htmlspecialchars($s['nombre']) ?></div>
       <?php if ($s['provincia']): ?>
         <div class="station-prov"><?= htmlspecialchars($s['provincia']) ?></div>
       <?php endif; ?>
+      <?php if ($tags): ?>
+        <div class="station-tags">
+          <?php foreach (array_slice($tags, 0, 3) as $t): ?>
+            <span class="station-tag"><?= htmlspecialchars($t) ?></span>
+          <?php endforeach; ?>
+        </div>
+      <?php endif; ?>
     </div>
+    <?php if ($codec_str): ?><span class="codec-badge"><?= htmlspecialchars($codec_str) ?></span><?php endif; ?>
     <button class="btn-play" aria-label="Reproducir <?= htmlspecialchars($s['nombre']) ?>">▶</button>
   </div>
 <?php endforeach; ?>
@@ -706,6 +745,8 @@ radio_log('visit', '');
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
   });
 
+  var genreTags = <?= json_encode(array_values($genre_tags)) ?>;
+
   // ── Filtros de estado ─────────────────────────────────────────────────────────
   var currentFilter = 'all';
 
@@ -716,7 +757,9 @@ radio_log('visit', '');
     items.forEach(function(el) {
       var textMatch   = !q || el.dataset.search.includes(q);
       var statusMatch = currentFilter === 'all'
-          || (currentFilter === 'top' ? el.dataset.top === '1' : el.dataset.status === currentFilter);
+          || (currentFilter === 'top'   ? el.dataset.top === '1'
+          : currentFilter.startsWith('g:') ? (el.dataset.tags || '').split(',').includes(currentFilter.slice(2))
+          : el.dataset.status === currentFilter);
       var show        = textMatch && statusMatch;
       el.classList.toggle('hidden', !show);
       if (show) vis++;
@@ -772,11 +815,31 @@ radio_log('visit', '');
       var okBtn = filtrosEl.querySelector('.f-ok');
       if (okBtn) { currentFilter = 'ok'; okBtn.classList.add('active'); applyFilters(); }
 
+      // Botones de género
+      if (genreTags.length > 0) {
+        var sep = document.createElement('span');
+        sep.style.cssText = 'display:block;width:100%;height:0;margin:4px 0 0';
+        filtrosEl.appendChild(sep);
+        genreTags.forEach(function(tag) {
+          var btn = document.createElement('button');
+          btn.className = 'filter-btn f-genre';
+          btn.textContent = tag;
+          btn.dataset.genre = tag;
+          btn.addEventListener('click', function() {
+            currentFilter = 'g:' + tag;
+            document.querySelectorAll('.filter-btn').forEach(function(x) { x.classList.remove('active'); });
+            btn.classList.add('active');
+            applyFilters();
+          });
+          filtrosEl.appendChild(btn);
+        });
+      }
+
       // Cargar top emisoras y agregar botón si hay datos
       fetch('/radio/listeners.php?action=top&limit=10')
         .then(function(r) { return r.json(); })
         .then(function(d) {
-          if (!d.top || d.top.length < 2) return;
+          if (!d.top || d.top.length < 1) return;
           // Marcar estaciones top con data-top="1"
           d.top.forEach(function(name) {
             document.querySelectorAll('.station').forEach(function(el) {
@@ -796,7 +859,6 @@ radio_log('visit', '');
           filtrosEl.appendChild(btn);
         })
         .catch(function() {});
-    });
     })
     .catch(function() {}); // sin status.json todavía — silencioso
 
