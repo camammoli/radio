@@ -1099,18 +1099,23 @@ radio_log('visit', '');
   });
 
   // ── Toast de apoyo (una vez por día) ─────────────────────────────────────────
-  var toastTs = parseInt(localStorage.getItem('toast_ts') || '0');
+  var toastTs = parseInt(localStorage.getItem('toast_ts_v2') || '0');
   if (Date.now() - toastTs > 86400000) {
     setTimeout(function() {
       var toast = document.createElement('div');
       toast.id = 'support-toast';
+      function dismissToast() {
+        localStorage.setItem('toast_ts_v2', Date.now().toString());
+        toast.classList.add('hide');
+        setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 700);
+      }
       toast.innerHTML =
         'Si esta herramienta te resultó útil, considerá <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">invitar un café</a> —' +
         ' ayuda a mantener esta y otras herramientas online. ☕' +
-        '<button onclick="this.parentNode.classList.add(\'hide\')" title="Cerrar">✕</button>';
+        '<button id="toast-close" title="Cerrar">✕</button>';
       document.body.appendChild(toast);
-      localStorage.setItem('toast_ts', Date.now().toString());
-      setTimeout(function() { toast.classList.add('hide'); }, 12000);
+      document.getElementById('toast-close').addEventListener('click', dismissToast);
+      setTimeout(dismissToast, 12000);
     }, 20000);
   }
 })();
