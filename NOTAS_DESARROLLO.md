@@ -51,13 +51,22 @@ El player web existía con buscador y filtros básicos. Se agregaron múltiples 
 - `?n=NNN`: scroll a emisora compartida, arranca en "Todas" para verla aunque esté caída
 
 **Tema claro/oscuro**
-- Botón 🌙/☀️ fijo arriba a la derecha
+- Botón movido de fixed top-right a fila de badges junto al cafecito (2026-05-20)
+- Ícono muestra destino: ☀️ Modo claro / 🌙 Modo oscuro
 - Persiste en localStorage
 - Overrides completos para todos los colores hardcodeados
 
 **Compartir**
 - Link, WhatsApp, QR por emisora
 - Banner "Tocá para escuchar" al llegar por link compartido, desaparece a los 6s con fade
+- shared-highlight (borde pulsante) persiste hasta que el usuario reproduce cualquier emisora (2026-05-20)
+
+**SEO (2026-05-20)**
+- Título: "Radio Argentina en vivo · N emisoras online"
+- Open Graph completo: og:type, og:site_name, og:url, og:title, og:description
+- Twitter Card: summary con title y description
+- `<link rel=canonical>` explícito + canonical dinámico para ?n=
+- Indexación solicitada en Google Search Console
 
 **Toast de apoyo**
 - Aparece a los 20s, dura 12s, una vez por día (localStorage TTL 24h)
@@ -77,17 +86,18 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 
 ## Pendientes — TKT-0681 (próxima sesión)
 
-### P1 — Link compartido no scroll a la emisora correcta
-Al llegar con `?n=50`, el querySelector encuentra la emisora pero si está oculta por filtros
-el scroll falla y "salta a cualquiera". Fix: asegurarse de que el elemento esté visible antes
-de hacer scrollIntoView, o esperar a que se apliquen los filtros del status.json.
-
-### P2 — Toast no aparece
+### P1 — Toast no aparece
 El toast con localStorage TTL 24h fue implementado pero Carlos reporta que no aparece.
 Posible causa: la key anterior (`toast_v2` en sessionStorage) ya estaba marcada y hay conflicto,
 o el localStorage `toast_ts` quedó seteado. Verificar y resetear lógica.
 
-### P3 — Revisar bots de mantenimiento
+### P2 — Revisar bots de mantenimiento
 Los bots de email/gestión estaban temporalmente deshabilitados (semana del 2026-05-19).
-Reactivar el lunes 2026-05-25 y verificar estado: modo legal, identidad escalonada,
+Reactivar el lunes 2026-05-26 y verificar estado: modo legal, identidad escalonada,
 firmas dinámicas, pending por cuenta. Ver `project_email_bot.md` y `feedback_bot_deploy.md`.
+
+### P3 — GitHub Action: crawler de estado de streams (idea 2026-05-20)
+Automatizar el chequeo de endpoints de streaming cada 24hs via GitHub Actions.
+Actualiza el campo `estado` en `emisoras.json` (ok/dudosa/caída) sin infraestructura propia.
+Corre gratis en servidores de GitHub. Elimina la dependencia de checks manuales.
+Prerequisito: definir qué constituye "ok" vs "dudosa" (timeout, HTTP status, content-type audio).
