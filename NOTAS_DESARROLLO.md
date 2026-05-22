@@ -88,4 +88,6 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 
 - ✅ P1 Toast: key cambiada a `toast_ts_v2`, setItem movido al cierre (2026-05-22)
 - ✅ P3 GitHub Action crawler: `.github/workflows/check-streams.yml` — cada 6hs (2026-05-22)
+- ✅ TKT-0687: verificación paralela (30 workers) — de 30min+timeout a 2min (2026-05-22)
+- ✅ TKT-0686: contraseña FTP eliminada del historial público, movida a `.ftp.conf` + GitHub Secret (2026-05-22)
 - 📅 Bots de mantenimiento: reactivar lunes 2026-05-26 (gestión, no radio)
