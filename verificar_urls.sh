@@ -90,26 +90,43 @@ COUNT_OK=0
 COUNT_DEAD=0
 COUNT_TIMEOUT=0
 
-# ── Verificar cada URL ────────────────────────────────────────────────────────
+PARALLEL=30   # workers simultáneos
+TMPDIR_R=$(mktemp -d)
+
+# ── Verificar en paralelo ─────────────────────────────────────────────────────
+declare -a PIDS
+for i in "${!URLS[@]}"; do
+    url="${URLS[$i]}"
+    test_url="$url"
+    [[ "$url" == http://* ]] && test_url="${url/http:\/\//https://}"
+
+    (
+        curl -s -o /dev/null \
+            -w "%{http_code}|%{time_total}" \
+            --max-time "$TIMEOUT" \
+            --connect-timeout 4 \
+            -L --max-redirs 3 \
+            "$test_url" 2>/dev/null > "$TMPDIR_R/$i"
+    ) &
+    PIDS+=($!)
+
+    # Limitar a PARALLEL workers: cuando el pool está lleno, esperar al más viejo
+    if (( ${#PIDS[@]} >= PARALLEL )); then
+        wait "${PIDS[0]}" 2>/dev/null
+        PIDS=("${PIDS[@]:1}")
+    fi
+done
+wait   # esperar los workers restantes
+
+# ── Recopilar resultados en orden ─────────────────────────────────────────────
 for i in "${!URLS[@]}"; do
     url="${URLS[$i]}"
     nombre="${NOMBRES[$i]}"
     num=$((i + 1))
 
-    # Probar la versión HTTPS (lo que usa el browser en una página HTTPS)
-    test_url="$url"
-    [[ "$url" == http://* ]] && test_url="${url/http:\/\//https://}"
-
-    result=$(curl -s -o /dev/null \
-        -w "%{http_code}|%{time_total}" \
-        --max-time    "$TIMEOUT" \
-        --connect-timeout 4 \
-        -L --max-redirs 3 \
-        "$test_url" 2>/dev/null)
-
+    result=$(cat "$TMPDIR_R/$i" 2>/dev/null || echo "000|0")
     http_code="${result%%|*}"
     time_raw="${result##*|}"
-    # Convertir segundos decimales a ms enteros (bc si disponible, fallback a 0)
     ms=$(echo "${time_raw} * 1000 / 1" | bc 2>/dev/null || echo "0")
 
     RES_URL+=("$url")
@@ -131,6 +148,8 @@ for i in "${!URLS[@]}"; do
         log "✗ [$num/$TOTAL] $nombre  (HTTP $http_code)"
     fi
 done
+
+rm -rf "$TMPDIR_R"
 
 log ""
 log "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
