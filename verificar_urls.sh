@@ -25,8 +25,9 @@ TIMEOUT=5            # segundos por URL
 
 FTP_HOST="mammoli.ar"
 FTP_USER="carlos@mammoli.ar"
-FTP_PASS='REDACTED_FTP_PASS'
 FTP_DEST="/radio/status.json"
+# FTP_PASS: se lee del entorno (GitHub Actions secret) o de .ftp.conf (local, gitignoreado)
+[ -z "$FTP_PASS" ] && [ -f "$SCRIPT_DIR/.ftp.conf" ] && source "$SCRIPT_DIR/.ftp.conf"
 
 # ── Parámetros ────────────────────────────────────────────────────────────────
 DO_JSON=false
