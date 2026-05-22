@@ -25,7 +25,7 @@ TIMEOUT=5            # segundos por URL
 
 FTP_HOST="mammoli.ar"
 FTP_USER="carlos@mammoli.ar"
-FTP_PASS='REDACTED_FTP_PASS_OLD'
+FTP_PASS='REDACTED_FTP_PASS'
 FTP_DEST="/radio/status.json"
 
 # ── Parámetros ────────────────────────────────────────────────────────────────
