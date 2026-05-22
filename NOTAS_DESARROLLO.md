@@ -84,20 +84,8 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 
 ---
 
-## Pendientes — TKT-0681 (próxima sesión)
+## Historial de pendientes resueltos
 
-### P1 — Toast no aparece
-El toast con localStorage TTL 24h fue implementado pero Carlos reporta que no aparece.
-Posible causa: la key anterior (`toast_v2` en sessionStorage) ya estaba marcada y hay conflicto,
-o el localStorage `toast_ts` quedó seteado. Verificar y resetear lógica.
-
-### P2 — Revisar bots de mantenimiento
-Los bots de email/gestión estaban temporalmente deshabilitados (semana del 2026-05-19).
-Reactivar el lunes 2026-05-26 y verificar estado: modo legal, identidad escalonada,
-firmas dinámicas, pending por cuenta. Ver `project_email_bot.md` y `feedback_bot_deploy.md`.
-
-### P3 — GitHub Action: crawler de estado de streams (idea 2026-05-20)
-Automatizar el chequeo de endpoints de streaming cada 24hs via GitHub Actions.
-Actualiza el campo `estado` en `emisoras.json` (ok/dudosa/caída) sin infraestructura propia.
-Corre gratis en servidores de GitHub. Elimina la dependencia de checks manuales.
-Prerequisito: definir qué constituye "ok" vs "dudosa" (timeout, HTTP status, content-type audio).
+- ✅ P1 Toast: key cambiada a `toast_ts_v2`, setItem movido al cierre (2026-05-22)
+- ✅ P3 GitHub Action crawler: `.github/workflows/check-streams.yml` — cada 6hs (2026-05-22)
+- 📅 Bots de mantenimiento: reactivar lunes 2026-05-26 (gestión, no radio)
