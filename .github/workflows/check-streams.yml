@@ -1,0 +1,21 @@
+name: Verificar streams
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # cada 6 horas: 00:00, 06:00, 12:00, 18:00 UTC
+  workflow_dispatch:          # permite correrlo a mano desde GitHub
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Instalar dependencias
+        run: sudo apt-get install -y lftp bc
+
+      - name: Verificar streams y subir status.json
+        run: ./verificar_urls.sh --json --upload --quiet
