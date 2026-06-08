@@ -540,6 +540,8 @@ radio_log('visit', '');
   <p class="sub"><?= $total ?> emisoras en streaming · escuchá sin instalar nada</p>
   <div class="badges">
     <a class="badge" href="?m3u=1">⬇ Bajar M3U</a>
+    <a class="badge" href="sugerir.php">+ Sugerir emisora</a>
+    <a class="badge" href="estadisticas.php">📊 Estadísticas</a>
     <a class="badge" href="https://github.com/camammoli/radio" target="_blank">GitHub</a>
     <a class="badge" href="https://mammoli.ar">mammoli.ar</a>
     <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>

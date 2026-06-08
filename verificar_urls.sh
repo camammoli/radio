@@ -21,11 +21,13 @@
 SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
 EMISORAS="$SCRIPT_DIR/emisoras.txt"
 JSON_OUT="$SCRIPT_DIR/web/status.json"
+HISTORY_OUT="$SCRIPT_DIR/web/status_history.json"
 TIMEOUT=5            # segundos por URL
 
 FTP_HOST="mammoli.ar"
 FTP_USER="carlos@mammoli.ar"
 FTP_DEST="/radio/status.json"
+FTP_DEST_HISTORY="/radio/status_history.json"
 # FTP_PASS: se lee del entorno (GitHub Actions secret) o de .ftp.conf (local, gitignoreado)
 [ -z "$FTP_PASS" ] && [ -f "$SCRIPT_DIR/.ftp.conf" ] && source "$SCRIPT_DIR/.ftp.conf"
 
@@ -176,6 +178,27 @@ if $DO_JSON; then
         echo "}"
     } > "$JSON_OUT"
     log "JSON guardado: $JSON_OUT"
+
+    # ── Actualizar historial ───────────────────────────────────────────────────
+    HIST_TS="$(date -u '+%Y-%m-%d %H:%M:%S')"
+    HIST_ENTRY="{\"ts\":\"${HIST_TS}\",\"total\":${TOTAL},\"ok\":${COUNT_OK},\"muertos\":${COUNT_DEAD},\"timeout\":${COUNT_TIMEOUT}}"
+    if [[ -f "$HISTORY_OUT" ]] && command -v python3 &>/dev/null; then
+        python3 - "$HISTORY_OUT" "$HIST_ENTRY" << 'PYEOF'
+import json, sys
+path, entry = sys.argv[1], json.loads(sys.argv[2])
+with open(path) as f:
+    data = json.load(f)
+if not isinstance(data, list):
+    data = []
+data.append(entry)
+data = data[-360:]  # máximo 90 días (4 checks/día)
+with open(path, 'w') as f:
+    json.dump(data, f, ensure_ascii=False)
+PYEOF
+    else
+        echo "[${HIST_ENTRY}]" > "$HISTORY_OUT"
+    fi
+    log "Historial actualizado: $HISTORY_OUT"
 fi
 
 # ── Upload FTP ────────────────────────────────────────────────────────────────
@@ -184,10 +207,12 @@ if $DO_UPLOAD; then
     lftp -u "${FTP_USER},${FTP_PASS}" "$FTP_HOST" << LFTP
 set ssl:verify-certificate no
 put ${JSON_OUT} -o ${FTP_DEST}
+put ${HISTORY_OUT} -o ${FTP_DEST_HISTORY}
 quit
 LFTP
     if [[ $? -eq 0 ]]; then
         log "✓ Subido: https://${FTP_HOST}${FTP_DEST}"
+        log "✓ Subido: https://${FTP_HOST}${FTP_DEST_HISTORY}"
     else
         log "✗ Error al subir. Verificá conectividad FTP."
         exit 1

@@ -1,4 +1,10 @@
 web/status.json
+web/status_history.json
+web/config.php
+web/data/
+web/listeners.json
+web/plays.json
+web/count.json
 trafico_github.py
 trafico_github.json
 web/logs/
