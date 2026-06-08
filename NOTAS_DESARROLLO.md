@@ -84,10 +84,32 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 
 ---
 
+## TKT-0691 — 2026-06-08 — Historial de streams + sugerencias de emisoras
+
+### Historial de evolución de streams
+- `verificar_urls.sh`: después de generar `status.json`, append snapshot a `web/status_history.json` (máx 360 entradas = 90 días)
+- `check-streams.yml`: descarga `status_history.json` existente del servidor vía FTP antes de correr, para que el append acumule entre runs
+- `web/estadisticas.php`: página con gráfico Chart.js (ok/caídas/timeout), comparativa (ahora vs 24h/7d/30d) y tabla de últimos 30 snapshots
+- Rango seleccionable: 7d / 30d / 90d
+
+### Sugerencias de emisoras
+- `web/sugerir.php`: formulario público — valida URL, verifica stream con cURL (HEAD + fallback GET), guarda en `web/data/sugerencias.json`, notifica por Telegram
+- `web/admin_sugerencias.php?key=RADIO_ADMIN_KEY`: panel admin — tabs pendiente/aprobadas/rechazadas, botones aprobar/rechazar, en aprobación genera línea lista para pegar en `emisoras.txt` + Telegram
+- `web/config.php` (gitignoreado): RADIO_ADMIN_KEY, TG_TOKEN, TG_CHAT_ID
+- `web/data/` (gitignoreado): sugerencias.json + .htaccess (Deny from all)
+- `web/index.php`: links a Estadísticas y Sugerir emisora en el header
+
+### Flujo de incorporación de sugerencia aprobada
+1. Usuario sugiere → backend verifica stream → guarda como "pendiente"
+2. Admin aprueba en admin_sugerencias.php → genera línea formateada para emisoras.txt
+3. Carlos pega en `emisoras.txt` + commit → pre-commit hook regenera `emisoras.json` → deploy
+
+---
+
 ## Historial de pendientes resueltos
 
 - ✅ P1 Toast: key cambiada a `toast_ts_v2`, setItem movido al cierre (2026-05-22)
 - ✅ P3 GitHub Action crawler: `.github/workflows/check-streams.yml` — cada 6hs (2026-05-22)
 - ✅ TKT-0687: verificación paralela (30 workers) — de 30min+timeout a 2min (2026-05-22)
 - ✅ TKT-0686: contraseña FTP eliminada del historial público, movida a `.ftp.conf` + GitHub Secret (2026-05-22)
-- 📅 Bots de mantenimiento: reactivar lunes 2026-05-26 (gestión, no radio)
+- ✅ TKT-0691: historial de streams + sugerencias (2026-06-08)
