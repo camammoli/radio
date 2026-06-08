@@ -3,7 +3,33 @@
  * sugerir.php — formulario público para sugerir una emisora nueva
  */
 
-define('DATA_FILE', __DIR__ . '/data/sugerencias.json');
+define('DATA_FILE',   __DIR__ . '/data/sugerencias.json');
+define('EMISORAS_JSON_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.json');
+define('CACHE_JSON',  sys_get_temp_dir() . '/radio_emisoras_cache.json');
+define('CACHE_TTL',   3600);
+
+function url_en_emisoras(string $url): ?string {
+    $data = null;
+    if (file_exists(CACHE_JSON) && (time() - filemtime(CACHE_JSON)) < CACHE_TTL) {
+        $data = json_decode(file_get_contents(CACHE_JSON), true);
+    }
+    if (!is_array($data)) {
+        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
+        $raw = @file_get_contents(EMISORAS_JSON_URL, false, $ctx);
+        if ($raw !== false) {
+            $data = json_decode($raw, true);
+            if (is_array($data)) @file_put_contents(CACHE_JSON, $raw);
+        }
+    }
+    if (!is_array($data)) return null;
+    $url_norm = rtrim(strtolower($url), '/');
+    foreach ($data as $s) {
+        if (rtrim(strtolower($s['url'] ?? ''), '/') === $url_norm) {
+            return $s['nombre'] ?? 'una emisora existente';
+        }
+    }
+    return null;
+}
 
 if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
 if (!defined('TG_TOKEN'))  define('TG_TOKEN', '');
@@ -90,6 +116,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif (strlen($url) > 500) {
         $error = 'URL demasiado larga.';
     } else {
+        // Chequear duplicado en emisoras existentes
+        $existente = url_en_emisoras($url);
+        if ($existente !== null) {
+            $error = "Esta URL ya está en el directorio como \"" . htmlspecialchars($existente) . "\". ¡Gracias de todas formas!";
+        }
+    }
+
+    if (!$error) {
         // Verificar stream
         $check = check_stream($url);
         if (!$check['ok']) {
