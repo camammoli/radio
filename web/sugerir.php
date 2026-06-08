@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  . "URL: {$url}\n"
                  . "Stream: HTTP {$check['code']}" . ($check['audio'] ? ' (audio)' : '') . "\n"
                  . ($contacto ? "Contacto: {$contacto}\n" : '')
-                 . "\nRevisala en mammoli.ar/radio/admin_sugerencias.php";
+                 . "\nRevisala en https://mammoli.ar/radio/admin_sugerencias.php?key=" . RADIO_ADMIN_KEY;
             tg_send($msg);
 
             $result = ['nombre' => $nombre, 'url' => $url];
