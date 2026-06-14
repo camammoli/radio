@@ -316,7 +316,7 @@ https://cdn2.instream.audio/:8001/stream
 https://cdn2.instream.audio/:8008/stream
 
 [108] FM Del Mar
-https://cdn.instream.audio/:9051/stream
+https://streaming.escuchanosonline.com/8514/;
 
 [109] http//cdn.instream.audio9069/stream
 https://cdn.instream.audio/:9069/stream
