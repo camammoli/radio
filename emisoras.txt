@@ -2506,3 +2506,304 @@ https://radios.solumedia.com:10903/stream
 [#847] CVC La Voz Urbano * Argentina
 https://chat-assets.frontapp.com/v1/149be82f568687535638c72a66facc34.ogg
 
+
+[#848] FM Soldados 87.5 * Ciudad Autonoma de Buenos Aires
+https://radio02.ferozo.com/proxy/ra01000409?mp=/stream
+
+[#849] D Sports Radio 103.1 FM * Buenos Aires
+https://playerservices.streamtheworld.com/api/livestream-redirect/DSPORTSRADIOAAC.aac
+
+[#850] Radiovision Comodoro Rivadavia FM 99.5 * Provincia de Chubut
+https://cdn.instream.audio/:9061/stream?in_device_id=wp-5270c502-0535-444e-975b-d49592d1d988
+
+[#851] Pop Radio 101.5 * Argentina
+https://popradio.stweb.tv/popradio/live/playlist.m3u8
+
+[#852] FM Atlantic 105.9 * Argentina
+http://server1.veemesoft.com.ar:26511/;
+
+[#853] Radio Bella Vista Ctes 92.1 * Corrientes
+https://radio02.ferozo.com/proxy/ra02001485?mp=/stream
+
+[#854] Lola * Argentina
+https://cdn.instream.audio/:9081/stream
+
+[#855] Nacional Perito Moreno - LRA56 AM860 * Santa Cruz
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad34
+
+[#856] FM 97.9 VIDA * Argentina
+https://g2.vxral-slo.transport.edge-access.net/nx-beta/nx.hor.livetx.01/60a2b23eaf8c7e00145e64e0_240p/index.m3u8
+
+[#857] Planet Music Bahía Blanca * Argentina
+https://strcdn.klm99.com:10987/planetbahia
+
+[#858] Pop Life 107.7 * San Juan
+http://streaming1.locucionar.com:14835/stream/;stream/1
+
+[#859] Radio Universidad - FM91.1 UTN Resistencia * Chaco
+http://01.solumedia.com.ar:8336/
+
+[#860] Always Hits Radio * Buenos Aires
+https://stream.zeno.fm/yqb6aauhtv8uv
+
+[#861] Lider 104.3 * San Juan
+https://stream.arcast.tv:8443/lidersanjuan/lidersanjuan.stream/playlist.m3u8
+
+[#862] Radio Britannia * Buenos Aires
+http://01.solumedia.com.ar:8472/stream/;
+
+[#863] Radio del Mar 98.7 * Comodoro Rivadavia - Chubut
+https://cdn.instream.audio/:9051/stream
+
+[#864] Nacional Clásica fm 96.7 * Buenos Aires
+http://sa.mp3.icecast.magma.edge-access.net:7200/sc_rad37
+
+[#865] LU12 La Radio De La Gente, Rio Gallegos * Provincia de Santa Cruz
+https://sa.mp3.icecast.magma.edge-access.net/LOA_LaOpinionAustral
+
+[#866] MARAGATA FM 97.5 * Argentina
+https://streaming2.locucionar.com/proxy/maragata975?mp=/stream
+
+[#867] Net80 Radio * Argentina
+https://streaming.escuchanosonline.com/8274/stream
+
+[#868] Radio Emanuel FM 88.9 * Argentina
+https://rr5100.globalhost1.com/8546/;
+
+[#869] FM del Sol 100.5 * Argentina
+https://streaming2.locucionar.com/proxy/solpehuajo?mp=/stream
+
+[#870] LU14 Radio Provincia de Santa Cruz AM 830 khz * Provincia de Santa Cruz
+https://transmision-lu14.santacruz.gob.ar/lu14.mp3
+
+[#871] Estacion 95 91.5 FM * Argentina
+https://streaming2.locucionar.com/proxy/estacion95?mp=/stream
+
+[#872] Cadena Express 88.1 FM * Argentina
+https://streamall.alsolnet.com/cadenaexpress
+
+[#873] Patagonia Dinámica 105.5 - General Pico * La Pampa
+https://chino.republicahosting.com:2311/live
+
+[#874] De La Costa Radio 103.3 * Provincia de Buenos Aires
+http://01.solumedia.com.ar:8176/stream
+
+[#875] Fm Uno Corrientes * Corrientes
+https://srv10.streamingradio.ar/8062/stream
+
+[#876] FM 95.5 RADIO REPUBLICA * Argentina
+https://edge-st1-audio.masterhost.com.ar/listen/radio_republica_955/radio.mp3
+
+[#877] OK FM Arroyito * Córdoba
+http://audio.questreaming.com:27156/
+
+[#878] Abdulbasit Abdulsamad * Argentina
+https://radio.mp3islam.com/listen/abdulbasit/radio.mp3
+
+[#879] ON Radio * Buenos Aires
+https://streaming.radiosenlinea.com.ar/9020/stream
+
+[#880] FM Club Patagonia 88.9 * Argentina
+https://radio01.ferozo.com/proxy/ra01000872?mp=/stream
+
+[#881] Otro Día Perfecto * Argentina
+http://giss.tv:8000/odpradio.mp3
+
+[#882] Radio Universidad - UNLP - AM 1390 * Provincia de Buenos Aires
+https://statics-v2.streema.com/static/audios/sample.ea78c3d52389.mp3
+
+[#883] Rock ra * Argentina
+https://stream.zeno.fm/mbketaeaqhguv
+
+[#884] AIRE * Argentina
+http://stm14.xcast.com.br:8248/
+
+[#885] Meridiano 107.1 FM * Rosario
+http://23.111.184.195:8050/fmmeridiano.mp3
+
+[#886] Cadena 3 * Argentina
+http://server.laradio.online:8018/stream
+
+[#887] Radio Infinity Classic * Argentina
+https://sonic.host-live.com/8192/stream
+
+[#888] Planet Music Mar del PLata 101.1 * Argentina
+https://strcdn.klm99.com:10991/planetmdp
+
+[#889] Mediterraneo 98.3 Mhz * Argentina
+https://streaming01.radiosenlinea.com.ar:10996/stream
+
+[#890] Apuntes Fm 98.9Mhz * Argentina
+http://streaming2.locucionar.com:8112/stream
+
+[#891] Planet Music Villa Gesell 91.9 * Argentina
+https://strcdn.klm99.com:10986/planetvillagesell
+
+[#892] LT7 Radio Provincia de Corrientes * Corrientes
+http://turadioenvivo.com:11045/stream
+
+[#893] Malva FM - General Pico * La Pampa
+https://cdn.instream.audio/:9310/stream
+
+[#894] Diamante Fm 95.7 MHz * Argentina
+https://proxy01.servidorenlinea.net/streaming1/8014/;
+
+[#895] FMQ * Quilmes - Buenos Aires
+https://streamlky.alsolnet.com/radiofmq
+
+[#896] Ndr Radio * Buenos Aires
+https://streamconex.com:8096/;?listening-from-radio-garden=1640125124
+
+[#897] FMI TUCUMAN * Tucuman
+https://ssl.radiosnethosting.com/index.php?port=9808
+
+[#898] LU18 AM 640 Radio del Valle (Rio Negro) * Argentina
+https://streamingraddios.online/proxy/valle?mp=/stream
+
+[#899] Cadena Eco AM 1220 * Argentina
+https://node-35.zeno.fm/uyd6h9w162quv?rj-ttl=5&rj
+
+[#900] Radio 21 FM 90.1 - Caleta Olivia * Santa Cruz
+https://cdn.instream.audio/:9135/stream
+
+[#901] FM América 99.7 * Argentina
+https://stream.zeno.fm/dsvp0vvm9k8uv
+
+[#902] NJOY FM * Argentina
+https://radio02.ferozo.com/proxy/ra02001598?mp=/stream
+
+[#903] Digital FM 102.1 * Corrientes
+https://turadioenvivo.com/proxy/fmdigital/stream
+
+[#904] Antena Uno 92.3FM Posadas * Misiones
+https://radios.solumedia.com:10818/;
+
+[#905] Radio UTN FRC FM 94.3 * Córdoba(Argentina)
+https://01.solumedia.com.ar:8200/stream
+
+[#906] Nuestra FM La Adela FM 107.5 * Provincia de La Pampa
+http://server1.veemesoft.com.ar:10147/;
+
+[#907] Radio Fan Castelli * Provincia de Buenos Aires
+http://streaming5.locucionar.com:23184/stream
+
+[#908] XRADIO Bariloche * Argentina
+https://radios.streamingdha.com.ar/8004/;
+
+[#909] Coctel online * BUENOS AIRES
+https://streaming01.shockmedia.com.ar:8452/stream
+
+[#910] FM del este 100.5 * Argentina
+http://radio.fmdelestechajari.com.ar:8008/;
+
+[#911] Radiactiva 100.7 * Misiones
+http://sh4.radioonlinehd.com:8533/stream
+
+[#912] Kinshasa FM (64 kbps) * Argentina
+https://radio.kinshasafm.xyz/listen/kinshasafm/mobile.mp3
+
+[#913] InfoPico Radio 99.9 * Argentina
+https://streaming3.locucionar.com/proxy/infopico999?mp=/stream
+
+[#914] Radio República * Misiones
+http://streamlky.alsolnet.com:443/republica99
+
+[#915] Radio 7: De La Noche A La Mañana * Provincia de Neuquen
+https://radio.eduneu.eu:8060/radio.mp3
+
+[#916] jaja cba * Argentina
+https://streaming5.locucionar.com/proxy/radiojaja?mp=/stream
+
+[#917] Frecuencia Patagonia FM 99.3 * Santa Cruz
+http://server.laradio.online:9188/live
+
+[#918] ROLDÁN FM 92 92.3 * Argentina
+https://server.laradio.online/proxy/delcia_karamoschon?mp=/stream&1692351094586
+
+[#919] Cristal FM 107.9 * Rosario, Santa Fe
+https://radio02.ferozo.com/proxy/ra02001330?mp=/stream
+
+[#920] Pontiac Rock * Misiones
+https://radios.solumedia.com/6268/stream
+
+[#921] Meridiano FM 98.5 * Argentina
+https://streaming.escuchanosonline.com:7346/stream
+
+[#922] FM Activa 91.5 * Entre Ríos
+https://streaming5.locucionar.com/proxy/fmactivasegui?mp=/stream
+
+[#923] Gospel FM * Argentina
+https://ohradio.cc/8092/stream%22%20type=%22audio/mpeg
+
+[#924] Mañana Intensa * Córdoba(Argentina)
+https://server.streamcasthd.com/8272/stream
+
+[#925] Antena 98.9 * Argentina
+http://server1.veemesoft.com.ar:8064/live
+
+[#926] FM Armonía 105.1 * Argentina
+https://radiosar.com:9346/stream
+
+[#927] NEUQUEN ROCK * Argentina
+https://server.laradio.online/proxy/marco_aravena02?mp=/stream
+
+[#928] Radio Brisas 98.5 * Mar del Plata
+https://radio.ecolan.com:8443/stream.mp3
+
+[#929] Feeling FM 91.7 * Argentina
+https://turadioenvivo.com/proxy/feelings/stream?t=1778252067321&r=0.8264044151127908&nocache=1
+
+[#930] La Rocka RcK FM 107.3 * Resistencia (Argentina)
+http://cdn.instream.audio:8137/stream
+
+[#931] Expo Radio FM 94.3 * Argentina
+https://radios.tecnosoul.com.ar:8001/exporadio
+
+[#932] Estación Del Siglo Rio Grande FM 105.3 * Provincia de Tierra del Fuego
+http://streamall.alsolnet.com/estaciondelsigloaudio
+
+[#933] FM Bariloche * Río Negro
+https://streaming1.locucionar.com/proxy/colgados?mp=/stream
+
+[#934] Radio Mitre Patagonia - FM 90.5 * Argentina
+https://sc.host-live.com:10810/stream
+
+[#935] Radio de Clásicos 106.9 FM - Saladillo * Provincia de Buenos Aires
+http://streamconex.com:8118/stream
+
+[#936] Radio Universidad CALF Neuquén * Provincia de Neuquen
+https://cdn.instream.audio/:9032/stream?in_device_id=wp-5270c502-0535-444e-975b-d49592d1d988
+
+[#937] Kiss FM 95.1 Rosario * Santa Fe
+https://streaming.redboing.com/radio/8060/radio.mp3
+
+[#938] Chajarí al Día 940 AM * Entre Ríos
+http://190.185.128.226:8001/AM940
+
+[#939] PreNicene Radio * Rio Negro
+https://fra-pioneer01.dedicateware.com:2140/;?type=http&nocache=1743200018
+
+[#940] Panda NG * Argentina
+https://stream.zeno.fm/61ux2pwbuuhvv
+
+[#941] Radio 3 - Caseros 89.7 FM * Argentina
+http://icecasthd.net:8112/stream
+
+[#942] PLAY 94.3 * Argentina
+https://sonic.host-live.com/8026/stream
+
+[#943] Antena 1 radio * Argentina
+https://streaming.escuchanosonline.com/8268/stream
+
+[#944] FM 97.UNE - Provincia de Buenos Aires * Buenos Aires
+https://streaming.provinciaradio.com.ar:3352/fm
+
+[#945] Marcos Kappes * Argentina
+https://radio01.ferozo.com/proxy/ra01001060?mp=/stream
+
+[#946] Vale 97.5 * Argentina
+https://vale.stweb.tv/vale/live/chunks.m3u8
+
+[#947] Megadance Disco * Argentina
+http://stream.zeno.fm/xgyna51vrzzuv
+
