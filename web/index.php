@@ -64,8 +64,189 @@ function cargar_emisoras_txt(): array {
     return $stations;
 }
 
+function _radio_slug(array $s): string {
+    $text = $s['nombre'];
+    if (!empty($s['provincia'])) {
+        $text .= ' ' . trim(explode(',', $s['provincia'])[0]);
+    }
+    $text = mb_strtolower($text, 'UTF-8');
+    $text = strtr($text, [
+        'á'=>'a','à'=>'a','â'=>'a','ä'=>'a',
+        'é'=>'e','è'=>'e','ê'=>'e','ë'=>'e',
+        'í'=>'i','ì'=>'i','î'=>'i','ï'=>'i',
+        'ó'=>'o','ò'=>'o','ô'=>'o','ö'=>'o',
+        'ú'=>'u','ù'=>'u','û'=>'u','ü'=>'u',
+        'ñ'=>'n','ç'=>'c',
+    ]);
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+    return trim($text, '-');
+}
+
 $stations = cargar_emisoras_json() ?? cargar_emisoras_txt();
 $total    = count($stations);
+
+// Índice de slugs: slug base → n del primer dueño (para resolver colisiones)
+$_slug_idx = [];
+foreach ($stations as $_s) {
+    $_b = _radio_slug($_s);
+    if (!isset($_slug_idx[$_b])) $_slug_idx[$_b] = $_s['n'];
+}
+// Slug real de cada emisora: base si es el dueño, base-n si colisiona
+function _radio_full_slug(array $s, array $idx): string {
+    $b = _radio_slug($s);
+    return ($idx[$b] === $s['n']) ? $b : $b . '-' . $s['n'];
+}
+
+// ── Página individual de emisora (/radio/{slug}/) ─────────────────────────────
+if (!empty($_GET['station'])) {
+    $req = preg_replace('/[^a-z0-9-]/', '', strtolower(trim($_GET['station'])));
+    $found = null;
+    foreach ($stations as $_s) {
+        if (_radio_full_slug($_s, $_slug_idx) === $req) { $found = $_s; break; }
+    }
+    if (!$found) { header('Location: /radio/'); exit; }
+
+    $st_data = [];
+    $st_file = __DIR__ . '/status.json';
+    if (file_exists($st_file)) {
+        $sd = json_decode(file_get_contents($st_file), true);
+        $st_data = $sd['streams'] ?? [];
+    }
+    $estado  = $st_data[$found['url']]['estado'] ?? 'unknown';
+    $is_dead = ($estado === 'muerto');
+
+    radio_log('station', $found['nombre']);
+
+    $pg_url = 'https://mammoli.ar/radio/' . $req . '/';
+    $prov   = !empty($found['provincia']) ? trim(explode(',', $found['provincia'])[0]) : '';
+    $tags_s = !empty($found['tags']) ? implode(', ', array_slice($found['tags'], 0, 3)) : '';
+    $meta_d = 'Escuchá ' . $found['nombre'] . ' en vivo por internet.'
+        . ($prov   ? ' ' . $prov . '.'   : '')
+        . ($tags_s ? ' ' . $tags_s . '.' : '')
+        . ' Player gratuito, sin instalar nada.';
+
+    $ld = ['@context'=>'https://schema.org','@type'=>'RadioStation',
+           'name'=>$found['nombre'],'inLanguage'=>'es-AR'];
+    if ($prov)                    $ld['areaServed']         = $found['provincia'];
+    if (!empty($found['homepage'])) $ld['url']              = $found['homepage'];
+    if (!empty($found['logo']))     $ld['logo']             = $found['logo'];
+
+    $st_label = $estado === 'ok' ? '✓ Activa' : ($estado === 'muerto' ? '✗ Caída' : '⏱ Sin respuesta');
+    $st_color = $estado === 'ok' ? '#22c55e'  : ($estado === 'muerto' ? '#ef4444' : '#f59e0b');
+    header('Content-Type: text/html; charset=utf-8');
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><?= htmlspecialchars($found['nombre']) ?> — Escuchá en vivo | Radio Argentina</title>
+  <meta name="description" content="<?= htmlspecialchars($meta_d) ?>">
+  <link rel="canonical" href="<?= $pg_url ?>">
+  <?php if ($is_dead): ?><meta name="robots" content="noindex"><?php endif; ?>
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="<?= $pg_url ?>">
+  <meta property="og:title"       content="<?= htmlspecialchars($found['nombre']) ?> en vivo | Radio Argentina">
+  <meta property="og:description" content="<?= htmlspecialchars($meta_d) ?>">
+  <?php if (!empty($found['logo'])): ?>
+  <meta property="og:image" content="<?= htmlspecialchars($found['logo']) ?>">
+  <?php endif; ?>
+  <script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#111827;color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    a{color:#3b82f6;text-decoration:none}
+    a:hover{color:#93c5fd}
+    .hdr{background:linear-gradient(135deg,#1e3a5f 0%,#111827 70%);padding:14px 20px;border-bottom:1px solid #374151}
+    .hdr a{color:#9ca3af;font-size:13px}
+    .hdr a:hover{color:#f9fafb}
+    .wrap{max-width:640px;margin:0 auto;padding:32px 20px}
+    h1{font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.2}
+    .prov{color:#9ca3af;font-size:14px;margin-bottom:14px}
+    .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
+    .tag{background:rgba(167,139,250,.12);color:#a78bfa;border-radius:20px;padding:3px 10px;font-size:12px}
+    .box{background:#1f2937;border:1px solid #374151;border-radius:12px;padding:24px;margin-bottom:24px}
+    .box-label{font-size:12px;color:#9ca3af;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+    #btn-play{display:flex;align-items:center;justify-content:center;gap:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;width:100%;margin-bottom:14px;transition:background .15s}
+    #btn-play:hover{background:#2563eb}
+    #btn-play.playing{background:#22c55e}
+    #btn-play.loading{background:#f59e0b;cursor:wait}
+    #btn-play.error{background:#ef4444}
+    audio{width:100%}
+    #st-msg{font-size:12px;color:#9ca3af;margin-top:8px;min-height:16px}
+    .info{display:grid;gap:10px;font-size:13px;margin-bottom:28px}
+    .info-row{display:flex;gap:8px;color:#9ca3af}
+    .info-lbl{min-width:80px;flex-shrink:0}
+    .info-val{color:#f9fafb}
+    hr{border:none;border-top:1px solid #374151;margin:24px 0}
+    .ft{display:flex;gap:20px;flex-wrap:wrap;font-size:14px}
+  </style>
+</head>
+<body>
+<div class="hdr"><a href="/radio/">← Radio Argentina — todas las emisoras</a></div>
+<div class="wrap">
+  <?php if (!empty($found['logo'])): ?>
+  <img src="<?= htmlspecialchars($found['logo']) ?>" alt="" style="width:64px;height:64px;border-radius:8px;object-fit:cover;margin-bottom:16px" onerror="this.style.display='none'">
+  <?php endif; ?>
+  <h1><?= htmlspecialchars($found['nombre']) ?></h1>
+  <?php if ($prov): ?><div class="prov">📍 <?= htmlspecialchars($found['provincia']) ?></div><?php endif; ?>
+  <?php if (!empty($found['tags'])): ?>
+  <div class="tags"><?php foreach ($found['tags'] as $t): ?><span class="tag"><?= htmlspecialchars($t) ?></span><?php endforeach; ?></div>
+  <?php endif; ?>
+
+  <div class="box">
+    <div class="box-label">🎙 Reproducción en vivo</div>
+    <?php if ($is_dead): ?>
+    <p style="color:#f59e0b;font-size:13px;margin-bottom:14px">⚠ Esta emisora no respondió en la última verificación automática.</p>
+    <?php endif; ?>
+    <button id="btn-play">▶ Escuchar en vivo</button>
+    <audio id="audio" preload="none"></audio>
+    <div id="st-msg"></div>
+  </div>
+
+  <div class="info">
+    <div class="info-row"><span class="info-lbl">Estado</span><span class="info-val" style="color:<?= $st_color ?>"><?= $st_label ?></span></div>
+    <?php if (!empty($found['codec']) || !empty($found['bitrate'])): ?>
+    <div class="info-row"><span class="info-lbl">Formato</span><span class="info-val"><?= htmlspecialchars(trim(($found['codec']??'').' '.($found['bitrate'] ? $found['bitrate'].'kbps' : ''))) ?></span></div>
+    <?php endif; ?>
+    <?php if (!empty($found['homepage'])): ?>
+    <div class="info-row"><span class="info-lbl">Sitio web</span><span class="info-val"><a href="<?= htmlspecialchars($found['homepage']) ?>" target="_blank" rel="noopener">🌐 <?= htmlspecialchars($found['homepage']) ?></a></span></div>
+    <?php endif; ?>
+  </div>
+
+  <hr>
+  <div class="ft">
+    <a href="/radio/">← Ver todas las emisoras</a>
+    <a href="/radio/?n=<?= $found['n'] ?>">🔗 Link compartible</a>
+  </div>
+</div>
+<script>
+(function(){
+  var audio=document.getElementById('audio'),btn=document.getElementById('btn-play'),msg=document.getElementById('st-msg');
+  var rawUrl=<?= json_encode($found['url']) ?>,isHttps=location.protocol==='https:',playing=false;
+  var PROXY='/radio/proxy.php?url=';
+  function resolve(u){
+    if(/\.pls(\?|$)/i.test(u)||(/\.m3u(\?|$)/i.test(u)&&!/\.m3u8/i.test(u))) return PROXY+encodeURIComponent(u);
+    if(isHttps&&u.startsWith('http://')) return u.replace('http://','https://');
+    return u;
+  }
+  btn.addEventListener('click',function(){
+    if(playing){audio.pause();audio.src='';btn.textContent='▶ Escuchar en vivo';btn.className='';msg.textContent='';playing=false;return;}
+    btn.textContent='⏳ Conectando...';btn.className='loading';msg.textContent='';
+    audio.src=resolve(rawUrl);
+    audio.play().catch(function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='No disponible en este momento.';});
+  });
+  audio.addEventListener('playing',function(){btn.textContent='⏸ Detener';btn.className='playing';msg.textContent='● En vivo';playing=true;});
+  audio.addEventListener('error',function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='La señal se cortó. Intentá de nuevo.';playing=false;});
+  audio.addEventListener('waiting',function(){if(playing){btn.textContent='⏳ Buffering...';btn.className='loading';}});
+})();
+</script>
+</body>
+</html>
+<?php
+    exit;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 
 // Géneros para filtro (top 12 tags con al menos 3 emisoras)
 $tag_counts = [];
@@ -352,7 +533,20 @@ radio_log('visit', '');
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
+    .station-pg-link {
+      color: transparent;
+      font-size: 11px;
+      flex-shrink: 0;
+      text-decoration: none;
+      transition: color .15s;
+      line-height: 1;
+    }
+    .station:hover .station-pg-link { color: var(--muted); }
+    .station-pg-link:hover { color: var(--text) !important; }
     .station-prov {
       font-size: 12px;
       color: var(--muted);
@@ -587,7 +781,14 @@ radio_log('visit', '');
     <?php endif; ?>
     <span class="station-num"><?= $s['n'] ?></span>
     <div class="station-info">
-      <div class="station-name"><?= htmlspecialchars($s['nombre']) ?></div>
+      <div class="station-name">
+        <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($s['nombre']) ?></span>
+        <a class="station-pg-link"
+           href="/radio/<?= htmlspecialchars(_radio_full_slug($s, $_slug_idx)) ?>/"
+           onclick="event.stopPropagation()"
+           target="_blank" rel="noopener"
+           title="Página de <?= htmlspecialchars($s['nombre']) ?>">⬈</a>
+      </div>
       <?php if ($s['provincia']): ?>
         <div class="station-prov"><?= htmlspecialchars($s['provincia']) ?></div>
       <?php endif; ?>

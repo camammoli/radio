@@ -19,6 +19,31 @@ Con 1000 oyentes simultáneos el impacto en ancho de banda sería igualmente ins
 
 ---
 
+## TKT-0681 — 2026-06-16 — SEO: páginas individuales por emisora
+
+### Contexto
+Google Search Console mostraba 0 impresiones para búsquedas por nombre de emisora específica
+(ej: "FM Sol Mendoza"). El directorio era una única página con 827 emisoras — imposible que
+Google la asociara a una emisora particular.
+
+### Lo que se hizo
+- `_radio_slug()` + `_radio_full_slug()`: genera slugs URL a partir de nombre + ciudad
+- Interceptor en `index.php`: detecta `?station=slug`, carga la emisora y renderiza página
+  individual con `<title>`, `<meta description>`, `<link canonical>`, JSON-LD `RadioStation`
+  y player minimalista. Las emisoras con `estado: muerto` reciben `<meta name="robots" content="noindex">`
+- `.htaccess`: rewrite `/radio/{slug}/` → `index.php?station={slug}` + `sitemap.xml` → `sitemap.php`
+- `sitemap.php`: genera XML dinámico con todas las emisoras que no son `muerto` (~791 URLs)
+- `index.php` (directorio): ícono `⬈` en nombre de cada emisora → link a su página individual
+  (invisible en reposo, visible en hover, no interfiere con el player)
+- `robots.txt` (mammoli-site): eliminado `Disallow: /radio/`, bloqueados solo endpoints internos;
+  agregado `Sitemap: https://mammoli.ar/radio/sitemap.xml`
+
+### Pendiente
+- Solicitar reindexación en Google Search Console (manual)
+- Enviar sitemap de radio en GSC: `https://mammoli.ar/radio/sitemap.xml`
+
+---
+
 ## TKT-0680 — 2026-05-19/20 — Player web: oyentes, ranking, géneros, tema claro
 
 ### Contexto
