@@ -390,7 +390,7 @@ https://hostingystreaming.net/generadornuevo/?pl=winamp&c=urbana98
 [132] LU2
 https://icecast2.hostingbahia.com.ar:8040/live
 
-[133] http//cdn2.instream.audio8007/stream
+[133] Futurock
 https://mdstrm.com/audio/5d9d019112cbbb45d6a50960/live.m3u8
 
 [134] Mega
@@ -1437,7 +1437,7 @@ http://phanta-soft.com:8000/radio_fmdelsol.mp3
 [#485] La 990
 http://play-am990.cdn.sion.com:1935/rockandpop/radio990/playlist.m3u8
 
-[#486] http//14983.live.streamtheworld.com3690/ASPENAAC_SC
+[#486] Aspen
 http://playerservices.streamtheworld.com/api/livestream-redirect/ASPENAAC_SC
 
 [#487] Rock & Pop
