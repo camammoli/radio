@@ -2807,3 +2807,6 @@ https://vale.stweb.tv/vale/live/chunks.m3u8
 [#947] Megadance Disco * Argentina
 http://stream.zeno.fm/xgyna51vrzzuv
 
+
+[#948] LED FM
+https://cdn.instream.audio/:9068/stream
