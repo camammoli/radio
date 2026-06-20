@@ -251,6 +251,8 @@ filtraba por provincia vía texto libre pero no era obvio ni rápido.
 - ✅ TKT-0694: notificaciones Telegram de oyentes, desactivable con NOTIFY_OYENTES (2026-06-19)
 - ✅ TKT-0695: +331 emisoras (928→1259) + panel filtro Provincias (2026-06-20)
 - ✅ TKT-0696: crawler hunt_stations.py + GitHub Action hunt-stations.yml (2026-06-20)
+- ✅ TKT-0697: aprobación automática vía GitHub Action add-station.yml (2026-06-20)
+- ✅ TKT-0698: páginas individuales enriquecidas + participación (2026-06-20)
 
 ---
 
@@ -276,4 +278,39 @@ ese flujo no escala.
 
 ### Flujo resultante
 Aprobar en panel → PHP dispara Action → commit + deploy FTP en ~13s → Telegram → live
+
+---
+
+## TKT-0698 — 2026-06-20 — Participación y páginas individuales mejoradas
+
+### Contexto
+Las páginas individuales tenían lo mínimo (player, estado, info técnica). Con 1259 emisoras
+y tráfico SEO creciente (x60 impresiones en 48hs desde TKT-0692), valía enriquecer cada
+página y agregar más puntos de entrada a `sugerir.php`.
+
+### Lo que se hizo
+
+**Páginas individuales (`web/index.php`, bloque `?station=`):**
+- Meta description enriquecida: provincia, géneros, codec/bitrate, total del directorio
+- BreadcrumbList JSON-LD (complementa el RadioStation ya existente)
+- OG image ya existía para logos; mejorada la meta description que la acompaña
+- Sección "Otras radios de [provincia]": hasta 5 emisoras de la misma provincia,
+  con logo (o ícono 📻 fallback), nombre, géneros y link a su página individual
+- Botón "Reportar caída": POST en la misma página, notifica por Telegram vía TG_TOKEN,
+  redirige con `?reportado=1` para mostrar confirmación
+- Botón "Compartir": usa `navigator.share` en móvil, `clipboard.writeText` en desktop
+- Link "¿Conocés otra radio de [provincia]? →": link a `sugerir.php?provincia=X`
+
+**Página principal:**
+- Cabecera: mientras `$total < 1500`, muestra "ayudanos a llegar a 1500 →" junto al conteo
+- Cuando búsqueda/filtro da 0 resultados, aparece "¿No encontrás tu radio? Sugerila →"
+- Footer nuevo: "Directorio actualizado el DD/MM/YYYY HH:MM" leyendo `count.json` (ya escrito
+  en cada carga de `index.php`); link a `mammoli.ar`
+
+**`web/sugerir.php`:**
+- Formulario ahora acepta `?provincia=X` para prefill del campo "Provincia / País"
+  (antes solo leía `$_POST`, ahora lee `$_GET` como fallback)
+
+**`web/index.php`:** carga `config.php` (gitignoreado) para TG_TOKEN/TG_CHAT_ID necesario
+  en el handler de reporte de caída. Patrón idéntico al de `admin_sugerencias.php`.
 
