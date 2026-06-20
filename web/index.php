@@ -256,6 +256,48 @@ foreach ($stations as $s) {
 arsort($tag_counts);
 $genre_tags = array_keys(array_filter(array_slice($tag_counts, 0, 12, true), fn($c) => $c >= 3));
 
+// Provincias para filtro — normalización de variantes
+$province_terms = [
+    'Buenos Aires'        => ['provincia de buenos aires', 'buenos aires'],
+    'CABA'                => ['caba', 'ciudad autonoma', 'ciudad de buenos aires', 'capital federal'],
+    'Córdoba'             => ['córdoba', 'cordoba'],
+    'Santa Fe'            => ['santa fe', 'rosario'],
+    'Mendoza'             => ['mendoza'],
+    'La Pampa'            => ['la pampa'],
+    'Corrientes'          => ['corrientes'],
+    'Salta'               => ['salta'],
+    'Misiones'            => ['misiones', 'posadas'],
+    'Jujuy'               => ['jujuy'],
+    'Entre Ríos'          => ['entre ríos', 'entre rios'],
+    'Río Negro'           => ['río negro', 'rio negro', 'bariloche'],
+    'Neuquén'             => ['neuquén', 'neuquen'],
+    'San Juan'            => ['san juan'],
+    'Tucumán'             => ['tucumán', 'tucuman'],
+    'Chaco'               => ['chaco', 'resistencia'],
+    'Chubut'              => ['chubut'],
+    'Santa Cruz'          => ['santa cruz'],
+    'Tierra del Fuego'    => ['tierra del fuego'],
+    'San Luis'            => ['san luis'],
+    'Santiago del Estero' => ['santiago del estero'],
+    'Catamarca'           => ['catamarca'],
+    'La Rioja'            => ['la rioja'],
+    'Formosa'             => ['formosa'],
+];
+$province_counts = [];
+foreach ($stations as $s) {
+    $prov_lower = strtolower($s['provincia']);
+    foreach ($province_terms as $display => $terms) {
+        foreach ($terms as $term) {
+            if (str_contains($prov_lower, $term)) {
+                $province_counts[$display] = ($province_counts[$display] ?? 0) + 1;
+                break 2;
+            }
+        }
+    }
+}
+arsort($province_counts);
+$province_list = array_filter($province_counts, fn($c) => $c >= 4);
+
 // Escribe el conteo para que mammoli.ar/index.php lo lea sin HTTP request
 @file_put_contents(__DIR__ . '/count.json', json_encode(['total' => $total, 'ts' => time()]));
 
@@ -353,8 +395,11 @@ radio_log('visit', '');
     body.light .filter-btn.f-top.active     { background: rgba(180,83,9,.12);  border-color: #d97706; color: #92400e; }
     body.light .filter-btn.f-genre.active   { background: rgba(109,40,217,.12); border-color: #7c3aed; color: #5b21b6; }
     body.light .filter-btn.f-cat.has-genre  { border-color: #7c3aed; color: #5b21b6; }
-    /* Panel de géneros */
-    body.light #genre-panel { background: rgba(0,0,0,.03); }
+    body.light .filter-btn.f-prov.active    { background: rgba(5,150,105,.12); border-color: #059669; color: #065f46; }
+    body.light .filter-btn.f-provcat.has-prov { border-color: #059669; color: #065f46; border-style: solid; }
+    /* Panel de géneros y provincias */
+    body.light #genre-panel    { background: rgba(0,0,0,.03); }
+    body.light #province-panel { background: rgba(0,0,0,.03); }
     /* Tags y badges */
     body.light .station-tag { background: rgba(109,40,217,.10); color: #6d28d9; }
     /* Hover de emisora */
@@ -439,7 +484,10 @@ radio_log('visit', '');
     .filter-btn.f-genre.active   { background: rgba(167,139,250,.15); border-color: #a78bfa; color: #ddd6fe; }
     .filter-btn.f-cat            { border-style: dashed; }
     .filter-btn.f-cat.has-genre  { border-color: #a78bfa; color: #ddd6fe; border-style: solid; }
-    #genre-panel {
+    .filter-btn.f-prov.active    { background: rgba(16,185,129,.15); border-color: #10b981; color: #6ee7b7; }
+    .filter-btn.f-provcat        { border-style: dashed; }
+    .filter-btn.f-provcat.has-prov { border-color: #10b981; color: #6ee7b7; border-style: solid; }
+    #genre-panel, #province-panel {
       display: none;
       gap: 6px;
       flex-wrap: wrap;
@@ -450,6 +498,7 @@ radio_log('visit', '');
       background: rgba(255,255,255,.03);
     }
     #genre-panel.open { display: flex; }
+    #province-panel.open { display: flex; }
 
     .station-logo {
       width: 36px; height: 36px; border-radius: 6px; object-fit: cover;
@@ -747,6 +796,7 @@ radio_log('visit', '');
   <input id="buscador" type="search" placeholder="Buscar por nombre, provincia o género..." autocomplete="off" autofocus>
   <div class="filtros" id="filtros"></div>
   <div id="genre-panel"></div>
+  <div id="province-panel"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
     <div style="font-size:11px;color:#6b7280" id="status-gen"></div>
     <div style="display:flex;align-items:center;gap:12px">
@@ -1059,15 +1109,26 @@ radio_log('visit', '');
     if (activeEl && activeEl.classList.contains('active')) markEl(activeEl, 'loading');
   });
 
-  var genreTags   = <?= json_encode(array_values($genre_tags)) ?>;
-  var urlParams   = new URLSearchParams(location.search);
-  var initGenre   = urlParams.get('genero') ? urlParams.get('genero').toLowerCase() : null;
-  var initStatus  = urlParams.get('estado') || null; // all|ok|timeout|muerto
+  var genreTags     = <?= json_encode(array_values($genre_tags)) ?>;
+  var provinceList  = <?= json_encode($province_list) ?>;
+  var provinceTerms = <?= json_encode($province_terms) ?>;
+  var urlParams     = new URLSearchParams(location.search);
+  var initGenre     = urlParams.get('genero') ? urlParams.get('genero').toLowerCase() : null;
+  var initStatus    = urlParams.get('estado') || null; // all|ok|timeout|muerto
+  var initProv      = urlParams.get('provincia') || null;
 
   // ── Filtros ───────────────────────────────────────────────────────────────────
   var currentStatus = 'all';
   var currentGenre  = null;
+  var currentProv   = null;
   var urlN = new URLSearchParams(location.search).get('n');
+
+  function matchesProv(el) {
+    if (!currentProv) return true;
+    var provLower = (el.dataset.prov || '').toLowerCase();
+    var terms = provinceTerms[currentProv] || [];
+    return terms.some(function(t) { return provLower.indexOf(t) !== -1; });
+  }
 
   function applyFilters() {
     var q   = buscador.value.toLowerCase().trim();
@@ -1079,11 +1140,12 @@ radio_log('visit', '');
           : el.dataset.status === currentStatus);
       var genreMatch  = currentStatus === 'top' || !currentGenre
           || (el.dataset.tags || '').split(',').includes(currentGenre);
-      var show = textMatch && statusMatch && genreMatch;
+      var provMatch   = matchesProv(el);
+      var show = textMatch && statusMatch && genreMatch && provMatch;
       el.classList.toggle('hidden', !show);
       if (show) vis++;
     });
-    counter.textContent = (q || currentStatus !== 'all' || currentGenre)
+    counter.textContent = (q || currentStatus !== 'all' || currentGenre || currentProv)
       ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
   }
 
@@ -1248,6 +1310,74 @@ radio_log('visit', '');
           genrePanel.appendChild(btn);
         });
       }
+
+      // ── Panel de Provincias ────────────────────────────────────────────────────
+      var provKeys = Object.keys(provinceList);
+      if (provKeys.length > 0) {
+        var provincePanel = document.getElementById('province-panel');
+        var provBtn = document.createElement('button');
+        provBtn.className = 'filter-btn f-provcat';
+        provBtn.textContent = 'Provincias ▾';
+        provBtn.addEventListener('click', function() {
+          if (currentProv) {
+            clearProv();
+          } else {
+            provincePanel.classList.toggle('open');
+          }
+        });
+        filtrosEl.appendChild(provBtn);
+
+        function updateProvBtn() {
+          if (currentProv) {
+            provBtn.textContent = currentProv + ' ✕';
+            provBtn.classList.add('has-prov');
+          } else {
+            provBtn.textContent = 'Provincias ▾';
+            provBtn.classList.remove('has-prov');
+          }
+        }
+
+        function clearProv() {
+          currentProv = null;
+          document.querySelectorAll('.filter-btn.f-prov').forEach(function(x) { x.classList.remove('active'); });
+          allProvBtn.classList.add('active');
+          updateProvBtn();
+          applyFilters();
+        }
+
+        var allProvBtn = document.createElement('button');
+        allProvBtn.className = 'filter-btn f-prov active';
+        allProvBtn.textContent = 'Todas';
+        allProvBtn.addEventListener('click', clearProv);
+        provincePanel.appendChild(allProvBtn);
+
+        provKeys.forEach(function(prov) {
+          var btn = document.createElement('button');
+          btn.className = 'filter-btn f-prov';
+          btn.textContent = prov + ' (' + provinceList[prov] + ')';
+          btn.addEventListener('click', function() {
+            if (currentProv === prov) {
+              clearProv();
+            } else {
+              currentProv = prov;
+              document.querySelectorAll('.filter-btn.f-prov').forEach(function(x) { x.classList.remove('active'); });
+              btn.classList.add('active');
+              updateProvBtn();
+              applyFilters();
+            }
+          });
+          if (initProv && initProv === prov) {
+            currentProv = prov;
+            document.querySelectorAll('.filter-btn.f-prov').forEach(function(x) { x.classList.remove('active'); });
+            btn.classList.add('active');
+            provincePanel.classList.add('open');
+            updateProvBtn();
+            applyFilters();
+          }
+          provincePanel.appendChild(btn);
+        });
+      }
+
       // Scroll a emisora compartida — después de applyFilters para que el layout esté correcto
       if (urlN) {
         var st = document.querySelector('.station[data-n="' + urlN + '"]');
