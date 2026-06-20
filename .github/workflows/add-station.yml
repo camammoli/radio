@@ -1,0 +1,104 @@
+name: Agregar emisora aprobada
+
+on:
+  workflow_dispatch:
+    inputs:
+      nombre:
+        description: 'Nombre de la emisora'
+        required: true
+      url:
+        description: 'URL del stream'
+        required: true
+      provincia:
+        description: 'Provincia (ej: "Mendoza, Argentina")'
+        required: false
+        default: 'Argentina'
+      sug_id:
+        description: 'ID de la sugerencia (informativo)'
+        required: false
+        default: ''
+
+jobs:
+  add:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Instalar dependencias Python
+        run: pip install requests --quiet
+
+      - name: Agregar emisora a emisoras.txt
+        env:
+          NOMBRE:   ${{ github.event.inputs.nombre }}
+          URL:      ${{ github.event.inputs.url }}
+          PROVINCIA: ${{ github.event.inputs.provincia }}
+        run: |
+          # Calcular siguiente número
+          LAST=$(grep -oP '(?<=\[#)\d+' emisoras.txt | sort -n | tail -1)
+          NEXT=$(printf "%03d" $(( ${LAST:-0} + 1 )))
+
+          # Construir línea de nombre con provincia
+          PROV="${PROVINCIA:-Argentina}"
+          if [ -z "$PROV" ] || [ "$PROV" = "Argentina" ]; then
+            LINEA_NOMBRE="[#${NEXT}] ${NOMBRE} * Argentina"
+          else
+            LINEA_NOMBRE="[#${NEXT}] ${NOMBRE} * ${PROV}"
+          fi
+
+          # Agregar al final del archivo
+          printf '\n%s\n%s\n' "${LINEA_NOMBRE}" "${URL}" >> emisoras.txt
+          echo "Agregada: ${LINEA_NOMBRE}"
+          echo "URL: ${URL}"
+
+      - name: Regenerar emisoras.json
+        run: python3 enrich.py
+
+      - name: Commit y push
+        env:
+          NOMBRE: ${{ github.event.inputs.nombre }}
+        run: |
+          git config user.name  "Radio Bot"
+          git config user.email "bot@mammoli.ar"
+          git add emisoras.txt emisoras.json
+          git commit -m "add: ${NOMBRE} (aprobada desde panel admin)"
+          git push origin master
+
+      - name: Deploy FTP
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          sudo apt-get install -y lftp -q
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
+          set ssl:verify-certificate no
+          put emisoras.txt -o /radio/emisoras.txt
+          put emisoras.json -o /radio/emisoras.json
+          bye
+          LFTP
+
+      - name: Notificar por Telegram
+        env:
+          TG_TOKEN:  ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          NOMBRE:    ${{ github.event.inputs.nombre }}
+          URL:       ${{ github.event.inputs.url }}
+          PROVINCIA: ${{ github.event.inputs.provincia }}
+        run: |
+          TOTAL=$(python3 -c "import re; print(len(re.findall(r'^\[', open('emisoras.txt').read(), re.M)))")
+          > /tmp/tg_add.txt
+          echo "Emisora agregada al directorio" >> /tmp/tg_add.txt
+          echo "" >> /tmp/tg_add.txt
+          echo "${NOMBRE}" >> /tmp/tg_add.txt
+          echo "${PROVINCIA}" >> /tmp/tg_add.txt
+          echo "${URL}" >> /tmp/tg_add.txt
+          echo "" >> /tmp/tg_add.txt
+          echo "Total en directorio: ${TOTAL}" >> /tmp/tg_add.txt
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "text@/tmp/tg_add.txt" \
+            -d "chat_id=${TG_CHAT_ID}" > /dev/null
+          echo "Notificacion enviada."

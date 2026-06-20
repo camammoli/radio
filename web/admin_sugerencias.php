@@ -4,11 +4,14 @@
  * Acceso: ?key=RADIO_ADMIN_KEY
  */
 
-define('DATA_FILE', __DIR__ . '/data/sugerencias.json');
+define('DATA_FILE',   __DIR__ . '/data/sugerencias.json');
+define('GH_REPO',     'camammoli/radio');
+define('GH_WORKFLOW', 'add-station.yml');
 if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
 if (!defined('RADIO_ADMIN_KEY')) define('RADIO_ADMIN_KEY', '');
 if (!defined('TG_TOKEN'))        define('TG_TOKEN', '');
 if (!defined('TG_CHAT_ID'))      define('TG_CHAT_ID', '');
+if (!defined('GITHUB_PAT'))      define('GITHUB_PAT', '');
 
 $key = trim($_GET['key'] ?? $_POST['key'] ?? '');
 if (!RADIO_ADMIN_KEY || $key !== RADIO_ADMIN_KEY) {
@@ -38,23 +41,35 @@ function guardar(array $data): void {
     file_put_contents(DATA_FILE, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
 }
 
-function sig_numero(): int {
-    // Leer emisoras.txt para encontrar el número más alto
-    $txt = __DIR__ . '/../emisoras.txt';
-    if (!file_exists($txt)) return 900;
-    $max = 0;
-    foreach (file($txt) as $linea) {
-        if (preg_match('/^\[#?(\d+)\]/', trim($linea), $m)) {
-            $max = max($max, (int)$m[1]);
-        }
-    }
-    return $max + 1;
-}
-
-function formato_emisoras_txt(string $nombre, string $url, string $provincia, int $num): string {
-    $linea_nombre = sprintf('[#%03d] %s', $num, $nombre);
-    if ($provincia) $linea_nombre .= " * $provincia";
-    return "$linea_nombre\n$url";
+function github_dispatch(string $nombre, string $url, string $provincia, string $sug_id): bool {
+    if (!GITHUB_PAT) return false;
+    $payload = json_encode([
+        'ref'    => 'master',
+        'inputs' => [
+            'nombre'   => $nombre,
+            'url'      => $url,
+            'provincia'=> $provincia ?: 'Argentina',
+            'sug_id'   => $sug_id,
+        ],
+    ]);
+    $ch = curl_init('https://api.github.com/repos/' . GH_REPO . '/actions/workflows/' . GH_WORKFLOW . '/dispatches');
+    curl_setopt_array($ch, [
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $payload,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT        => 10,
+        CURLOPT_HTTPHEADER     => [
+            'Authorization: Bearer ' . GITHUB_PAT,
+            'Accept: application/vnd.github+json',
+            'X-GitHub-Api-Version: 2022-11-28',
+            'User-Agent: mammoli-radio-admin/1.0',
+            'Content-Type: application/json',
+        ],
+    ]);
+    curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return $code === 204; // 204 No Content = éxito
 }
 
 $flash = '';
@@ -75,24 +90,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = 'ok|Sugerencia rechazada.';
 
         } elseif ($accion === 'aprobar') {
-            $num = sig_numero();
-            $entrada = formato_emisoras_txt(
+            $ok = github_dispatch(
                 $sug[$idx]['nombre'],
                 $sug[$idx]['url'],
                 $sug[$idx]['provincia'] ?? '',
-                $num
+                $sug[$idx]['id']
             );
-            $sug[$idx]['estado'] = 'aprobada';
+            $sug[$idx]['estado']      = 'aprobada';
             $sug[$idx]['aprobado_at'] = gmdate('Y-m-d H:i:s');
-            $sug[$idx]['numero_asignado'] = $num;
-            $sug[$idx]['entrada_emisoras_txt'] = $entrada;
+            $sug[$idx]['gh_dispatch'] = $ok ? 'ok' : 'error';
             guardar($sug);
 
-            // Notificar por Telegram con la línea lista para pegar
-            $msg = "Sugerencia APROBADA — Agregar a emisoras.txt:\n\n$entrada\n\nLuego: git commit + deploy";
-            tg_send($msg);
-
-            $flash = "entrada|$entrada";
+            $flash = $ok
+                ? 'ok|Workflow disparado. La emisora aparecera en el directorio en ~30 segundos.'
+                : 'error|No se pudo disparar el workflow (GITHUB_PAT ausente o error de API). Revisá config.php.';
         }
     }
     // Redirect PRG para evitar reenvío
@@ -174,13 +185,10 @@ header p{font-size:13px;color:var(--muted);margin-top:4px}
 <?php if ($flash): ?>
   <?php [$flash_type, $flash_val] = explode('|', $flash, 2); ?>
   <?php if ($flash_type === 'ok'): ?>
-    <div class="flash-ok"><?= htmlspecialchars($flash_val) ?></div>
-  <?php elseif ($flash_type === 'entrada'): ?>
-    <div class="flash-entrada">
-      <strong>Sugerencia aprobada.</strong> Copiá esta línea y pegala al final de <code>emisoras.txt</code>, luego hacé commit y deploy:<br><br>
-      <div class="entrada-txt" title="Click para copiar" id="entrada-copy"><?= htmlspecialchars($flash_val) ?></div>
-      <button onclick="copyEntrada()" style="margin-top:8px;padding:5px 12px;border-radius:6px;border:1px solid var(--accent);background:transparent;color:var(--accent);cursor:pointer;font-size:12px">Copiar</button>
-      <span id="copy-ok" style="display:none;color:#22c55e;margin-left:8px;font-size:12px">¡Copiado!</span>
+    <div class="flash-ok">✓ <?= htmlspecialchars($flash_val) ?></div>
+  <?php elseif ($flash_type === 'error'): ?>
+    <div style="background:#2a0a0a;border:1px solid #dc3545;border-radius:8px;padding:12px 14px;color:#ff8a8a;font-size:13px;margin-bottom:16px">
+      ⚠ <?= htmlspecialchars($flash_val) ?>
     </div>
   <?php endif; ?>
 <?php endif; ?>
@@ -235,8 +243,13 @@ header p{font-size:13px;color:var(--muted);margin-top:4px}
         <button type="submit" name="accion" value="rechazar"  class="btn btn-rechazar">✕ Rechazar</button>
       </div>
     </form>
-    <?php elseif ($s['estado'] === 'aprobada' && isset($s['entrada_emisoras_txt'])): ?>
-      <div class="entrada-txt"><?= htmlspecialchars($s['entrada_emisoras_txt']) ?></div>
+    <?php elseif ($s['estado'] === 'aprobada'): ?>
+      <div style="font-size:12px;color:<?= ($s['gh_dispatch'] ?? '') === 'error' ? '#ff8a8a' : '#7dd49f' ?>">
+        <?= ($s['gh_dispatch'] ?? '') === 'error' ? '⚠ Error al disparar workflow' : '✓ Workflow disparado — desplegada automaticamente' ?>
+        <?php if ($s['aprobado_at'] ?? ''): ?>
+          · <?= (new DateTime($s['aprobado_at']))->format('d/m H:i') ?>
+        <?php endif; ?>
+      </div>
     <?php endif; ?>
   </div>
   <?php endforeach; ?>
@@ -244,13 +257,6 @@ header p{font-size:13px;color:var(--muted);margin-top:4px}
 </div>
 
 <script>
-function copyEntrada() {
-    var el = document.getElementById('entrada-copy');
-    if (!el) return;
-    navigator.clipboard.writeText(el.textContent.trim()).then(function(){
-        document.getElementById('copy-ok').style.display = 'inline';
-    });
-}
 document.querySelectorAll('.entrada-txt').forEach(function(el){
     el.addEventListener('click', function(){
         navigator.clipboard.writeText(el.textContent.trim()).catch(function(){});
