@@ -251,3 +251,29 @@ filtraba por provincia vía texto libre pero no era obvio ni rápido.
 - ✅ TKT-0694: notificaciones Telegram de oyentes, desactivable con NOTIFY_OYENTES (2026-06-19)
 - ✅ TKT-0695: +331 emisoras (928→1259) + panel filtro Provincias (2026-06-20)
 - ✅ TKT-0696: crawler hunt_stations.py + GitHub Action hunt-stations.yml (2026-06-20)
+
+---
+
+## TKT-0697 — 2026-06-20 — Aprobación automática de sugerencias vía GitHub Action
+
+### Contexto
+El panel de admin generaba una línea de texto para copiar manualmente a emisoras.txt,
+seguido de git commit + deploy manual. Con el crawler trayendo lotes de sugerencias,
+ese flujo no escala.
+
+### Lo que se hizo
+- `add-station.yml` (nuevo workflow): recibe `nombre`, `url`, `provincia`, `sug_id`
+  como inputs de `workflow_dispatch`. Agrega la entrada a `emisoras.txt` calculando
+  el número siguiente con bash, regenera `emisoras.json` con `enrich.py`, hace commit
+  y push (permissions: contents: write), deploy FTP, y notifica por Telegram.
+  Tiempo de ejecución: ~13 segundos.
+- `web/admin_sugerencias.php`: acción `aprobar` ahora llama `github_dispatch()` que
+  hace POST a la GitHub API (`/repos/camammoli/radio/actions/workflows/add-station.yml/dispatches`)
+  usando `GITHUB_PAT` de `config.php`. Guarda `gh_dispatch: 'ok'|'error'` en sugerencias.json.
+  Flash message indica éxito ("aparecerá en ~30 segundos") o error de API.
+- `web/config.php` (servidor): agregada constante `GITHUB_PAT`
+- `web/config.example.php`: agregada constante `GITHUB_PAT = ''`
+
+### Flujo resultante
+Aprobar en panel → PHP dispara Action → commit + deploy FTP en ~13s → Telegram → live
+
