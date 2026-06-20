@@ -6,6 +6,10 @@
 // GET ?action=top&limit=N          → top N emisoras por reproducciones
 
 require_once __DIR__ . '/log.php';
+if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
+if (!defined('NOTIFY_OYENTES')) define('NOTIFY_OYENTES', false);
+if (!defined('TG_TOKEN'))       define('TG_TOKEN', '');
+if (!defined('TG_CHAT_ID'))     define('TG_CHAT_ID', '');
 
 header('Content-Type: application/json');
 header('Cache-Control: no-store');
@@ -57,6 +61,18 @@ if ($action === 'ping' && $sid) {
         }
         $plays[$station] = ($plays[$station] ?? 0) + 1;
         file_put_contents($filePlays, json_encode($plays), LOCK_EX);
+        // Notificación Telegram (debug — activar con NOTIFY_OYENTES en config.php)
+        if (NOTIFY_OYENTES && TG_TOKEN && TG_CHAT_ID) {
+            $ip   = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '?';
+            $ip   = trim(explode(',', $ip)[0]);
+            $text = "🎙 Oyente: $station\n🌐 IP: $ip\n👥 Activos: " . count($listeners);
+            $ch   = curl_init('https://api.telegram.org/bot' . TG_TOKEN . '/sendMessage');
+            curl_setopt_array($ch, [
+                CURLOPT_POST => true, CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 3,
+                CURLOPT_POSTFIELDS => ['chat_id' => TG_CHAT_ID, 'text' => $text],
+            ]);
+            curl_exec($ch); curl_close($ch);
+        }
     }
     echo json_encode(['ok' => true, 'count' => count($listeners)]);
 
