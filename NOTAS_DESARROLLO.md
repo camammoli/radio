@@ -210,6 +210,35 @@ Implementado como feature de debug desactivable desde config.
 
 ---
 
+## TKT-0695 — 2026-06-20 — +331 emisoras desde Radio Browser API + filtro por provincias
+
+### Contexto
+928 emisoras era menos de la mitad de los directorios líderes (~1750). El buscador ya
+filtraba por provincia vía texto libre pero no era obvio ni rápido.
+
+### Emisoras incorporadas
+- Fuente: `de1.api.radio-browser.info` — endpoint `/json/stations/search?countrycode=AR`
+- 778 estaciones disponibles en API; 331 nuevas (no presentes en nuestras URLs)
+- Formato: `[#NNN] Nombre * Provincia, Argentina` — provincia normalizada
+- Total: 928 → 1259 emisoras
+- `emisoras.json` regenerado: 33% logo / 34% tags / 53% codec / 52% homepage
+
+### Filtro por provincias (UX)
+- Panel "Provincias ▾" (mismo patrón que "Categorías ▾")
+- 24 provincias con ≥4 emisoras, muestra conteo en cada botón
+- Normalización de variantes: CABA/Ciudad Autonoma/Capital Federal → CABA;
+  Córdoba/Córdoba(Argentina) → Córdoba; Provincia de Buenos Aires → Buenos Aires; etc.
+- `applyFilters()` actualizado con `matchesProv()` — AND con género/estado/buscador
+- Soporte `?provincia=Mendoza` en URL params
+- Compatible con todos los filtros existentes
+
+### Archivos modificados
+- `emisoras.txt`: 331 entradas nuevas al final
+- `emisoras.json`: regenerado por pre-commit hook
+- `web/index.php`: PHP province_list/province_terms + CSS f-prov/f-provcat/province-panel + JS panel
+
+---
+
 ## Historial de pendientes resueltos
 
 - ✅ P1 Toast: key cambiada a `toast_ts_v2`, setItem movido al cierre (2026-05-22)
@@ -220,3 +249,4 @@ Implementado como feature de debug desactivable desde config.
 - ✅ TKT-0692: SEO páginas individuales por emisora + sitemap (2026-06-16)
 - ✅ TKT-0693: corrección de nombres malformados en emisoras.txt + dedup_urls.py (2026-06-19)
 - ✅ TKT-0694: notificaciones Telegram de oyentes, desactivable con NOTIFY_OYENTES (2026-06-19)
+- ✅ TKT-0695: +331 emisoras (928→1259) + panel filtro Provincias (2026-06-20)
