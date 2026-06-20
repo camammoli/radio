@@ -3804,6 +3804,3 @@ http://argentina.republicahosting.com:8417/stream
 
 [#1279] FM TIEMPO 92.5 * Argentina
 https://streaming3.locucionar.com/proxy/fmtiempo925?mp=/stream
-
-[#1280] Radio Prueba TKT-0697 * Mendoza, Argentina
-https://cdn.instream.audio/:9068/stream

@@ -19509,19 +19509,5 @@
     "rb_uuid": "413ef533-f895-4f51-8293-ba0f35aee1c3",
     "rb_votes": 5,
     "rb_clicks": 0
-  },
-  {
-    "n": 1280,
-    "nombre": "Radio Prueba TKT-0697",
-    "provincia": "Mendoza, Argentina",
-    "url": "https://cdn.instream.audio/:9068/stream",
-    "logo": null,
-    "tags": [],
-    "homepage": null,
-    "codec": null,
-    "bitrate": null,
-    "rb_uuid": "",
-    "rb_votes": 0,
-    "rb_clicks": 0
   }
 ]
