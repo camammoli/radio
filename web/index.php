@@ -7,6 +7,9 @@
  */
 
 require_once __DIR__ . '/log.php';
+if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
+if (!defined('TG_TOKEN'))   define('TG_TOKEN', '');
+if (!defined('TG_CHAT_ID')) define('TG_CHAT_ID', '');
 
 define('EMISORAS_JSON_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.json');
 define('EMISORAS_TXT_URL',  'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.txt');
@@ -106,6 +109,19 @@ if (!empty($_GET['station'])) {
     }
     if (!$found) { header('Location: /radio/'); exit; }
 
+    // Reporte de caída (POST)
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['accion'] ?? '') === 'reportar') {
+        if (TG_TOKEN && TG_CHAT_ID) {
+            $msg = "⚠️ Reporte de caída\n" . $found['nombre'] . "\n" . $found['url'];
+            $ch = curl_init('https://api.telegram.org/bot' . TG_TOKEN . '/sendMessage');
+            curl_setopt_array($ch, [CURLOPT_POST=>true,CURLOPT_POSTFIELDS=>['chat_id'=>TG_CHAT_ID,'text'=>$msg],CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>5]);
+            curl_exec($ch); curl_close($ch);
+        }
+        header('Location: /radio/' . $req . '/?reportado=1');
+        exit;
+    }
+    $reportado = !empty($_GET['reportado']);
+
     $st_data = [];
     $st_file = __DIR__ . '/status.json';
     if (file_exists($st_file)) {
@@ -120,10 +136,29 @@ if (!empty($_GET['station'])) {
     $pg_url = 'https://mammoli.ar/radio/' . $req . '/';
     $prov   = !empty($found['provincia']) ? trim(explode(',', $found['provincia'])[0]) : '';
     $tags_s = !empty($found['tags']) ? implode(', ', array_slice($found['tags'], 0, 3)) : '';
-    $meta_d = 'Escuchá ' . $found['nombre'] . ' en vivo por internet.'
-        . ($prov   ? ' ' . $prov . '.'   : '')
-        . ($tags_s ? ' ' . $tags_s . '.' : '')
-        . ' Player gratuito, sin instalar nada.';
+    $codec_info = '';
+    if (!empty($found['codec'])) {
+        $codec_info = ' Formato: ' . $found['codec'];
+        if (!empty($found['bitrate'])) $codec_info .= ' ' . $found['bitrate'] . 'kbps.';
+        else $codec_info .= '.';
+    }
+    $meta_d = 'Escuchá ' . $found['nombre'] . ' en vivo por internet, gratis y sin instalar nada.'
+        . ($prov   ? ' ' . $prov . ', Argentina.' : '')
+        . ($tags_s ? ' Géneros: ' . $tags_s . '.' : '')
+        . $codec_info
+        . ' Directorio de ' . $total . ' radios argentinas en streaming.';
+
+    // Emisoras relacionadas (misma provincia, hasta 5)
+    $relacionadas = [];
+    if ($prov) {
+        foreach ($stations as $_rel) {
+            if ($_rel['n'] === $found['n']) continue;
+            $rel_prov = !empty($_rel['provincia']) ? trim(explode(',', $_rel['provincia'])[0]) : '';
+            if (strcasecmp($rel_prov, $prov) !== 0) continue;
+            $relacionadas[] = $_rel;
+            if (count($relacionadas) >= 5) break;
+        }
+    }
 
     $ld = ['@context'=>'https://schema.org','@type'=>'RadioStation',
            'name'=>$found['nombre'],'inLanguage'=>'es-AR'];
@@ -152,6 +187,13 @@ if (!empty($_GET['station'])) {
   <meta property="og:image" content="<?= htmlspecialchars($found['logo']) ?>">
   <?php endif; ?>
   <script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
+  <script type="application/ld+json"><?= json_encode([
+    '@context'=>'https://schema.org','@type'=>'BreadcrumbList',
+    'itemListElement'=>[
+      ['@type'=>'ListItem','position'=>1,'name'=>'Radio Argentina','item'=>'https://mammoli.ar/radio/'],
+      ['@type'=>'ListItem','position'=>2,'name'=>$found['nombre'],'item'=>$pg_url],
+    ]
+  ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{background:#111827;color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
@@ -179,7 +221,23 @@ if (!empty($_GET['station'])) {
     .info-lbl{min-width:80px;flex-shrink:0}
     .info-val{color:#f9fafb}
     hr{border:none;border-top:1px solid #374151;margin:24px 0}
-    .ft{display:flex;gap:20px;flex-wrap:wrap;font-size:14px}
+    .ft{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;align-items:center}
+    .btn-report{background:none;border:1px solid #374151;border-radius:6px;color:#9ca3af;font-size:12px;padding:5px 10px;cursor:pointer;margin-top:10px}
+    .btn-report:hover{border-color:#ef4444;color:#ef4444}
+    .btn-share{background:none;border:1px solid #374151;border-radius:6px;color:#9ca3af;font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit}
+    .btn-share:hover{border-color:#3b82f6;color:#3b82f6}
+    .reportado-ok{font-size:12px;color:#22c55e;margin-top:8px}
+    .rel-section{margin-top:28px}
+    .rel-title{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-weight:500}
+    .rel-list{display:flex;flex-direction:column;gap:6px}
+    .rel-item{display:flex;align-items:center;gap:10px;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px;text-decoration:none;color:#f9fafb;font-size:13px;transition:background .15s}
+    .rel-item:hover{background:#374151;color:#f9fafb}
+    .rel-item img{width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0}
+    .rel-item-info{flex:1;min-width:0}
+    .rel-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .rel-item-tags{font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .suggest-prov{color:#9ca3af;font-size:13px}
+    .suggest-prov:hover{color:#f9fafb}
   </style>
 </head>
 <body>
@@ -214,10 +272,46 @@ if (!empty($_GET['station'])) {
     <?php endif; ?>
   </div>
 
+  <form method="post" style="display:inline">
+    <input type="hidden" name="accion" value="reportar">
+    <button type="submit" class="btn-report">⚠ Reportar caída</button>
+  </form>
+  <?php if ($reportado): ?>
+    <div class="reportado-ok">✓ Gracias por el reporte. Lo revisaremos pronto.</div>
+  <?php endif; ?>
+
+  <?php if ($relacionadas): ?>
+  <div class="rel-section">
+    <div class="rel-title">Otras radios de <?= htmlspecialchars($prov) ?></div>
+    <div class="rel-list">
+    <?php foreach ($relacionadas as $_rel):
+      $_slug = _radio_full_slug($_rel, $_slug_idx);
+      $_rtags = !empty($_rel['tags']) ? implode(' · ', array_slice($_rel['tags'], 0, 2)) : '';
+    ?>
+      <a class="rel-item" href="/radio/<?= htmlspecialchars($_slug) ?>/">
+        <?php if (!empty($_rel['logo'])): ?>
+        <img src="<?= htmlspecialchars($_rel['logo']) ?>" alt="" onerror="this.style.display='none'">
+        <?php else: ?>
+        <span style="width:28px;height:28px;border-radius:4px;background:#374151;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px">📻</span>
+        <?php endif; ?>
+        <div class="rel-item-info">
+          <div class="rel-item-name"><?= htmlspecialchars($_rel['nombre']) ?></div>
+          <?php if ($_rtags): ?><div class="rel-item-tags"><?= htmlspecialchars($_rtags) ?></div><?php endif; ?>
+        </div>
+        <span style="color:#6b7280;font-size:14px">›</span>
+      </a>
+    <?php endforeach; ?>
+    </div>
+  </div>
+  <?php endif; ?>
+
   <hr>
   <div class="ft">
-    <a href="/radio/">← Ver todas las emisoras</a>
-    <a href="/radio/?n=<?= $found['n'] ?>">🔗 Link compartible</a>
+    <a href="/radio/">← Todas las emisoras</a>
+    <button class="btn-share" id="btn-share-pg">🔗 Compartir</button>
+    <?php if ($prov): ?>
+    <a class="suggest-prov" href="/radio/sugerir.php?provincia=<?= urlencode($found['provincia']) ?>">¿Conocés otra radio de <?= htmlspecialchars($prov) ?>? →</a>
+    <?php endif; ?>
   </div>
 </div>
 <script>
@@ -239,6 +333,14 @@ if (!empty($_GET['station'])) {
   audio.addEventListener('playing',function(){btn.textContent='⏸ Detener';btn.className='playing';msg.textContent='● En vivo';playing=true;});
   audio.addEventListener('error',function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='La señal se cortó. Intentá de nuevo.';playing=false;});
   audio.addEventListener('waiting',function(){if(playing){btn.textContent='⏳ Buffering...';btn.className='loading';}});
+
+  // Compartir
+  var shareBtn=document.getElementById('btn-share-pg');
+  if(shareBtn){shareBtn.addEventListener('click',function(){
+    var url=<?= json_encode($pg_url) ?>;
+    if(navigator.share){navigator.share({title:<?= json_encode($found['nombre']) ?>,url:url}).catch(function(){});}
+    else{navigator.clipboard.writeText(url).then(function(){shareBtn.textContent='✓ Copiado';setTimeout(function(){shareBtn.textContent='🔗 Compartir';},2000);}).catch(function(){});}
+  });}
 })();
 </script>
 </body>
@@ -780,7 +882,7 @@ radio_log('visit', '');
 
 <header>
   <h1>📻 Radio Argentina</h1>
-  <p class="sub"><?= $total ?> emisoras en streaming · escuchá sin instalar nada</p>
+  <p class="sub"><?= $total ?> emisoras en streaming · escuchá sin instalar nada<?php if ($total < 1500): ?> · <a href="sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a 1500 →</a><?php endif; ?></p>
   <div class="badges">
     <a class="badge" href="?m3u=1">⬇ Bajar M3U</a>
     <a class="badge" href="sugerir.php">+ Sugerir emisora</a>
@@ -803,6 +905,9 @@ radio_log('visit', '');
       <span id="listeners-badge" style="display:none;font-size:11px;color:#22c55e">● <span id="listeners-count"></span> escuchando</span>
       <div class="result-count" id="result-count"><?= $total ?> emisoras</div>
     </div>
+  </div>
+  <div id="no-results-hint" style="display:none;font-size:13px;color:#9ca3af;padding:6px 0;text-align:right">
+    ¿No encontrás tu radio? <a href="sugerir.php" style="color:#3b82f6">Sugerila →</a>
   </div>
 </div>
 
@@ -1147,6 +1252,8 @@ radio_log('visit', '');
     });
     counter.textContent = (q || currentStatus !== 'all' || currentGenre || currentProv)
       ? vis + ' de ' + total + ' emisoras' : total + ' emisoras';
+    var noHint = document.getElementById('no-results-hint');
+    if (noHint) noHint.style.display = vis === 0 ? 'block' : 'none';
   }
 
   // ── Estado de streams (status.json generado por verificar_urls.sh) ──────────
@@ -1453,5 +1560,16 @@ radio_log('visit', '');
   }
 })();
 </script>
+<?php
+$count_file = __DIR__ . '/count.json';
+$count_data = file_exists($count_file) ? json_decode(file_get_contents($count_file), true) : null;
+$last_update = ($count_data && isset($count_data['ts']))
+    ? (new DateTime('@' . $count_data['ts']))->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))->format('d/m/Y H:i')
+    : null;
+?>
+<footer style="text-align:center;padding:24px 16px 32px;font-size:11px;color:#4b5563;border-top:1px solid #1f2937;margin-top:16px">
+  <?php if ($last_update): ?>Directorio actualizado el <?= $last_update ?> · <?php endif; ?>
+  <a href="https://mammoli.ar" style="color:#4b5563;text-decoration:none">mammoli.ar</a>
+</footer>
 </body>
 </html>

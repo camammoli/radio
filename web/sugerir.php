@@ -233,7 +233,7 @@ body.light input,body.light select{background:#f9fafb}
       <p class="hint">URL directa del stream de audio (mp3, aac, ogg). No la página web de la radio.</p>
 
       <label for="provincia">Provincia / País</label>
-      <input type="text" id="provincia" name="provincia" maxlength="60" placeholder="Ej: Mendoza" value="<?= htmlspecialchars($_POST['provincia'] ?? '') ?>">
+      <input type="text" id="provincia" name="provincia" maxlength="60" placeholder="Ej: Mendoza" value="<?= htmlspecialchars($_POST['provincia'] ?? $_GET['provincia'] ?? '') ?>">
 
       <label for="contacto">Tu email o contacto <span style="font-weight:normal">(opcional, para avisarte cuando se agregue)</span></label>
       <input type="text" id="contacto" name="contacto" maxlength="100" placeholder="Ej: tu@email.com" value="<?= htmlspecialchars($_POST['contacto'] ?? '') ?>">
