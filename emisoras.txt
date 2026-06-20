@@ -3804,3 +3804,6 @@ http://argentina.republicahosting.com:8417/stream
 
 [#1279] FM TIEMPO 92.5 * Argentina
 https://streaming3.locucionar.com/proxy/fmtiempo925?mp=/stream
+
+[#1280] FM Klimax * Buenos Aires, Argentina
+http://tun.in/se8E9

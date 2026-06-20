@@ -9263,7 +9263,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "c0cf2d87-993c-4cb6-97ad-f508a3fc5495",
-    "rb_votes": 2368,
+    "rb_votes": 2369,
     "rb_clicks": 27
   },
   {
@@ -9282,7 +9282,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "4520c04e-0514-43f9-9fe6-89d2f6d746f5",
-    "rb_votes": 396,
+    "rb_votes": 397,
     "rb_clicks": 28
   },
   {
@@ -19508,6 +19508,25 @@
     "bitrate": 32,
     "rb_uuid": "413ef533-f895-4f51-8293-ba0f35aee1c3",
     "rb_votes": 5,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1280,
+    "nombre": "FM Klimax",
+    "provincia": "Buenos Aires, Argentina",
+    "url": "http://tun.in/se8E9",
+    "logo": "https://www.fmklimax.com.ar/logo-klimax.png",
+    "tags": [
+      "80's pop hits",
+      "90's pop",
+      "eurodance",
+      "italo dance"
+    ],
+    "homepage": "https://www.fmklimax.com.ar/",
+    "codec": null,
+    "bitrate": null,
+    "rb_uuid": "593ba95a-3a5b-485d-aa13-4b376c5cffd2",
+    "rb_votes": 0,
     "rb_clicks": 0
   }
 ]
