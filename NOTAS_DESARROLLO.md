@@ -131,6 +131,85 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 
 ---
 
+## TKT-0692 — 2026-06-16 — SEO: páginas individuales por emisora
+
+### Contexto
+Google Search Console mostraba 0 impresiones para búsquedas por nombre de emisora específica
+(ej: "FM Sol Mendoza"). El directorio era una única página con 827 emisoras — imposible que
+Google la asociara a una emisora particular.
+
+### Lo que se hizo
+- `_radio_slug()` + `_radio_full_slug()`: genera slugs URL a partir de nombre + ciudad
+- Interceptor en `index.php`: detecta `?station=slug`, carga la emisora y renderiza página
+  individual con `<title>`, `<meta description>`, `<link canonical>`, JSON-LD `RadioStation`
+  y player minimalista. Las emisoras con `estado: muerto` reciben `<meta name="robots" content="noindex">`
+- `.htaccess`: rewrite `/radio/{slug}/` → `index.php?station={slug}` + `sitemap.xml` → `sitemap.php`
+- `sitemap.php`: genera XML dinámico con todas las emisoras que no son `muerto` (~791 URLs)
+- `index.php` (directorio): ícono `⬈` en nombre de cada emisora → link a su página individual
+- `robots.txt`: eliminado `Disallow: /radio/`, bloqueados solo endpoints internos;
+  agregado `Sitemap: https://mammoli.ar/radio/sitemap.xml`
+
+### Resultado (medido 3 días después)
+- 16/06: 227 impresiones · 17/06: 1.259 impresiones (x60 en 48hs)
+- Páginas individuales ya indexadas: Radio Mitre (142 imp), Pop Radio (57), Estación Urbana (42)
+- Posición promedio ~43 — se espera mejora gradual con el tiempo
+
+### Pendiente
+- Solicitar reindexación manual en Google Search Console
+- Monitorear posiciones por emisora en 2-3 semanas
+
+---
+
+## TKT-0693 — 2026-06-19 — Corrección de nombres en emisoras.txt + plays.json + dedup
+
+### Contexto
+Análisis de logs reveló que tres emisoras tenían la URL del stream como nombre (entrada
+malformada desde el crawler). El oyente de Resistencia no pudo escuchar Aspen ni Delta por
+este motivo. plays.json también tenía esas URLs como claves.
+
+### Lo que se hizo
+- `emisoras.txt`: corregidos tres nombres malformados:
+  - `[133] http//cdn2.instream.audio8007/stream` → `[133] Futurock`
+  - `[#486] http//14983.live.streamtheworld.com3690/ASPENAAC_SC` → `[#486] Aspen`
+  - `[109] http//cdn.instream.audio9069/stream` → `[109] Delta`
+- `web/plays.json` (servidor): eliminadas las tres claves con URL rota (los plays
+  históricos de esas entradas —4 en total— se perdieron; futuros plays se registran
+  con nombre correcto)
+- `dedup_urls.py`: script nuevo — detecta entradas con URL exactamente igual, conserva
+  la de mayor metadata (logo > homepage > tags > codec > nombre más largo), elimina el
+  resto. Dry-run por defecto; `--apply` para ejecutar. Resultado de la primera corrida:
+  0 duplicados de URL exacta (los 142 nombres repetidos son emisoras distintas en
+  distintas ciudades — correcto).
+
+---
+
+## TKT-0694 — 2026-06-19 — Notificaciones Telegram de oyentes (debug)
+
+### Contexto
+Se quería visibilidad en tiempo real de cuándo hay oyentes, sin tener que revisar logs.
+Implementado como feature de debug desactivable desde config.
+
+### Lo que se hizo
+- `web/listeners.php`: cuando `$isNew && $station` (primera sesión de un oyente),
+  si `NOTIFY_OYENTES` está activo, envía mensaje Telegram vía cURL con:
+  nombre de emisora, IP del oyente y cantidad de oyentes activos.
+  Timeout de 3s para no bloquear la respuesta al cliente.
+  IP se lee de `HTTP_X_FORWARDED_FOR` (primer valor) con fallback a `REMOTE_ADDR`.
+- `web/config.php` (gitignoreado, servidor): agregada constante `NOTIFY_OYENTES = true`
+- `web/config.example.php`: agregada constante `NOTIFY_OYENTES = false` como default
+
+### Activar / desactivar
+`config.php` en el servidor → cambiar `NOTIFY_OYENTES` a `true` o `false`. Sin deploy.
+
+### Formato del mensaje
+```
+🎙 Oyente: Dínamo 100.9
+🌐 IP: 190.247.73.253
+👥 Activos: 1
+```
+
+---
+
 ## Historial de pendientes resueltos
 
 - ✅ P1 Toast: key cambiada a `toast_ts_v2`, setItem movido al cierre (2026-05-22)
@@ -138,3 +217,6 @@ FTP a mammoli.ar: `lftp` con credenciales en `/radio/`. GitHub: `camammoli/radio
 - ✅ TKT-0687: verificación paralela (30 workers) — de 30min+timeout a 2min (2026-05-22)
 - ✅ TKT-0686: contraseña FTP eliminada del historial público, movida a `.ftp.conf` + GitHub Secret (2026-05-22)
 - ✅ TKT-0691: historial de streams + sugerencias (2026-06-08)
+- ✅ TKT-0692: SEO páginas individuales por emisora + sitemap (2026-06-16)
+- ✅ TKT-0693: corrección de nombres malformados en emisoras.txt + dedup_urls.py (2026-06-19)
+- ✅ TKT-0694: notificaciones Telegram de oyentes, desactivable con NOTIFY_OYENTES (2026-06-19)
