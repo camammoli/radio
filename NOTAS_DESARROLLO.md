@@ -250,3 +250,4 @@ filtraba por provincia vía texto libre pero no era obvio ni rápido.
 - ✅ TKT-0693: corrección de nombres malformados en emisoras.txt + dedup_urls.py (2026-06-19)
 - ✅ TKT-0694: notificaciones Telegram de oyentes, desactivable con NOTIFY_OYENTES (2026-06-19)
 - ✅ TKT-0695: +331 emisoras (928→1259) + panel filtro Provincias (2026-06-20)
+- ✅ TKT-0696: crawler hunt_stations.py + GitHub Action hunt-stations.yml (2026-06-20)

@@ -1,0 +1,102 @@
+name: Cazar emisoras nuevas
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'   # Lunes 9:00 UTC (6am ARG)
+  workflow_dispatch:        # Disparo manual desde GitHub
+
+jobs:
+  hunt:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Instalar lftp
+        run: sudo apt-get install -y lftp
+
+      - name: Descargar sugerencias.json del servidor
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
+          set ssl:verify-certificate no
+          get /radio/data/sugerencias.json -o /tmp/sugerencias.json
+          bye
+          LFTP
+          # Si no existe en el servidor, crear vacío
+          [ -f /tmp/sugerencias.json ] && echo "Sugerencias descargadas." || echo '[]' > /tmp/sugerencias.json
+
+      - name: Cazar y verificar emisoras
+        id: hunt
+        run: |
+          python3 hunt_stations.py --sugerencias /tmp/sugerencias.json 2>&1 | tee /tmp/hunt_log.txt
+          # Extraer conteos del output del script
+          FOUND=$(grep '^HUNT_FOUND='   /tmp/hunt_log.txt | tail -1 | cut -d= -f2)
+          FAILED=$(grep '^HUNT_FAILED='  /tmp/hunt_log.txt | tail -1 | cut -d= -f2)
+          CHECKED=$(grep '^HUNT_CHECKED=' /tmp/hunt_log.txt | tail -1 | cut -d= -f2)
+          echo "found=${FOUND:-0}"   >> $GITHUB_OUTPUT
+          echo "failed=${FAILED:-0}" >> $GITHUB_OUTPUT
+          echo "checked=${CHECKED:-0}" >> $GITHUB_OUTPUT
+          echo "Encontradas: ${FOUND:-0} / Verificadas: ${CHECKED:-0}"
+
+      - name: Subir sugerencias.json actualizado al servidor
+        if: steps.hunt.outputs.found != '0'
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
+          set ssl:verify-certificate no
+          put /tmp/sugerencias.json -o /radio/data/sugerencias.json
+          bye
+          LFTP
+
+      - name: Notificar por Telegram
+        env:
+          TG_TOKEN:        ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID:      ${{ secrets.TG_CHAT_ID }}
+          RADIO_ADMIN_KEY: ${{ secrets.RADIO_ADMIN_KEY }}
+        run: |
+          FOUND=${{ steps.hunt.outputs.found }}
+          FAILED=${{ steps.hunt.outputs.failed }}
+          CHECKED=${{ steps.hunt.outputs.checked }}
+          TOTAL=$(python3 -c "
+          import re
+          txt = open('emisoras.txt').read()
+          print(len(re.findall(r'^\[', txt, re.M)))
+          ")
+          DATE=$(date +'%Y-%m-%d')
+
+          if [ "${FOUND}" -gt "0" ]; then
+            # Extraer resumen por provincia del log
+            PROV_LINES=$(grep -A 40 'Por provincia:' /tmp/hunt_log.txt \
+              | grep -E '^\s+[0-9]+\s+' | head -8 \
+              | awk '{printf "  %s %s\n", $1, $2}' || true)
+
+            MSG="🎙 Radio Hunter — ${DATE}
+
+🆕 Nuevas emisoras verificadas: ${FOUND}
+🔍 Candidatos chequeados: ${CHECKED}
+❌ Caídas descartadas: ${FAILED}
+📻 Total en directorio: ${TOTAL}
+
+${PROV_LINES}
+
+👉 Revisar y aprobar:
+https://mammoli.ar/radio/admin_sugerencias.php?key=${RADIO_ADMIN_KEY}"
+          else
+            MSG="🎙 Radio Hunter — ${DATE}
+
+✅ Sin novedades esta semana.
+🔍 Candidatos chequeados: ${CHECKED}
+❌ Caídas descartadas: ${FAILED}
+📻 Total en directorio: ${TOTAL}"
+          fi
+
+          curl -s -X POST "https://api.telegram.org/bot${TG_TOKEN}/sendMessage" \
+            --data-urlencode "text=${MSG}" \
+            -d "chat_id=${TG_CHAT_ID}" \
+            > /dev/null
+          echo "Telegram enviado."
