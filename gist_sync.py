@@ -241,11 +241,16 @@ def main():
 
     # ── 4. Postear comentario en gist original ────────────────────────────────
     # Formato minimalista: solo nombre, provincia y URL de stream — como cualquier usuario del gist.
-    # Sin publicidad ni links al proyecto.
-    lineas = [f'{s["nombre"]} ({s["provincia"]})\n{s["url"]}'
-              for s in new_stations[:20]]
-    extra = f'\n\n... y {len(new_stations)-20} más.' if len(new_stations) > 20 else ''
+    # Si hay muchas emisoras nuevas, mostrar solo las primeras para no saturar el feed.
+    CAP = 10
+    if len(new_stations) > CAP:
+        muestra = new_stations[:5]
+        extra = '\n\n... y varias más.'
+    else:
+        muestra = new_stations
+        extra = ''
 
+    lineas = [f'{s["nombre"]} ({s["provincia"]})\n{s["url"]}' for s in muestra]
     comentario = '\n\n'.join(lineas) + extra
 
     print(f'\nPostear en gist original ({ORIG_GIST_ID}):')
