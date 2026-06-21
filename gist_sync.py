@@ -240,18 +240,13 @@ def main():
         return
 
     # ── 4. Postear comentario en gist original ────────────────────────────────
-    fecha = datetime.now(timezone.utc).strftime('%d/%m/%Y')
-    lineas = [f'  {s["nombre"]} ({s["provincia"]}) → {MAMMOLI_RADIO}/?n={s["numero"]}'
-              for s in new_stations[:15]]
-    extra = f'\n  ... y {len(new_stations)-15} más.' if len(new_stations) > 15 else ''
+    # Formato minimalista: solo nombre, provincia y URL de stream — como cualquier usuario del gist.
+    # Sin publicidad ni links al proyecto.
+    lineas = [f'{s["nombre"]} ({s["provincia"]})\n{s["url"]}'
+              for s in new_stations[:20]]
+    extra = f'\n\n... y {len(new_stations)-20} más.' if len(new_stations) > 20 else ''
 
-    comentario = (
-        f'📻 Novedades de esta semana en mammoli.ar/radio ({fecha}):\n\n'
-        + '\n'.join(lineas)
-        + extra
-        + f'\n\nDirectorio completo ({len(stations)} emisoras AR) con player, '
-        f'buscador por nombre y provincia: {MAMMOLI_RADIO}'
-    )
+    comentario = '\n\n'.join(lineas) + extra
 
     print(f'\nPostear en gist original ({ORIG_GIST_ID}):')
     print(comentario)

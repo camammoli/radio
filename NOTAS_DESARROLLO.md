@@ -366,6 +366,18 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0701 — 2026-06-21 — Comentario gist sin publicidad
+
+`gist_sync.py`: el comentario semanal que el bot postea en el gist original de pisculichi
+pasó a formato minimalista — solo nombre, provincia y URL de stream, como hace cualquier
+usuario del gist. Se eliminó el texto promocional y el link a mammoli.ar/radio.
+
+Motivo: postear publicidad automatizada en un espacio comunitario se considera spam.
+
+**Archivo:** `gist_sync.py` — función `main()`, bloque "Postear comentario en gist original".
+
+---
+
 ## TKT-0700 — 2026-06-21 — Sincronización bidireccional con gist pisculichi/radios_nacionales.txt
 
 ### Contexto
