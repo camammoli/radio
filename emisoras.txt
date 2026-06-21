@@ -210,7 +210,7 @@ http://nvradios.com:9396/;
 
 
 [070] Continental
-https://edge02.radiohdvivo.com/continental
+https://20833.live.streamtheworld.com/CONTINENTALAAC.aac
 
 [071] FM Córdoba
 https://liveradio.mediainbox.net/fmcordoba.mp3
