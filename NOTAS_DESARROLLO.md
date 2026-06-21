@@ -314,3 +314,52 @@ página y agregar más puntos de entrada a `sugerir.php`.
 **`web/index.php`:** carga `config.php` (gitignoreado) para TG_TOKEN/TG_CHAT_ID necesario
   en el handler de reporte de caída. Patrón idéntico al de `admin_sugerencias.php`.
 
+
+---
+
+## TKT-0699 — 2026-06-20 — Corrección URL Continental + Respuestas gist + Mundial v2 actualizado
+
+### Contexto
+Retomando sesión anterior (TKT-0698). Tareas pendientes:
+1. Actualizar mundial_v2.xlsx con resultados del 20/06/2026
+2. Responder emails de radio (gist pisculichi/radios_nacionales.txt)
+
+### mundial_v2.xlsx — Correcciones
+
+Grupos que jugaron el 20/06/2026 (Groups E y F):
+- **Grupo E**: Alemania 2-1 Costa de Marfil, Ecuador 0-0 Curazao
+- **Grupo F**: Países Bajos 5-1 Suecia
+
+Además se detectaron errores en los datos de jornada 1 (grupos H, I, J, K, L):
+- Grupo H: Uruguay/Arabia Saudita no ganaron — fue 1-1 y España 0-0 Cabo Verde
+- Grupo I: Noruega 4-1 Irak (no 3-0)
+- Grupo J: Argentina 3-0 Argelia, Austria 3-1 Jordania (datos originales incorrectos)
+- Grupo K: R.D.Congo empató 1-1 con Portugal (no ganó)
+- Grupo L: Ghana ganó 1-0 a Panamá (no empató)
+
+Se corrigieron ambas hojas (Por Grupo y Tabla General) con script Python.
+
+### Gist pisculichi/radios_nacionales.txt — Respuestas
+
+Leídos ~966 comentarios, identificados los recientes de 2026:
+
+| Usuario | Pregunta | Respuesta dada |
+|---------|----------|----------------|
+| anibeat | Continental rota | URL streamtheworld (comment 6209813) |
+| matferna | Led FM + Blackie | Confirmado que están en mammoli.ar/radio (comment 6209814) |
+| dariomineria | Qué apps usar | VLC + mammoli.ar/radio (comment 6209815) |
+| Guskrilon | MMS + Misiones FMs | Explicación MMS + Radio Light URL + no URLs para Classic/Express (comment 6209816) |
+
+No se encontraron URLs para FM Classic 90.3 y FM Express 96.5 (Misiones) — sitios sin stream expuesto.
+
+### URL Continental actualizada
+
+Entrada #070 tenía URL rota `https://edge02.radiohdvivo.com/continental`.
+Actualizada a `https://20833.live.streamtheworld.com/CONTINENTALAAC.aac`.
+
+**Incidente deploy**: deploy FTP con `--delete` eliminó emisoras.json, emisoras.txt,
+plays.json, data/sugerencias.json y count.json del servidor (son archivos que viven
+solo en el servidor, no en web/). Se restauraron manualmente con lftp put.
+**Lección**: el deploy a /radio/ NO debe usar `--delete` o deben excluirse los
+archivos de datos (emisoras.json, emisoras.txt, plays.json, plays/*.json,
+data/sugerencias.json, count.json, listeners.json, logs/).
