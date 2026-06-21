@@ -363,3 +363,39 @@ solo en el servidor, no en web/). Se restauraron manualmente con lftp put.
 **Lección**: el deploy a /radio/ NO debe usar `--delete` o deben excluirse los
 archivos de datos (emisoras.json, emisoras.txt, plays.json, plays/*.json,
 data/sugerencias.json, count.json, listeners.json, logs/).
+
+---
+
+## TKT-0700 — 2026-06-21 — Sincronización bidireccional con gist pisculichi/radios_nacionales.txt
+
+### Contexto
+El gist https://gist.github.com/pisculichi/fae88a2f5570ab22da53 es una referencia
+histórica de URLs de radios AR con comunidad activa (~966 comentarios, 37 forks).
+Carlos ya había comentado allí como camammoli. Se implementó integración completa.
+
+### Archivos nuevos / modificados
+
+- `gist_sync.py` — nuevo script de sincronización:
+  - Parsea emisoras.txt → genera archivo formateado por provincia
+  - PATCH al fork via GitHub API
+  - Detecta emisoras nuevas (git log --since) → postea comentario en gist original
+  - Filtro de estaciones de prueba (TKT-NNN)
+  - Token: GITHUB_TOKEN env var → fallback gh CLI
+
+- `hunt_stations.py` — dos nuevas fuentes:
+  - `gist-file`: lee el archivo del gist de pisculichi (URLs curadas desde 2015)
+  - `gist-comments`: escanea comentarios desde 2024 buscando URLs http(s)
+
+- `.github/workflows/hunt-stations.yml` — nuevo step post-crawler:
+  `python3 gist_sync.py --since "7 days ago"` con secrets.GITHUB_PAT
+
+### Estado inicial
+- Fork creado: https://gist.github.com/camammoli/21ce6e3ba07486bcd16a28cda967f0d9
+- Fork actualizado con 1257 emisoras formateadas (21/06/2026)
+- Primer comentario del bot posteado (id 6210260) en el gist original
+- Nota: primer run detectó 334 "nuevas" por batch imports recientes de TKT-0695/0698.
+  Los runs semanales siguientes tendrán sets pequeños (5-20 estaciones normalmente).
+
+### Pendientes
+- Verificar que secrets.GITHUB_PAT tenga scope `gist` en GitHub Actions
+- Próximo lunes: confirmar que el step de sync corra sin errores en el workflow
