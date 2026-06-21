@@ -1510,8 +1510,6 @@ http://s1.radiosnethosting.com:12052/;stream.nsv&type=mp3
 http://s1.radiosnethosting.com:9692/;stream.nsv&type=mp3
 
 
-[#511] Continental
-https://20833.live.streamtheworld.com/CONTINENTALAAC.aac
 
 [#512] Paraíso
 http://s2.radiosnethosting.com:9752/;stream.nsv&type=mp3
@@ -1688,7 +1686,7 @@ https://stream2.305streamcdn.com/rockandpop
 https://streaming02.radiosenlinea.com.ar:9740/stream
 
 [#572] Colonia
-https://streaming1.hostingmontevideo.com:7019/;
+https://playerservices.streamtheworld.com/api/livestream-redirect/COLONIA_ADP.aac
 
 [#573] Mágica
 https://streaming2.hostingmontevideo.com:7011/;
@@ -2887,8 +2885,6 @@ https://cdn.instream.audio:9097/stream
 [#973] Radio Sudaca 103.3 * Argentina
 https://sudaca.redenfoques.com.ar/sudaca
 
-[#974] LU6 Radio Atlántica * Buenos Aires, Argentina
-http://173.255.205.241:9090/
 
 [#975] Radio Rio Cuarto * Argentina
 https://server6.hostradios.com/8552/stream/;/;type=mp3
@@ -3319,8 +3315,6 @@ https://stream.radioinfo.ar/p/8092/stream
 [#1117] FM Ayer 98.1 * Argentina
 https://icecast.unomedios.com.ar/ayer
 
-[#1118] Fm Latina 92.5 Salta * Argentina
-http://streaming.radiosenlinea.com.ar:9640/;
 
 [#1119] Radio 2 * Buenos Aires, Argentina
 https://cdn.instream.audio/:9056/stream?_=1680ada412b
