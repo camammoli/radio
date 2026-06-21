@@ -51,6 +51,12 @@ jobs:
           bye
           LFTP
 
+      - name: Sincronizar fork del gist y postear novedades
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+        run: |
+          python3 gist_sync.py --since "7 days ago" || true
+
       - name: Notificar por Telegram
         env:
           TG_TOKEN:        ${{ secrets.TG_TOKEN }}

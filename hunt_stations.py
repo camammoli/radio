@@ -54,6 +54,19 @@ SOURCES = [
     },
     # Fuentes M3U adicionales: agregar aquí cuando haya listas verificadas de radio AR.
     # IPTV-org (ar.m3u) descartado: contiene canales de TV sin distinción de radio.
+
+    # Gist pisculichi/radios_nacionales.txt — archivo principal curado
+    {
+        'type': 'gist-file',
+        'gist_id': 'fae88a2f5570ab22da53',
+        'filename': 'radios_nacionales.txt',
+    },
+    # Gist comentarios — comunidad aporta URLs nuevas y actualizaciones
+    {
+        'type': 'gist-comments',
+        'gist_id': 'fae88a2f5570ab22da53',
+        'since': '2024-01-01T00:00:00Z',   # solo comentarios post-2024
+    },
 ]
 
 # ── Normalización de provincias ───────────────────────────────────────────────
@@ -133,6 +146,108 @@ def load_existing_suggestions(path: Path) -> set:
 
 
 # ── Fetchers por tipo de fuente ───────────────────────────────────────────────
+
+GIST_URL_RE = re.compile(
+    r'(?<!["\'\`(])'                    # no dentro de strings/markdown links
+    r'(https?://[^\s\]\)"\'<>,\n]+)'    # URL completa
+)
+
+def fetch_gist_file(source: dict, known: set = None) -> list:
+    """Parsea el archivo de texto del gist buscando URLs de streams."""
+    gist_id  = source['gist_id']
+    filename = source.get('filename', '')
+    api_url  = f'https://api.github.com/gists/{gist_id}'
+    try:
+        raw = _http_get(api_url)
+        data = json.loads(raw.decode('utf-8'))
+    except Exception as e:
+        print(f'  ✗ Error gist-file ({gist_id}): {e}', flush=True)
+        return []
+
+    files = data.get('files', {})
+    target = files.get(filename) or (next(iter(files.values())) if files else None)
+    if not target:
+        return []
+
+    content = target.get('content') or ''
+    results = []
+    lines = content.splitlines()
+    for line in lines:
+        line = line.strip()
+        if not line or line.startswith('#'):
+            continue
+        # Cada línea válida es: URL  <espacios>  Nombre  <espacios>  [frecuencia]
+        if re.match(r'^https?://', line):
+            parts = line.split()
+            url  = parts[0]
+            name = ' '.join(parts[1:]) if len(parts) > 1 else url
+            # Limpiar frecuencia numérica del final del nombre
+            name = re.sub(r'\s+\d{2,4}(\.\d)?\s*$', '', name).strip()
+            if not name:
+                name = url
+            url_norm = url.lower().rstrip('/')
+            if known and url_norm in known:
+                continue
+            results.append({
+                'nombre':    name,
+                'url':       url,
+                'provincia': 'Argentina',
+                'fuente':    'gist-file',
+            })
+    return results
+
+
+def fetch_gist_comments(source: dict, known: set = None) -> list:
+    """Extrae URLs de streams de los comentarios recientes del gist."""
+    gist_id = source['gist_id']
+    since   = source.get('since', '2024-01-01T00:00:00Z')
+    results = []
+    seen    = set(known or [])
+    page    = 1
+
+    while True:
+        api_url = (f'https://api.github.com/gists/{gist_id}/comments'
+                   f'?per_page=100&page={page}')
+        try:
+            raw  = _http_get(api_url)
+            data = json.loads(raw.decode('utf-8'))
+        except Exception as e:
+            print(f'  ✗ Error gist-comments p{page}: {e}', flush=True)
+            break
+
+        if not data:
+            break
+
+        for comment in data:
+            # Filtrar por fecha
+            created = comment.get('created_at', '')
+            if created < since:
+                continue
+            body = comment.get('body') or ''
+            for m in GIST_URL_RE.finditer(body):
+                url = m.group(1).rstrip('.,;)')
+                if not url.startswith('http'):
+                    continue
+                # Solo URLs que parecen streams (no páginas web comunes)
+                if re.search(r'\.(php|html?|com/?$|net/?$|ar/?$)', url, re.I):
+                    continue
+                url_norm = url.lower().rstrip('/')
+                if url_norm in seen:
+                    continue
+                seen.add(url_norm)
+                results.append({
+                    'nombre':    f'[gist comment] {url}',
+                    'url':       url,
+                    'provincia': 'Argentina',
+                    'fuente':    'gist-comments',
+                })
+
+        if len(data) < 100:
+            break
+        page += 1
+
+    return results
+
 
 def _http_get(url: str, timeout: int = 30) -> bytes:
     req = Request(url, headers={'User-Agent': 'mammoli-radio-hunter/1.0'})
@@ -233,8 +348,10 @@ def hunt_all_sources(known: set) -> list:
     """Consulta todas las fuentes y devuelve candidatos sin duplicar URL.
     'known' son las URLs ya existentes (emisoras.txt + sugerencias previas)."""
     dispatch = {
-        'radio-browser': fetch_radio_browser,
-        'm3u':           fetch_m3u,
+        'radio-browser':  fetch_radio_browser,
+        'm3u':            fetch_m3u,
+        'gist-file':      fetch_gist_file,
+        'gist-comments':  fetch_gist_comments,
     }
     seen_urls = set(known)  # copia; se expande con cada fuente para dedup cross-source
     candidates = []
@@ -244,7 +361,7 @@ def hunt_all_sources(known: set) -> list:
         if not fetcher:
             continue
         print(f"  → {src['type']}: {src['url'][:70]}...", flush=True)
-        if src['type'] == 'radio-browser':
+        if src['type'] in ('radio-browser', 'gist-file', 'gist-comments'):
             items = fetcher(src, known=seen_urls)
         else:
             items = fetcher(src)
