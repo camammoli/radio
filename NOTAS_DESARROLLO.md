@@ -374,6 +374,9 @@ usuario del gist. Se eliminó el texto promocional y el link a mammoli.ar/radio.
 
 Motivo: postear publicidad automatizada en un espacio comunitario se considera spam.
 
+Si hay más de 10 emisoras nuevas en la semana, el comentario muestra solo las primeras 5
+y dice "... y varias más." sin revelar el número exacto. Evita comentarios largos en el feed.
+
 **Archivo:** `gist_sync.py` — función `main()`, bloque "Postear comentario en gist original".
 
 ---
