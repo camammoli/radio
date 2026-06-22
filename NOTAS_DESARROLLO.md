@@ -366,6 +366,18 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0703 — 2026-06-22 — Google Analytics 4 + Klimax recuperada
+
+**Google Analytics 4** agregado a `web/index.php` (directorio y páginas individuales).
+Condicional: solo se activa si `config.php` define `GA_ID`. ID configurado: `G-BRGB9LNXXY`.
+No afecta SEO ni Search Console — los complementa. Ad blockers de escritorio ocultan
+algunos hits; en mobile funciona correctamente.
+
+**Klimax #594** URL reemplazada vía candidatos_recuperados.json:
+`http://streamall.alsolnet.com:443/klimaxok` → `https://streamall.alsolnet.com/fmklimax`
+
+---
+
 ## TKT-0702 — 2026-06-22 — Tracking por stream + búsqueda activa de URLs caídas
 
 **track_since.py** (nuevo): corre después de cada check (cada 6hs) y mantiene
