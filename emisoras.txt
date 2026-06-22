@@ -1748,7 +1748,7 @@ http://streamall.alsolnet.com:443/fmsonidohd
 http://streamall.alsolnet.com:443/k2hd
 
 [#594] Klimax
-http://streamall.alsolnet.com:443/klimaxok
+https://streamall.alsolnet.com/fmklimax
 
 [#595] La Colifata
 http://streamall.alsolnet.com:443/lacolifata
