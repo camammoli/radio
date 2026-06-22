@@ -239,6 +239,10 @@ if (!empty($_GET['station'])) {
     .suggest-prov{color:#9ca3af;font-size:13px}
     .suggest-prov:hover{color:#f9fafb}
   </style>
+  <?php if (defined('GA_ID') && GA_ID): ?>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_ID ?>"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','<?= GA_ID ?>');</script>
+  <?php endif; ?>
 </head>
 <body>
 <div class="hdr"><a href="/radio/">← Radio Argentina — todas las emisoras</a></div>
@@ -877,6 +881,10 @@ radio_log('visit', '');
     }
     #support-toast button:hover { color: #d1d5db; }
   </style>
+  <?php if (defined('GA_ID') && GA_ID): ?>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_ID ?>"></script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','<?= GA_ID ?>');</script>
+  <?php endif; ?>
 </head>
 <body>
 
