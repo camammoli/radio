@@ -71,11 +71,8 @@ jobs:
 
           # Subir candidatos al servidor si hay alguno
           if [ "${RECUPERADOS:-0}" -gt "0" ]; then
-            lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
-            set ssl:verify-certificate no
-            put /tmp/candidatos.json -o /radio/data/candidatos_recuperados.json
-            bye
-            LFTP
+            lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar \
+              -e "set ssl:verify-certificate no; put /tmp/candidatos.json -o /radio/data/candidatos_recuperados.json; bye"
           fi
 
       - name: Sincronizar fork del gist y postear novedades
