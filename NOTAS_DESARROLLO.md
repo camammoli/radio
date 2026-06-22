@@ -366,6 +366,27 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0702 — 2026-06-22 — Tracking por stream + búsqueda activa de URLs caídas
+
+**track_since.py** (nuevo): corre después de cada check (cada 6hs) y mantiene
+`web/stream_since.json` con la fecha en que cada URL entró en timeout/muerto.
+Cuando una URL se recupera, se borra del registro. Permite saber cuánto lleva
+cada stream caído (dato que status_history.json no tenía — solo guardaba totales).
+
+**recuperar_caidas.py** (extendido): nuevos flags:
+- `--include-timeout`: busca también URLs en timeout, no solo muertas
+- `--output-json FILE`: guarda candidatos en JSON sin tocar emisoras.txt
+- `--limit N`: procesa máximo N URLs
+
+**check-streams.yml**: descarga stream_since.json antes del check, corre
+track_since.py después y lo sube al servidor.
+
+**hunt-stations.yml**: nuevo paso "Buscar URLs alternativas" — descarga status.json,
+corre recuperar_caidas.py --output-json, sube candidatos_recuperados.json al servidor
+e incluye el conteo en el mensaje de Telegram. Timeout del job extendido a 35min.
+
+---
+
 ## TKT-0701 — 2026-06-21 — Comentario gist sin publicidad
 
 `gist_sync.py`: el comentario semanal que el bot postea en el gist original de pisculichi

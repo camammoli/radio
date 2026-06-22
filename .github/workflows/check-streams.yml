@@ -24,6 +24,7 @@ jobs:
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
           set ssl:verify-certificate no
           get /radio/status_history.json -o web/status_history.json
+          get /radio/stream_since.json   -o web/stream_since.json
           bye
           LFTP
 
@@ -31,3 +32,14 @@ jobs:
         env:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: ./verificar_urls.sh --json --upload --quiet
+
+      - name: Actualizar tracking por stream y subir
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          python3 track_since.py
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
+          set ssl:verify-certificate no
+          put web/stream_since.json -o /radio/stream_since.json
+          bye
+          LFTP

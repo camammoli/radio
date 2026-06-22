@@ -165,12 +165,15 @@ def parse_blocks(path):
 
 def main():
     parser = argparse.ArgumentParser(description="Recupera streams caídos via radio-browser.info")
-    parser.add_argument("--apply",     action="store_true", help="Aplicar reemplazos en emisoras.txt")
-    parser.add_argument("--commit",    action="store_true", help="git commit")
-    parser.add_argument("--push",      action="store_true", help="git push")
-    parser.add_argument("--no-verify", action="store_true", help="No verificar la nueva URL")
-    parser.add_argument("--min",       type=float, default=DEF_MIN_SIM, help="Umbral de similitud (0-1)")
-    parser.add_argument("--quiet",     action="store_true", help="Sin output")
+    parser.add_argument("--apply",           action="store_true", help="Aplicar reemplazos en emisoras.txt")
+    parser.add_argument("--commit",          action="store_true", help="git commit")
+    parser.add_argument("--push",            action="store_true", help="git push")
+    parser.add_argument("--no-verify",       action="store_true", help="No verificar la nueva URL")
+    parser.add_argument("--include-timeout", action="store_true", help="Buscar también URLs en timeout (no solo muertas)")
+    parser.add_argument("--output-json",     metavar="FILE",      help="Guardar candidatos en JSON sin modificar emisoras.txt")
+    parser.add_argument("--limit",           type=int, default=0, metavar="N", help="Procesar máximo N URLs (0 = sin límite)")
+    parser.add_argument("--min",             type=float, default=DEF_MIN_SIM, help="Umbral de similitud (0-1)")
+    parser.add_argument("--quiet",           action="store_true", help="Sin output")
     args = parser.parse_args()
 
     def log(msg=""):
@@ -180,12 +183,18 @@ def main():
     log(f"=== recuperar_caidas.py  {datetime.now().strftime('%Y-%m-%d %H:%M')} ===")
 
     # 1. Cargar status.json
-    status    = load_status(STATUS_JSON)
-    dead_urls = {url for url, estado in status.items() if estado == "muerto"}
-    log(f"URLs muertas en status.json : {len(dead_urls)}")
+    status = load_status(STATUS_JSON)
+    target_estados = {"muerto"}
+    if args.include_timeout:
+        target_estados.add("timeout")
+    dead_urls = {url for url, estado in status.items() if estado in target_estados}
+    log(f"URLs objetivo ({'/'.join(sorted(target_estados))}): {len(dead_urls)}")
     if not dead_urls:
-        log("Sin URLs muertas. Saliendo.")
+        log("Sin URLs a recuperar. Saliendo.")
         return
+    if args.limit:
+        dead_urls = set(sorted(dead_urls)[:args.limit])
+        log(f"Limitado a {len(dead_urls)} URLs")
 
     # 2. Parsear emisoras.txt
     blocks        = parse_blocks(EMISORAS)
@@ -265,7 +274,7 @@ def main():
         log(f"  ✓ {station_name}")
         log(f"      {dead_url}")
         log(f"    → {best_url}  ({best_api_name}, {best_score:.0%})")
-        replacements.append((block_idx, dead_url, best_url))
+        replacements.append((block_idx, dead_url, best_url, station_name))
 
     log()
     log(f"Reemplazos encontrados : {len(replacements)}")
@@ -275,12 +284,24 @@ def main():
         log("Nada para hacer. Saliendo.")
         return
 
+    # 5a. Modo candidatos: guardar JSON y salir sin tocar emisoras.txt
+    if args.output_json:
+        out = [
+            {"nombre": name, "old_url": old, "new_url": new}
+            for _, old, new, name in replacements
+        ]
+        with open(args.output_json, "w", encoding="utf-8") as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+        log(f"✓ {len(out)} candidatos guardados en {args.output_json}")
+        print(f"RECUPERADOS={len(out)}")
+        return
+
     if not args.apply:
         log("\nPasá --apply para aplicar los cambios.")
         return
 
-    # 5. Aplicar en los bloques
-    for block_idx, old_url, new_url in replacements:
+    # 5b. Aplicar en los bloques
+    for block_idx, old_url, new_url, _ in replacements:
         block = blocks[block_idx]
         for i, line in enumerate(block):
             if line.strip() == old_url:
