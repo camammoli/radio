@@ -273,6 +273,37 @@ if (!empty($_GET['station'])) {
     #survey-toast .survey-dismiss{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px}
     #survey-toast .survey-dismiss:hover{color:var(--text)}
     #survey-toast .survey-later{font-size:11px;color:var(--muted);margin-top:8px;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;text-decoration:underline}
+    /* Header estandarizado */
+    .site-header{background:linear-gradient(135deg,#1e3a5f 0%,#111827 70%);padding:20px 20px 16px;text-align:center;border-bottom:1px solid var(--border)}
+    body.light .site-header{background:linear-gradient(135deg,#dbeafe 0%,#f3f4f6 70%)}
+    .site-header-inner{max-width:640px;margin:0 auto}
+    .site-brand{font-size:20px;font-weight:700;color:#f9fafb;margin-bottom:3px}
+    .site-sub{font-size:12px;color:#9ca3af;margin-bottom:12px}
+    .badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .badge{background:rgba(255,255,255,.08);border:1px solid var(--border);border-radius:20px;padding:4px 12px;font-size:12px;color:var(--muted);text-decoration:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+    .badge:hover{background:rgba(255,255,255,.14);color:var(--text)}
+    .badge-cafe{border-color:#92400e;color:#fbbf24}
+    .badge-cafe:hover{background:rgba(251,191,36,.12);color:#fde68a}
+    body.light .badge{background:rgba(0,0,0,.06);color:#374151}
+    body.light .badge:hover{background:rgba(0,0,0,.11);color:#111827}
+    body.light .badge-cafe{border-color:#b45309;color:#92400e}
+    body.light .badge-cafe:hover{background:rgba(180,83,9,.10);color:#78350f}
+    /* Share row en station page */
+    .share-row-st{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+    .sbtn{background:rgba(255,255,255,.07);border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:6px 12px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;gap:4px;transition:all .15s;font-family:inherit}
+    .sbtn:hover{background:rgba(255,255,255,.13);color:var(--text);border-color:#6b7280}
+    body.light .sbtn{background:rgba(0,0,0,.05);color:#374151}
+    body.light .sbtn:hover{background:rgba(0,0,0,.10);color:#111827;border-color:#9ca3af}
+    #sbtn-copy.copied{border-color:var(--green);color:#86efac}
+    /* QR modal en station page */
+    #qr-modal-st{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;align-items:center;justify-content:center}
+    #qr-modal-st.visible{display:flex}
+    #qr-box-st{background:#fff;border-radius:12px;padding:20px;text-align:center;max-width:260px;width:90%}
+    #qr-box-st img{width:200px;height:200px;display:block;margin:0 auto 12px}
+    .qr-name{font-size:14px;color:#111;font-weight:600;margin-bottom:4px}
+    .qr-url{font-size:11px;color:#6b7280;word-break:break-all;margin-bottom:12px}
+    #qr-close-st{background:#f3f4f6;border:none;border-radius:6px;padding:7px 18px;font-size:13px;cursor:pointer;color:#374151}
+    #qr-close-st:hover{background:#e5e7eb}
   </style>
   <?php if (defined('GA_ID') && GA_ID): ?>
   <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_ID ?>"></script>
@@ -280,7 +311,18 @@ if (!empty($_GET['station'])) {
   <?php endif; ?>
 </head>
 <body>
-<div class="hdr"><a href="/radio/">← Radio Argentina — todas las emisoras</a><button id="theme-btn-st">☀️ Modo claro</button></div>
+<header class="site-header">
+  <div class="site-header-inner">
+    <div class="site-brand">📻 Radio Argentina</div>
+    <div class="site-sub"><?= htmlspecialchars($found['nombre']) ?></div>
+    <div class="badges">
+      <a class="badge" href="/radio/">← Todas las emisoras</a>
+      <a class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
+      <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Café</a>
+      <button id="theme-btn-st" class="badge">☀️ Modo claro</button>
+    </div>
+  </div>
+</header>
 <div class="wrap">
   <?php if (!empty($found['logo'])): ?>
   <img src="<?= htmlspecialchars($found['logo']) ?>" alt="" style="width:64px;height:64px;border-radius:8px;object-fit:cover;margin-bottom:16px" onerror="this.style.display='none'">
@@ -346,19 +388,28 @@ if (!empty($_GET['station'])) {
   <?php endif; ?>
 
   <hr>
+  <div class="share-row-st">
+    <button class="sbtn" id="sbtn-copy">🔗 Copiar link</button>
+    <a class="sbtn" id="sbtn-wa" href="https://wa.me/?text=<?= urlencode('📻 Escuchá ' . $found['nombre'] . ' en vivo 👉 ' . $pg_url) ?>" target="_blank" rel="noopener">💬 WhatsApp</a>
+    <button class="sbtn" id="sbtn-qr">⬛ QR</button>
+  </div>
   <?php if ($prov): ?>
-  <div style="margin-top:12px;font-size:13px">
+  <div style="margin-top:14px;font-size:13px">
     <a href="/radio/?provincia=<?= urlencode($found['provincia']) ?>" style="color:var(--muted)">
       📻 Ver todas las radios de <?= htmlspecialchars($prov) ?> →
     </a>
+    &nbsp;·&nbsp;
+    <a class="suggest-prov" href="/radio/sugerir.php?provincia=<?= urlencode($found['provincia']) ?>">¿Conocés otra? Sugerila →</a>
   </div>
   <?php endif; ?>
-  <div class="ft">
-    <a href="/radio/">← Todas las emisoras</a>
-    <button class="btn-share" id="btn-share-pg">🔗 Compartir</button>
-    <?php if ($prov): ?>
-    <a class="suggest-prov" href="/radio/sugerir.php?provincia=<?= urlencode($found['provincia']) ?>">¿Conocés otra radio de <?= htmlspecialchars($prov) ?>? →</a>
-    <?php endif; ?>
+</div>
+
+<div id="qr-modal-st">
+  <div id="qr-box-st">
+    <img id="qr-img-st" src="" alt="QR">
+    <div class="qr-name"><?= htmlspecialchars($found['nombre']) ?></div>
+    <div class="qr-url"><?= htmlspecialchars($pg_url) ?></div>
+    <button id="qr-close-st">Cerrar</button>
   </div>
 </div>
 <script>
@@ -432,13 +483,26 @@ if (!empty($_GET['station'])) {
   audio.addEventListener('pause',function(){clearInterval(playTimer);});
   audio.addEventListener('error',function(){clearInterval(playTimer);playSeconds=0;});
 
-  // Compartir
-  var shareBtn=document.getElementById('btn-share-pg');
-  if(shareBtn){shareBtn.addEventListener('click',function(){
-    var url=<?= json_encode($pg_url) ?>;
-    if(navigator.share){navigator.share({title:<?= json_encode($found['nombre']) ?>,url:url}).catch(function(){});}
-    else{navigator.clipboard.writeText(url).then(function(){shareBtn.textContent='✓ Copiado';setTimeout(function(){shareBtn.textContent='🔗 Compartir';},2000);}).catch(function(){});}
+  // Compartir — Link, WhatsApp, QR
+  var pgUrl=<?= json_encode($pg_url) ?>;
+  var pgNombre=<?= json_encode($found['nombre']) ?>;
+  var btnCopySt=document.getElementById('sbtn-copy');
+  var btnQrSt=document.getElementById('sbtn-qr');
+  var qrModalSt=document.getElementById('qr-modal-st');
+  if(btnCopySt){btnCopySt.addEventListener('click',function(){
+    navigator.clipboard.writeText(pgUrl).then(function(){
+      btnCopySt.textContent='✓ Copiado';btnCopySt.id='sbtn-copy';btnCopySt.classList.add('copied');
+      setTimeout(function(){btnCopySt.textContent='🔗 Copiar link';btnCopySt.classList.remove('copied');},2000);
+    }).catch(function(){if(navigator.share)navigator.share({title:pgNombre,url:pgUrl}).catch(function(){});});
   });}
+  if(btnQrSt){btnQrSt.addEventListener('click',function(){
+    document.getElementById('qr-img-st').src='https://api.qrserver.com/v1/create-qr-code/?size=200x200&data='+encodeURIComponent(pgUrl);
+    qrModalSt.classList.add('visible');
+  });}
+  if(qrModalSt){
+    document.getElementById('qr-close-st').addEventListener('click',function(){qrModalSt.classList.remove('visible');});
+    qrModalSt.addEventListener('click',function(e){if(e.target===qrModalSt)qrModalSt.classList.remove('visible');});
+  }
 
   // Tema claro/oscuro
   var themeBtn=document.getElementById('theme-btn-st');
@@ -755,6 +819,11 @@ radio_log('visit', '');
     .codec-badge {
       font-size: 10px; color: var(--muted); white-space: nowrap;
       align-self: flex-start; padding-top: 2px; flex-shrink: 0;
+    }
+    .icy-badge {
+      font-size: 10px; color: #a78bfa; padding: 1px 5px; border-radius: 10px;
+      background: rgba(167,139,250,.12); white-space: nowrap;
+      align-self: flex-start; padding-top: 2px; flex-shrink: 0; cursor: default;
     }
 
     /* ── Buscador ── */
@@ -1703,6 +1772,24 @@ radio_log('visit', '');
       setTimeout(dismissToast, 12000);
     }, 20000);
   }
+
+  // ICY badges — emisoras que soportan metadata de canción
+  fetch('/radio/icy_stations.json')
+    .then(function(r) { return r.ok ? r.json() : null; })
+    .then(function(icy) {
+      if (!icy) return;
+      var icySet = new Set(icy);
+      document.querySelectorAll('.station').forEach(function(el) {
+        if (!icySet.has(el.dataset.url)) return;
+        var badge = document.createElement('span');
+        badge.className = 'icy-badge';
+        badge.title = 'Muestra la canción que suena';
+        badge.textContent = '♪';
+        var ref = el.querySelector('.codec-badge') || el.querySelector('.btn-play');
+        if (ref) ref.before(badge);
+      });
+    })
+    .catch(function() {});
 
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/radio/sw.js').catch(function(){});
