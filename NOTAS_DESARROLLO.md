@@ -366,6 +366,88 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0705 — 2026-06-24 — Íconos PWA + estandarización UI + badges ICY metadata
+
+### Contexto
+Continuación de TKT-0704. Cuatro mejoras agrupadas en un solo commit.
+
+### Cambios
+
+**Íconos PWA** (`icon-192.png`, `icon-512.png`)
+- Generados con Python PIL: antena de radio + ondas azules sobre fondo #111827
+- Referenciados en `manifest.json` como `"purpose": "any maskable"`
+- Sin dependencias externas de diseño
+
+**Estandarización de páginas individuales** (`index.php` — sección station)
+- Header unificado `<header class="site-header">` igual al de la página principal
+- Barra de compartir idéntica a la del listado: 🔗 Copiar link / 💬 WhatsApp / ⬛ QR
+- Modal QR con `api.qrserver.com`, misma lógica que en el player principal
+- Mismo sistema de tema (localStorage `radio_theme`) compartido entre todas las páginas
+
+**ICY metadata detection** (`icy_stations.json`, nuevo)
+- Script Python con threading (50 hilos, timeout 5s) verificó 690 streams HTTP
+- 147/690 streams soportan ICY metadata (21%)
+- Badge `♪` clase `.icy-badge` (píldora violeta) en el listado general
+- JS fetch carga `icy_stations.json` y aplica badges al DOM después de render
+
+### Archivos nuevos
+- `icon-192.png`, `icon-512.png` — íconos PWA
+- `icy_stations.json` — 147 URLs con soporte ICY (regenerar periódicamente)
+
+---
+
+## TKT-0704 — 2026-06-24 — Plan de marketing: dark/light + PWA + schema + survey + now playing + SEO
+
+### Contexto
+Plan de marketing no invasivo implementado integralmente. Foco: visibilidad orgánica y
+retención de oyentes sin publicidad, popups ni dark patterns.
+
+### Cambios implementados
+
+**Tema oscuro/claro** (CSS variables en `index.php`)
+- Variables `:root` para `--bg`, `--surface`, `--border`, `--text`, `--muted`, `--accent`
+- Override `body.light` para modo claro
+- Toggle persistido en `localStorage` clave `radio_theme`, compartido entre todas las páginas
+- Mismo sistema aplicado a páginas de emisora individual
+
+**PWA — Progressive Web App** (`manifest.json`, `sw.js`)
+- `manifest.json`: nombre, scope `/radio/`, display standalone, colores, íconos 192/512
+- `sw.js`: service worker con precache del shell (`/radio/`, `manifest.json`)
+- Network-first para endpoints dinámicos (proxy.php, nowplaying.php, survey.php, etc.)
+- Meta tags apple-mobile-web-app-* para iOS
+- Registro del SW en `index.php` al final del JS
+
+**Schema.org JSON-LD** (en páginas individuales)
+- Tipo `RadioBroadcastService` con `broadcastFrequency` extraída por regex del nombre
+- `potentialAction: ListenAction` con `target` = URL del stream
+- `og:audio` meta tag para embeds en redes sociales
+
+**Survey de satisfacción** (`survey.php`, toast en `index.php`)
+- Toast aparece tras 3 minutos continuos de reproducción
+- Opciones: 👍 / 😐 / 👎 (ratings 1/0/-1)
+- Cooldown 30 días por emisora (si ya valoró), 7 días si cerró sin valorar
+- Keys localStorage: `survey_v1_{slug}`
+- `survey.php`: guarda en `data/survey.csv` con timestamp, IP, rating, station
+- No bloquea reproducción, cierre instantáneo
+
+**Now playing** (`nowplaying.php`, poller JS)
+- `nowplaying.php`: fetcha stream con `Icy-MetaData: 1`, lee metaint bytes, parsea `StreamTitle=`
+- Caché 30s en `/tmp/radio_np_MD5.json` para no sobrecargar el stream
+- JS en páginas individuales: polling cada 30s mientras está reproduciéndose
+- Muestra artista/título en el player si el stream lo soporta
+
+**Páginas SEO por provincia** (en `index.php` — listado principal)
+- `$filtro_prov_seo`: si `?provincia=` está en la URL, ajusta `$page_title`, `$page_desc`, `$page_canon`
+- Ejemplo: `/radio/?provincia=mendoza` → "Radios de Mendoza | Radio Argentina"
+
+### Archivos nuevos
+- `manifest.json` — manifiesto PWA
+- `sw.js` — service worker
+- `nowplaying.php` — endpoint ICY metadata
+- `survey.php` — endpoint encuesta de satisfacción
+
+---
+
 ## TKT-0703 — 2026-06-22 — Google Analytics 4 + Klimax recuperada
 
 **Google Analytics 4** agregado a `web/index.php` (directorio y páginas individuales).
