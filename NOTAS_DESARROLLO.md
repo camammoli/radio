@@ -366,6 +366,69 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0708 — 2026-06-24 — V2: crawlers SQLite + radio2.sh CLI + staging /radio/beta/
+
+### Resumen
+Continuación del desarrollo v2 — completado V2-006 a V2-008.
+
+### V2-006: Crawlers SQLite
+
+**`db/radio_db.py`** — módulo Python para conexión SQLite compartida (WAL, row_factory, busy_timeout=5000)
+
+**`crawlers/check_streams_v2.py`**
+- Verificación HTTP paralela (30 workers por default)
+- Detecta y registra en station_events: `went_down`, `came_back`, `icy_gained`, `icy_lost`
+- Actualiza `stream_status` (UPSERT), `stream_history`, `icy_cache`
+- `--notify`: envía eventos pendientes a Telegram en bloque (max 20 por run)
+- `--icy`: lee StreamTitle vía socket raw para ICY streams activos
+- Registra cada run en `crawler_runs`
+
+**`crawlers/enrich_v2.py`**
+- Descarga Radio Browser API (AR+UY), cruza por URL normalizada
+- Actualiza logo, tags, homepage, codec, bitrate, rb_uuid, rb_votes, rb_clicks en DB
+- `--icy`: para sin-match, verifica ICY headers → detecta icy_gained/icy_lost
+- `--force`: re-enrich aunque ya tengan rb_uuid
+
+**`crawlers/hunt_stations_v2.py`**
+- Descubre emisoras nuevas en AR+UY que no están en la DB
+- Inserta con `approved=0` (requieren aprobación) o `--approve` para directo
+- Verifica URL antes de insertar, slug único generado en Python
+
+**GitHub Actions v2**
+- `check-streams-v2.yml`: cron cada 6hs — download DB → check → upload
+- `enrich-v2.yml`: cron días 1 y 15 — download DB → enrich → upload
+- Ambos pasan TG_TOKEN/TG_CHAT_ID desde secrets
+
+### V2-007: CLI radio2.sh
+
+**`radio2.sh`** — reemplaza radio.sh consumiendo API REST en lugar de emisoras.txt:
+- `radio2.sh` → lista top 20 más escuchadas (API call, tabla con ♪ + provincia + plays)
+- `radio2.sh <búsqueda>` → busca en API, menú numerado si hay múltiples resultados
+- Muestra: estado (●), ICY (♪), provincia, listener count, now-playing actual
+- Monitor ICY en background: cada 30s actualiza `♪ Ahora suena:` mientras reproduce
+- Soporte mplayer/cvlc/mpv (default mplayer)
+- Variable `RADIO_API` para apuntar a otro endpoint
+
+### V2-008: Staging /radio/beta/
+
+- `RADIO_BASE` constant en config.php controla el prefijo de assets y manifest
+- `head.php` y `station.php` usan `RADIO_BASE` (default `/radio`)
+- Deploy a `/radio/beta/` con config específico (`RADIO_BASE=/radio/beta`, `NOTIFY_OYENTES=false`)
+- DB SQLite subida a `/radio/db/radio_v2.sqlite` en servidor
+- `.htaccess` específico para beta con `RewriteBase /radio/beta/`
+
+### Verificación staging
+```
+https://mammoli.ar/radio/beta/                     → listing OK (1257 emisoras)
+https://mammoli.ar/radio/beta/radio-rivadavia-buenos-aires/  → station page OK
+https://mammoli.ar/radio/beta/api/stations?limit=3 → API JSON OK
+```
+
+### Pendiente
+- V2-009: cutover producción — requiere aprobación de Carlos
+
+---
+
 ## TKT-0707 — 2026-06-24 — V2: Arquitectura completa — modelo de datos, API, player, pages
 
 ### Contexto
