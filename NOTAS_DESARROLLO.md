@@ -366,6 +366,41 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0709 — 2026-06-24 — V2-009: Cutover a producción
+
+### Resumen
+Deploy completo de v2 a mammoli.ar/radio/. Producción migrada de PHP monolítico + JSON planos a arquitectura SQLite + API REST + páginas separadas.
+
+### Proceso
+1. Mirror `web/` → `/radio/` sin --delete (conserva datos de servidor: plays.json, status.json, emisoras.json, etc.)
+2. Excluir config.php del mirror → subir production config.php manualmente con RADIO_DB definido
+3. Subir SQLite DB a `/radio/db/radio_v2.sqlite`
+4. Limpiar `/radio/web/` espurio (mirror accidental de sesión anterior)
+
+### Bugs encontrados y corregidos en cutover
+- **RADIO_DB path**: `_db.php` tenía default `__DIR__ . '/../../db/'` (2 niveles arriba desde api/) → correcto para staging (beta/api/), incorrecto para prod (api/). Fix: definir en config.php como `__DIR__ . '/db/radio_v2.sqlite'`. Default cambiado a `/../db/` (1 nivel).
+- **playlist.php WHERE**: `approved = 1` en WHERE era inválido — `v_stations` ya filtra approved y no expone esa columna. Eliminado.
+- **sitemap.php**: reescrito para leer slugs del DB (v_stations) en lugar de JSON de GitHub.
+
+### Verificación final (todos OK)
+```
+https://mammoli.ar/radio/                                     → 1257 emisoras en vivo
+https://mammoli.ar/radio/radio-rivadavia-buenos-aires/        → página individual
+https://mammoli.ar/radio/api/stations?limit=2                 → JSON {ok:true, total:1257}
+https://mammoli.ar/radio/api/playlist.m3u                     → #EXTM3U, 1198 emisoras
+https://mammoli.ar/radio/?m3u=1                               → 301 → api/playlist.php → M3U
+https://mammoli.ar/radio/sitemap.xml                          → 1199 URLs con slugs v2
+```
+
+### Estado post-cutover
+- Producción: v2 activo. SQLite como fuente de verdad.
+- V1 emisoras.json + emisoras.txt: siguen en servidor (no borrados). radio.sh CLI los usa.
+- Staging /radio/beta/: sigue activo (config actualizada también).
+- GitHub Actions check-streams.yml: sigue corriendo (actualiza status.json v1, no SQLite). 
+  Pendiente: migrar a check-streams-v2.yml cuando GitHub Action pueda bajar/subir DB.
+
+---
+
 ## TKT-0708 — 2026-06-24 — V2: crawlers SQLite + radio2.sh CLI + staging /radio/beta/
 
 ### Resumen
