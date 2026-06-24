@@ -19,7 +19,7 @@ $prov   = str_param('provincia', 100);
 $tag    = str_param('tag', 60);
 $estado = str_param('estado', 20);
 
-$where  = ["estado != 'muerto'", 'approved = 1'];
+$where  = ["estado != 'muerto'"];   // v_stations ya filtra approved=1
 $params = [];
 
 if ($prov !== '') {

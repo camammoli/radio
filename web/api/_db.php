@@ -8,8 +8,8 @@ function radio_db(): PDO {
     static $pdo = null;
     if ($pdo) return $pdo;
 
-    // Ruta configurable desde config.php; por defecto dos niveles arriba de /api/
-    $path = defined('RADIO_DB') ? RADIO_DB : __DIR__ . '/../../db/radio_v2.sqlite';
+    // RADIO_DB definido en config.php (requerido en producción: __DIR__ de config + /db/radio_v2.sqlite)
+    $path = defined('RADIO_DB') ? RADIO_DB : __DIR__ . '/../db/radio_v2.sqlite';
 
     if (!file_exists($path)) {
         http_response_code(503);
