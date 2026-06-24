@@ -191,10 +191,8 @@
       }
     }
 
-    // Cambiar emisora sin recargar la página (para el listado)
+    // Cambiar emisora sin recargar la página (para el listado) y arrancar reproducción
     function setStation(newSlug, newUrl, newNombre) {
-      var wasPlaying = (state === 'playing' || state === 'buffering' || state === 'connecting');
-
       clearTimeout(loadTimer);
       if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
       audio.pause();
@@ -210,8 +208,8 @@
       survSecs  = 0;
       survShown = false;
 
-      setState('idle');
-      if (wasPlaying) play();
+      // No pasar por 'idle' — ir directo a play() para no resetear activeEl en los callbacks
+      play();
     }
 
     // ── Heartbeat / oyentes ───────────────────────────────────────────────────
