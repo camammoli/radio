@@ -440,6 +440,18 @@ if (!empty($_GET['station'])) {
   audio.addEventListener('error',function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='La señal se cortó. Intentá de nuevo.';playing=false;npDiv.textContent='';clearInterval(npTimer);});
   audio.addEventListener('waiting',function(){if(playing){btn.textContent='⏳ Buffering...';btn.className='loading';}});
 
+  // Oyentes / heartbeat
+  var lSid=Math.random().toString(36).slice(2)+Date.now().toString(36);
+  var lTimer=0;
+  var lStation=<?= json_encode($found['nombre']) ?>;
+  function lPing(){fetch('/radio/listeners.php?action=ping&sid='+lSid+'&station='+encodeURIComponent(lStation)).catch(function(){});}
+  function lStart(){clearInterval(lTimer);lPing();lTimer=setInterval(lPing,30000);}
+  function lStop(){clearInterval(lTimer);lTimer=0;navigator.sendBeacon('/radio/listeners.php?action=stop&sid='+lSid);}
+  audio.addEventListener('playing',function(){lStart();});
+  audio.addEventListener('pause',function(){lStop();});
+  audio.addEventListener('error',function(){lStop();});
+  window.addEventListener('beforeunload',function(){if(lTimer)lStop();});
+
   // Survey
   var slug=<?= json_encode($req) ?>;
   var surveyKey='survey_v1_'+slug;
@@ -821,9 +833,9 @@ radio_log('visit', '');
       align-self: flex-start; padding-top: 2px; flex-shrink: 0;
     }
     .icy-badge {
-      font-size: 10px; color: #a78bfa; padding: 1px 5px; border-radius: 10px;
-      background: rgba(167,139,250,.12); white-space: nowrap;
-      align-self: flex-start; padding-top: 2px; flex-shrink: 0; cursor: default;
+      font-size: 10px; color: #fff; font-weight: 600; padding: 2px 6px; border-radius: 10px;
+      background: #7c3aed; white-space: nowrap;
+      align-self: flex-start; flex-shrink: 0; cursor: default; letter-spacing: .3px;
     }
 
     /* ── Buscador ── */
@@ -1783,8 +1795,8 @@ radio_log('visit', '');
         if (!icySet.has(el.dataset.url)) return;
         var badge = document.createElement('span');
         badge.className = 'icy-badge';
-        badge.title = 'Muestra la canción que suena';
-        badge.textContent = '♪';
+        badge.title = 'Esta emisora muestra la canción que está sonando';
+        badge.textContent = '♪ ahora suena';
         var ref = el.querySelector('.codec-badge') || el.querySelector('.btn-play');
         if (ref) ref.before(badge);
       });
