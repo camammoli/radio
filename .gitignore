@@ -11,3 +11,8 @@ web/logs/
 .ftp.conf
 db/*.sqlite
 web/api/config.php
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
