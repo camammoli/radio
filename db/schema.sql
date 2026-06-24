@@ -165,6 +165,7 @@ CREATE VIEW IF NOT EXISTS v_stations AS
 SELECT
     s.id, s.n, s.slug, s.nombre, s.url, s.provincia, s.tags,
     s.codec, s.bitrate, s.homepage, s.logo, s.source,
+    s.rb_uuid, s.rb_votes, s.rb_clicks,
     COALESCE(ss.estado, 'unknown')          AS estado,
     ss.http_code, ss.response_ms,
     ss.consecutive_failures,

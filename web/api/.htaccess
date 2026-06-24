@@ -1,0 +1,9 @@
+# Bloquear acceso directo a archivos privados (_db.php, _helpers.php)
+<FilesMatch "^_">
+    Require all denied
+</FilesMatch>
+
+# Forzar MIME correcto para playlist
+<FilesMatch "playlist\.php">
+    ForceType audio/x-mpegurl
+</FilesMatch>
