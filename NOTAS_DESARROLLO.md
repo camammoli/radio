@@ -366,6 +366,34 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0706 — 2026-06-24 — Fix: heartbeat oyentes en páginas individuales + badge ICY más visible
+
+### Problema
+Las páginas individuales de emisora (`?station=slug`) no registraban oyentes en `listeners.php`:
+- No se enviaba notificación a Telegram al reproducir desde esa URL
+- El contador de oyentes activos no se incrementaba
+- El badge ICY "♪" era demasiado discreto (translúcido, sin texto)
+
+### Solución
+
+**Heartbeat en páginas de estación** (`index.php` — sección station, JS)
+- Se agrega SID único por sesión (`Math.random() + Date.now()` en base 36)
+- `lPing()`: llama `listeners.php?action=ping&sid=X&station=NOMBRE` al iniciar reproducción
+- Heartbeat cada 30s con `setInterval` mientras el audio está activo
+- `lStop()` con `sendBeacon` en `pause`, `error` y `beforeunload`
+- Reutiliza el mismo `listeners.php` que el listado → misma lógica Telegram, mismo contador
+
+**Badge ICY más visible** (CSS + JS del listado principal)
+- Antes: "♪" 10px, fondo `rgba(167,139,250,.12)`, color `#a78bfa`
+- Ahora: "♪ ahora suena" 10px bold, fondo sólido `#7c3aed`, texto `#fff`
+- Tooltip actualizado: "Esta emisora muestra la canción que está sonando"
+
+### Verificación
+- Probado con `listeners.php` real: La Brújula 24, LV12, Frecuencia Plus, Delta, Alfa 91.5 — todas responden con ICY OK
+- Confirmar en Telegram que llegan notificaciones al reproducir desde `/radio/?station=...`
+
+---
+
 ## TKT-0705 — 2026-06-24 — Íconos PWA + estandarización UI + badges ICY metadata
 
 ### Contexto
