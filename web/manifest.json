@@ -1,0 +1,17 @@
+{
+  "name": "Radio Argentina",
+  "short_name": "Radio AR",
+  "description": "Más de 1200 radios argentinas en streaming, sin instalar nada",
+  "start_url": "/radio/",
+  "scope": "/radio/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "lang": "es-AR",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    {"src": "/radio/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "/radio/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}

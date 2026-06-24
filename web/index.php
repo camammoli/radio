@@ -142,7 +142,7 @@ if (!empty($_GET['station'])) {
         if (!empty($found['bitrate'])) $codec_info .= ' ' . $found['bitrate'] . 'kbps.';
         else $codec_info .= '.';
     }
-    $meta_d = 'Escuchá ' . $found['nombre'] . ' en vivo por internet, gratis y sin instalar nada.'
+    $meta_d = '▶ Escuchá ' . $found['nombre'] . ' en vivo por internet, gratis y sin instalar nada.'
         . ($prov   ? ' ' . $prov . ', Argentina.' : '')
         . ($tags_s ? ' Géneros: ' . $tags_s . '.' : '')
         . $codec_info
@@ -166,6 +166,19 @@ if (!empty($_GET['station'])) {
     if (!empty($found['homepage'])) $ld['url']              = $found['homepage'];
     if (!empty($found['logo']))     $ld['logo']             = $found['logo'];
 
+    $ld2 = ['@context'=>'https://schema.org','@type'=>'RadioBroadcastService',
+             'name'=>$found['nombre'],'broadcastDisplayName'=>$found['nombre'],'inLanguage'=>'es-AR'];
+    if ($prov) $ld2['areaServed'] = $found['provincia'];
+    if (preg_match('/(\d+\.?\d*)\s*(FM|AM|MHz|KHz)/i', $found['nombre'], $fm)
+        || preg_match('/(FM|AM)\s*(\d+\.?\d*)/i', $found['nombre'], $fm2)) {
+        if (isset($fm[1])) { $freq_val = $fm[1]; $freq_mod = strtoupper($fm[2]); }
+        else { $freq_val = $fm2[2]; $freq_mod = strtoupper($fm2[1]); }
+        if (in_array($freq_mod, ['FM','AM','MHZ','KHZ'])) {
+            $freq_mod = ($freq_mod === 'MHZ') ? 'FM' : (($freq_mod === 'KHZ') ? 'AM' : $freq_mod);
+            $ld2['broadcastFrequency'] = ['@type'=>'BroadcastFrequencySpecification','broadcastFrequencyValue'=>$freq_val,'broadcastSignalModulation'=>$freq_mod];
+        }
+    }
+
     $st_label = $estado === 'ok' ? '✓ Activa' : ($estado === 'muerto' ? '✗ Caída' : '⏱ Sin respuesta');
     $st_color = $estado === 'ok' ? '#22c55e'  : ($estado === 'muerto' ? '#ef4444' : '#f59e0b');
     header('Content-Type: text/html; charset=utf-8');
@@ -186,7 +199,15 @@ if (!empty($_GET['station'])) {
   <?php if (!empty($found['logo'])): ?>
   <meta property="og:image" content="<?= htmlspecialchars($found['logo']) ?>">
   <?php endif; ?>
+  <meta property="og:audio" content="<?= htmlspecialchars($found['url']) ?>">
+  <link rel="manifest" href="/radio/manifest.json">
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Radio AR">
   <script type="application/ld+json"><?= json_encode($ld, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
+  <script type="application/ld+json"><?= json_encode($ld2, JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
   <script type="application/ld+json"><?= json_encode([
     '@context'=>'https://schema.org','@type'=>'BreadcrumbList',
     'itemListElement'=>[
@@ -195,49 +216,63 @@ if (!empty($_GET['station'])) {
     ]
   ], JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE) ?></script>
   <style>
+    :root{--bg:#111827;--surface:#1f2937;--border:#374151;--text:#f9fafb;--muted:#9ca3af;--accent:#3b82f6;--green:#22c55e;--red:#ef4444}
+    body.light{--bg:#f3f4f6;--surface:#fff;--border:#d1d5db;--text:#111827;--muted:#6b7280;--accent:#2563eb;--green:#16a34a;--red:#dc2626}
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#111827;color:#f9fafb;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
-    a{color:#3b82f6;text-decoration:none}
+    body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    a{color:var(--accent);text-decoration:none}
     a:hover{color:#93c5fd}
-    .hdr{background:linear-gradient(135deg,#1e3a5f 0%,#111827 70%);padding:14px 20px;border-bottom:1px solid #374151}
-    .hdr a{color:#9ca3af;font-size:13px}
-    .hdr a:hover{color:#f9fafb}
+    .hdr{background:linear-gradient(135deg,#1e3a5f 0%,#111827 70%);padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+    .hdr a{color:var(--muted);font-size:13px}
+    .hdr a:hover{color:var(--text)}
+    #theme-btn-st{background:none;border:1px solid var(--border);border-radius:16px;color:var(--muted);font-size:11px;padding:3px 9px;cursor:pointer;font-family:inherit;white-space:nowrap}
+    #theme-btn-st:hover{color:var(--text)}
     .wrap{max-width:640px;margin:0 auto;padding:32px 20px}
-    h1{font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.2}
-    .prov{color:#9ca3af;font-size:14px;margin-bottom:14px}
+    h1{font-size:28px;font-weight:700;margin-bottom:6px;line-height:1.2;color:var(--text)}
+    .prov{color:var(--muted);font-size:14px;margin-bottom:14px}
     .tags{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:28px}
     .tag{background:rgba(167,139,250,.12);color:#a78bfa;border-radius:20px;padding:3px 10px;font-size:12px}
-    .box{background:#1f2937;border:1px solid #374151;border-radius:12px;padding:24px;margin-bottom:24px}
-    .box-label{font-size:12px;color:#9ca3af;font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
-    #btn-play{display:flex;align-items:center;justify-content:center;gap:10px;background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;width:100%;margin-bottom:14px;transition:background .15s}
+    .box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px}
+    .box-label{font-size:12px;color:var(--muted);font-weight:500;text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px}
+    #btn-play{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:14px 28px;font-size:16px;font-weight:600;cursor:pointer;width:100%;margin-bottom:14px;transition:background .15s}
     #btn-play:hover{background:#2563eb}
-    #btn-play.playing{background:#22c55e}
+    #btn-play.playing{background:var(--green)}
     #btn-play.loading{background:#f59e0b;cursor:wait}
-    #btn-play.error{background:#ef4444}
+    #btn-play.error{background:var(--red)}
     audio{width:100%}
-    #st-msg{font-size:12px;color:#9ca3af;margin-top:8px;min-height:16px}
+    #st-msg{font-size:12px;color:var(--muted);margin-top:8px;min-height:16px}
+    #now-playing{font-size:12px;color:var(--muted);margin-top:6px;min-height:16px}
     .info{display:grid;gap:10px;font-size:13px;margin-bottom:28px}
-    .info-row{display:flex;gap:8px;color:#9ca3af}
+    .info-row{display:flex;gap:8px;color:var(--muted)}
     .info-lbl{min-width:80px;flex-shrink:0}
-    .info-val{color:#f9fafb}
-    hr{border:none;border-top:1px solid #374151;margin:24px 0}
+    .info-val{color:var(--text)}
+    hr{border:none;border-top:1px solid var(--border);margin:24px 0}
     .ft{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;align-items:center}
-    .btn-report{background:none;border:1px solid #374151;border-radius:6px;color:#9ca3af;font-size:12px;padding:5px 10px;cursor:pointer;margin-top:10px}
-    .btn-report:hover{border-color:#ef4444;color:#ef4444}
-    .btn-share{background:none;border:1px solid #374151;border-radius:6px;color:#9ca3af;font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit}
-    .btn-share:hover{border-color:#3b82f6;color:#3b82f6}
-    .reportado-ok{font-size:12px;color:#22c55e;margin-top:8px}
+    .btn-report{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:5px 10px;cursor:pointer;margin-top:10px}
+    .btn-report:hover{border-color:var(--red);color:var(--red)}
+    .btn-share{background:none;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;padding:5px 10px;cursor:pointer;font-family:inherit}
+    .btn-share:hover{border-color:var(--accent);color:var(--accent)}
+    .reportado-ok{font-size:12px;color:var(--green);margin-top:8px}
     .rel-section{margin-top:28px}
-    .rel-title{font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-weight:500}
+    .rel-title{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-weight:500}
     .rel-list{display:flex;flex-direction:column;gap:6px}
-    .rel-item{display:flex;align-items:center;gap:10px;background:#1f2937;border:1px solid #374151;border-radius:8px;padding:10px 12px;text-decoration:none;color:#f9fafb;font-size:13px;transition:background .15s}
-    .rel-item:hover{background:#374151;color:#f9fafb}
+    .rel-item{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;text-decoration:none;color:var(--text);font-size:13px;transition:background .15s}
+    .rel-item:hover{background:var(--border);color:var(--text)}
     .rel-item img{width:28px;height:28px;border-radius:4px;object-fit:cover;flex-shrink:0}
     .rel-item-info{flex:1;min-width:0}
     .rel-item-name{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .rel-item-tags{font-size:11px;color:#9ca3af;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .suggest-prov{color:#9ca3af;font-size:13px}
-    .suggest-prov:hover{color:#f9fafb}
+    .rel-item-tags{font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .suggest-prov{color:var(--muted);font-size:13px}
+    .suggest-prov:hover{color:var(--text)}
+    #survey-toast{position:fixed;bottom:20px;right:16px;max-width:260px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:8px;padding:14px 40px 14px 16px;font-size:14px;color:var(--text);line-height:1.5;z-index:200;box-shadow:0 4px 20px rgba(0,0,0,.3);transform:translateY(0);transition:opacity .5s,transform .5s}
+    #survey-toast.hide{opacity:0;transform:translateY(8px);pointer-events:none}
+    #survey-toast .survey-q{font-size:13px;color:var(--muted);margin-bottom:10px}
+    #survey-toast .survey-btns{display:flex;gap:8px}
+    #survey-toast .survey-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 12px;font-size:18px;cursor:pointer;transition:background .15s}
+    #survey-toast .survey-btn:hover{background:var(--border)}
+    #survey-toast .survey-dismiss{position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer;padding:2px}
+    #survey-toast .survey-dismiss:hover{color:var(--text)}
+    #survey-toast .survey-later{font-size:11px;color:var(--muted);margin-top:8px;cursor:pointer;background:none;border:none;padding:0;font-family:inherit;text-decoration:underline}
   </style>
   <?php if (defined('GA_ID') && GA_ID): ?>
   <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_ID ?>"></script>
@@ -245,7 +280,7 @@ if (!empty($_GET['station'])) {
   <?php endif; ?>
 </head>
 <body>
-<div class="hdr"><a href="/radio/">← Radio Argentina — todas las emisoras</a></div>
+<div class="hdr"><a href="/radio/">← Radio Argentina — todas las emisoras</a><button id="theme-btn-st">☀️ Modo claro</button></div>
 <div class="wrap">
   <?php if (!empty($found['logo'])): ?>
   <img src="<?= htmlspecialchars($found['logo']) ?>" alt="" style="width:64px;height:64px;border-radius:8px;object-fit:cover;margin-bottom:16px" onerror="this.style.display='none'">
@@ -264,6 +299,7 @@ if (!empty($_GET['station'])) {
     <button id="btn-play">▶ Escuchar en vivo</button>
     <audio id="audio" preload="none"></audio>
     <div id="st-msg"></div>
+    <div id="now-playing"></div>
   </div>
 
   <div class="info">
@@ -310,6 +346,13 @@ if (!empty($_GET['station'])) {
   <?php endif; ?>
 
   <hr>
+  <?php if ($prov): ?>
+  <div style="margin-top:12px;font-size:13px">
+    <a href="/radio/?provincia=<?= urlencode($found['provincia']) ?>" style="color:var(--muted)">
+      📻 Ver todas las radios de <?= htmlspecialchars($prov) ?> →
+    </a>
+  </div>
+  <?php endif; ?>
   <div class="ft">
     <a href="/radio/">← Todas las emisoras</a>
     <button class="btn-share" id="btn-share-pg">🔗 Compartir</button>
@@ -321,6 +364,7 @@ if (!empty($_GET['station'])) {
 <script>
 (function(){
   var audio=document.getElementById('audio'),btn=document.getElementById('btn-play'),msg=document.getElementById('st-msg');
+  var npDiv=document.getElementById('now-playing');
   var rawUrl=<?= json_encode($found['url']) ?>,isHttps=location.protocol==='https:',playing=false;
   var PROXY='/radio/proxy.php?url=';
   function resolve(u){
@@ -328,15 +372,65 @@ if (!empty($_GET['station'])) {
     if(isHttps&&u.startsWith('http://')) return u.replace('http://','https://');
     return u;
   }
+  var npTimer=0;
+  function fetchNP(){
+    fetch('/radio/nowplaying.php?url='+encodeURIComponent(rawUrl))
+      .then(function(r){return r.json();})
+      .then(function(d){if(d.ok&&d.title)npDiv.textContent='♪ '+d.title;else npDiv.textContent='';})
+      .catch(function(){npDiv.textContent='';});
+  }
   btn.addEventListener('click',function(){
-    if(playing){audio.pause();audio.src='';btn.textContent='▶ Escuchar en vivo';btn.className='';msg.textContent='';playing=false;return;}
+    if(playing){audio.pause();audio.src='';btn.textContent='▶ Escuchar en vivo';btn.className='';msg.textContent='';npDiv.textContent='';clearInterval(npTimer);playing=false;return;}
     btn.textContent='⏳ Conectando...';btn.className='loading';msg.textContent='';
     audio.src=resolve(rawUrl);
     audio.play().catch(function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='No disponible en este momento.';});
   });
-  audio.addEventListener('playing',function(){btn.textContent='⏸ Detener';btn.className='playing';msg.textContent='● En vivo';playing=true;});
-  audio.addEventListener('error',function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='La señal se cortó. Intentá de nuevo.';playing=false;});
+  audio.addEventListener('playing',function(){btn.textContent='⏸ Detener';btn.className='playing';msg.textContent='● En vivo';playing=true;clearInterval(npTimer);fetchNP();npTimer=setInterval(fetchNP,30000);});
+  audio.addEventListener('error',function(){btn.textContent='▶ Escuchar en vivo';btn.className='error';msg.textContent='La señal se cortó. Intentá de nuevo.';playing=false;npDiv.textContent='';clearInterval(npTimer);});
   audio.addEventListener('waiting',function(){if(playing){btn.textContent='⏳ Buffering...';btn.className='loading';}});
+
+  // Survey
+  var slug=<?= json_encode($req) ?>;
+  var surveyKey='survey_v1_'+slug;
+  var playSeconds=0;var playTimer=0;var surveyShown=false;
+  function showSurvey(){
+    if(surveyShown)return;
+    var stored=localStorage.getItem(surveyKey);
+    if(stored){var days=(Date.now()-parseInt(stored))/86400000;if(days<30)return;}
+    surveyShown=true;
+    var toast=document.createElement('div');
+    toast.id='survey-toast';
+    toast.innerHTML='<div class="survey-q">¿Encontraste lo que buscabas?</div>'+
+      '<div class="survey-btns">'+
+      '<button class="survey-btn" data-r="1">👍</button>'+
+      '<button class="survey-btn" data-r="0">😐</button>'+
+      '<button class="survey-btn" data-r="-1">👎</button>'+
+      '</div>'+
+      '<button class="survey-later">Ahora no</button>'+
+      '<button class="survey-dismiss">✕</button>';
+    document.body.appendChild(toast);
+    function dismiss(days){
+      localStorage.setItem(surveyKey,(Date.now()-(30-days)*86400000).toString());
+      toast.classList.add('hide');
+      setTimeout(function(){if(toast.parentNode)toast.parentNode.removeChild(toast);},600);
+    }
+    toast.querySelectorAll('.survey-btn').forEach(function(b){
+      b.addEventListener('click',function(){
+        fetch('/radio/survey.php',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({station:<?= json_encode($found['nombre']) ?>,rating:parseInt(b.dataset.r)})
+        }).catch(function(){});
+        dismiss(30);
+      });
+    });
+    toast.querySelector('.survey-later').addEventListener('click',function(){dismiss(7);});
+    toast.querySelector('.survey-dismiss').addEventListener('click',function(){dismiss(7);});
+  }
+  audio.addEventListener('playing',function(){
+    clearInterval(playTimer);
+    playTimer=setInterval(function(){playSeconds+=5;if(playSeconds>=180){clearInterval(playTimer);showSurvey();}},5000);
+  });
+  audio.addEventListener('pause',function(){clearInterval(playTimer);});
+  audio.addEventListener('error',function(){clearInterval(playTimer);playSeconds=0;});
 
   // Compartir
   var shareBtn=document.getElementById('btn-share-pg');
@@ -345,6 +439,20 @@ if (!empty($_GET['station'])) {
     if(navigator.share){navigator.share({title:<?= json_encode($found['nombre']) ?>,url:url}).catch(function(){});}
     else{navigator.clipboard.writeText(url).then(function(){shareBtn.textContent='✓ Copiado';setTimeout(function(){shareBtn.textContent='🔗 Compartir';},2000);}).catch(function(){});}
   });}
+
+  // Tema claro/oscuro
+  var themeBtn=document.getElementById('theme-btn-st');
+  function setThemeBtnSt(isLight){themeBtn.textContent=isLight?'🌙 Modo oscuro':'☀️ Modo claro';}
+  var savedTheme=localStorage.getItem('radio_theme');
+  if(savedTheme==='light'){document.body.classList.add('light');setThemeBtnSt(true);}
+  themeBtn.addEventListener('click',function(){
+    var isLight=document.body.classList.toggle('light');
+    setThemeBtnSt(isLight);
+    localStorage.setItem('radio_theme',isLight?'light':'dark');
+  });
+
+  // Service Worker
+  if('serviceWorker' in navigator){navigator.serviceWorker.register('/radio/sw.js').catch(function(){});}
 })();
 </script>
 </body>
@@ -420,6 +528,29 @@ if (isset($_GET['m3u'])) {
     exit;
 }
 
+// ── SEO por provincia ─────────────────────────────────────────────────────────
+$filtro_prov_seo = trim($_GET['provincia'] ?? '');
+$page_title = 'Radio Argentina en vivo · ' . $total . ' emisoras online';
+$page_desc  = 'Escuchá ' . $total . ' radios argentinas en streaming desde el navegador — sin instalar nada. Noticias, música, deportes, folklore y más.';
+$page_canon = 'https://mammoli.ar/radio/';
+if ($filtro_prov_seo) {
+    $terms_match = [];
+    foreach ($province_terms as $display => $terms) {
+        if (strcasecmp($display, $filtro_prov_seo) === 0) { $terms_match = $terms; break; }
+    }
+    if ($terms_match) {
+        $stations = array_values(array_filter($stations, function($s) use ($terms_match) {
+            $pl = strtolower($s['provincia']);
+            foreach ($terms_match as $t) { if (str_contains($pl, $t)) return true; }
+            return false;
+        }));
+    }
+    $cnt = count($stations);
+    $page_title = 'Radios de ' . $filtro_prov_seo . ' en vivo · ' . $cnt . ' emisoras online';
+    $page_desc  = '▶ Escuchá ' . $cnt . ' radios de ' . $filtro_prov_seo . ' en vivo desde el navegador, sin instalar nada. Noticias, música, folklore y más de Argentina.';
+    $page_canon = 'https://mammoli.ar/radio/?provincia=' . urlencode($filtro_prov_seo);
+}
+
 // ── Filtros server-side (para curl/bots/M3U) ─────────────────────────────────
 $filtro = trim($_GET['buscar'] ?? '');
 if ($filtro !== '') {
@@ -446,22 +577,28 @@ radio_log('visit', '');
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Radio Argentina en vivo · <?= $total ?> emisoras online</title>
-  <meta name="description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada. Noticias, música, deportes, folklore y más.">
-  <link rel="canonical" href="https://mammoli.ar/radio/">
+  <title><?= htmlspecialchars($page_title) ?></title>
+  <meta name="description" content="<?= htmlspecialchars($page_desc) ?>">
+  <link rel="canonical" href="<?= htmlspecialchars($page_canon) ?>">
   <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://mammoli.ar/radio/">
+  <meta property="og:url"         content="<?= htmlspecialchars($page_canon) ?>">
   <meta property="og:site_name"   content="Radio Argentina">
-  <meta property="og:title"       content="Radio Argentina en vivo · <?= $total ?> emisoras online">
-  <meta property="og:description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada. Noticias, música, deportes, folklore y más.">
+  <meta property="og:title"       content="<?= htmlspecialchars($page_title) ?>">
+  <meta property="og:description" content="<?= htmlspecialchars($page_desc) ?>">
   <meta name="twitter:card"        content="summary">
-  <meta name="twitter:title"       content="Radio Argentina en vivo · <?= $total ?> emisoras online">
-  <meta name="twitter:description" content="Escuchá <?= $total ?> radios argentinas en streaming desde el navegador — sin instalar nada."><?php
+  <meta name="twitter:title"       content="<?= htmlspecialchars($page_title) ?>">
+  <meta name="twitter:description" content="<?= htmlspecialchars($page_desc) ?>"><?php
   // Canonical por emisora compartida (?n=) para mejorar indexación de páginas compartidas
   if (!empty($_GET['n']) && ctype_digit($_GET['n'])) {
     echo "\n  <link rel=\"canonical\" href=\"https://mammoli.ar/radio/?n=" . $_GET['n'] . "\">";
   }
   ?>
+  <link rel="manifest" href="/radio/manifest.json">
+  <meta name="theme-color" content="#111827">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Radio AR">
   <style>
     :root {
       --bg:      #111827;
@@ -1565,6 +1702,10 @@ radio_log('visit', '');
       document.getElementById('toast-close').addEventListener('click', dismissToast);
       setTimeout(dismissToast, 12000);
     }, 20000);
+  }
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/radio/sw.js').catch(function(){});
   }
 })();
 </script>
