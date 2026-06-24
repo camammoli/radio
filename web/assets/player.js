@@ -120,8 +120,9 @@
       if (/\.pls(\?|$)/i.test(raw)) return PROXY_URL + encodeURIComponent(raw);
       if (/\.m3u(\?|$)/i.test(raw) && !/\.m3u8(\?|$)/i.test(raw))
         return PROXY_URL + encodeURIComponent(raw);
+      // Streams HTTP desde página HTTPS: usar proxy (no upgrade directo, los certs suelen fallar)
       if (location.protocol === 'https:' && raw.indexOf('http://') === 0)
-        return raw.replace('http://', 'https://');
+        return PROXY_URL + encodeURIComponent(raw);
       return raw;
     }
 
