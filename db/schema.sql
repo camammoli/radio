@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS stations (
     logo        TEXT,
     source      TEXT    DEFAULT 'manual',       -- manual / radio-browser / gist / sugerencia
     approved    INTEGER DEFAULT 1,              -- 0 = pendiente aprobación
+    rb_uuid     TEXT,                           -- Radio Browser UUID (dedup)
+    rb_votes    INTEGER DEFAULT 0,
+    rb_clicks   INTEGER DEFAULT 0,
     created_at  TEXT    DEFAULT (datetime('now')),
     updated_at  TEXT    DEFAULT (datetime('now'))
 );
