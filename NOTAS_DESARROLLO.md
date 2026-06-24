@@ -366,6 +366,64 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0707 — 2026-06-24 — V2: Arquitectura completa — modelo de datos, API, player, pages
+
+### Contexto
+V1 creció hasta un monolito de ~1811 líneas en index.php + JSON planos. Refactoring estructural
+completo a V2 en rama `v2`, sin romper producción en `master`.
+
+### Decisiones de arquitectura
+- **SQLite con WAL** como base de datos (reemplaza emisoras.json, status.json, plays.json, icy_stations.json)
+- **PDO singleton** `radio_db()` — todos los endpoints lo usan, sin conexiones duplicadas
+- **Slugs únicos** generados por `_radio_slug()` / `_radio_full_slug()`, con sufijo `-{n}` anti-colisión
+- **9 tablas** + 2 vistas: stations, stream_status, stream_history, station_events, icy_cache, plays, listeners, surveys, crawler_runs + v_stations + v_active_listeners
+- **API REST** en `/radio/api/` con helpers `api_response` / `api_error` / `api_method`
+- **M3U stable**: `/radio/api/playlist.m3u` con 301 desde `?m3u=1` para backward compat
+- **Factory function** `RadioPlayer(opts)` — sin clases, sin `this` binding — estados: idle/connecting/playing/buffering/error
+- **HLS.js** desde CDN para adaptive streams; fallback a `<audio>` nativo
+- **Page Visibility API** + sendBeacon para heartbeat mobile-safe
+- **Server-side render** del listing: PHP genera todas las cards, JS filtra en cliente (sin SSR/hydration)
+- **CSS namespace `rp-*`** para player, variables CSS para temas dark/light
+
+### Tickets incluidos
+- V2-001: diseño + docs/V2_DESIGN.md + db/schema.sql (9 tablas + 2 vistas)
+- V2-002: migrate_v1.py — lector JSON → SQLite (1257 emisoras migradas, slug gen idéntico a PHP)
+- V2-003: API REST — stations.php, playlist.php, listeners.php, nowplaying.php, survey.php, suggest.php
+- V2-004: player unificado — assets/player.js, assets/player.css, assets/theme.js
+- V2-005: router + pages — index.php (router), pages/listing.php, pages/station.php, components/head.php, assets/style.css
+
+### Archivos creados / modificados (ramas v2)
+```
+db/schema.sql
+db/migrate_v1.py
+web/api/_db.php
+web/api/_helpers.php
+web/api/stations.php
+web/api/playlist.php
+web/api/listeners.php
+web/api/nowplaying.php
+web/api/survey.php
+web/api/suggest.php
+web/api/.htaccess
+web/.htaccess          (rewrites para /api/{endpoint} y /api/stations/{slug})
+web/index.php          (router limpio, 37 líneas)
+web/pages/listing.php
+web/pages/station.php
+web/components/head.php
+web/assets/player.js
+web/assets/player.css
+web/assets/theme.js
+web/assets/style.css
+```
+
+### Pendientes V2
+- V2-006: crawlers → escribir en SQLite + station_events (icy_gained/lost, came_back, went_down)
+- V2-007: radio2.sh — CLI que consume API, muestra ICY + listener count
+- V2-008: staging /radio/beta/ + test migration completa
+- V2-009: cutover producción — FTP deploy v2 → /radio/
+
+---
+
 ## TKT-0706 — 2026-06-24 — Fix: heartbeat oyentes en páginas individuales + badge ICY más visible
 
 ### Problema
