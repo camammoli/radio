@@ -9,3 +9,4 @@ trafico_github.py
 trafico_github.json
 web/logs/
 .ftp.conf
+db/*.sqlite
