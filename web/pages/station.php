@@ -309,7 +309,8 @@ if ($prov) {
   qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrModal.classList.remove('visible'); });
 
   // Service Worker
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/radio/sw.js').catch(function(){});
+  var _swBase = <?= json_encode(defined('RADIO_BASE') ? RADIO_BASE : '/radio') ?>;
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register(_swBase + '/sw.js').catch(function(){});
 }());
 </script>
 </body>
