@@ -18,6 +18,7 @@ $act = $_POST['action'] ?? '';
 
 if ($act === 'login') {
     if (($_POST['u'] ?? '') === $ADMIN_USER && ($_POST['p'] ?? '') === $ADMIN_PASS) {
+        session_regenerate_id(true);
         $_SESSION['radio_admin'] = true;
         $_SESSION['csrf']        = bin2hex(random_bytes(16));
         header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
@@ -38,6 +39,9 @@ if (empty($_SESSION['radio_admin'])) {
 
 $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(16));
 $db   = radio_db();
+
+// Migración: agregar columna location si no existe (noop si ya existe)
+try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -68,12 +72,20 @@ $stats = [
     'suger_pend' => (int)$db->query("SELECT COUNT(*) FROM stations WHERE source='sugerencia' AND approved=0")->fetchColumn(),
 ];
 
-// Encuesta bienvenida (station_id IS NULL = slug _welcome_v2)
-$welcome = $db->query(
+// Encuesta bienvenida — rating
+$welcome_rating = $db->query(
     "SELECT rating, COUNT(*) AS cnt FROM surveys WHERE station_id IS NULL GROUP BY rating ORDER BY rating DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
-$welcome_map = [-1 => 0, 0 => 0, 1 => 0];
-foreach ($welcome as $r) $welcome_map[(int)$r['rating']] = (int)$r['cnt'];
+$wrating = [-1 => 0, 0 => 0, 1 => 0];
+foreach ($welcome_rating as $r) $wrating[(int)$r['rating']] = (int)$r['cnt'];
+
+// Encuesta bienvenida — location (¿desde dónde escuchás?)
+$welcome_loc = $db->query(
+    "SELECT location, COUNT(*) AS cnt FROM surveys
+     WHERE station_id IS NULL AND location IS NOT NULL AND location != ''
+     GROUP BY location ORDER BY cnt DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+$loc_icons = ['casa' => '🏠', 'trabajo' => '💼', 'viaje' => '🚗', 'caminando' => '📱'];
 
 // Encuestas por emisora (top 40)
 $station_surveys = $db->query(
@@ -110,12 +122,11 @@ $crawler_runs = $db->query(
 $icy = $db->query(
     "SELECT COUNT(*) AS total,
             SUM(CASE WHEN stream_title IS NOT NULL AND stream_title!='' THEN 1 ELSE 0 END) AS con_titulo,
-            MAX(last_checked) AS ultima,
-            MIN(last_checked) AS primera_sin_refresh
+            MAX(last_checked) AS ultima
      FROM icy_cache WHERE supported=1"
 )->fetch(PDO::FETCH_ASSOC);
 
-// ICY activas (con título reciente < 30 min)
+// ICY activas (con título, las más recientes)
 $icy_activas = $db->query(
     "SELECT s.nombre, s.slug, ic.stream_title, ic.last_checked,
             ROUND((julianday('now')-julianday(ic.last_checked))*1440) AS mins_ago
@@ -132,8 +143,8 @@ function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8')
 function ago(?string $dt): string {
     if (!$dt) return '—';
     $diff = time() - strtotime($dt . ' UTC');
-    if ($diff < 60)   return 'hace ' . $diff . 's';
-    if ($diff < 3600) return 'hace ' . floor($diff/60) . 'min';
+    if ($diff < 60)    return 'hace ' . $diff . 's';
+    if ($diff < 3600)  return 'hace ' . floor($diff/60) . 'min';
     if ($diff < 86400) return 'hace ' . floor($diff/3600) . 'h';
     return 'hace ' . floor($diff/86400) . 'd';
 }
@@ -147,19 +158,20 @@ function ago(?string $dt): string {
 <meta name="robots" content="noindex, nofollow">
 <title>Admin — Radio Argentina</title>
 <style>
-:root{--bg:#0f172a;--card:#1e293b;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b}
+:root{--bg:#0f172a;--card:#1e293b;--card2:#263249;--border:#334155;--text:#e2e8f0;--muted:#94a3b8;--accent:#3b82f6;--green:#22c55e;--red:#ef4444;--yellow:#f59e0b}
+body.light{--bg:#f1f5f9;--card:#ffffff;--card2:#f8fafc;--border:#e2e8f0;--text:#1e293b;--muted:#64748b;--accent:#2563eb;--green:#16a34a;--red:#dc2626;--yellow:#d97706}
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif;padding:16px}
-h1{font-size:20px;margin-bottom:16px}
+body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif;padding:16px;transition:background .2s,color .2s}
+h1{font-size:20px}
 h2{font-size:15px;color:var(--accent);margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .cards{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:120px}
 .card .v{font-size:26px;font-weight:700;color:var(--accent)}
 .card .l{font-size:11px;color:var(--muted);margin-top:2px}
 table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
-th{text-align:left;padding:7px 10px;background:var(--card);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
+th{text-align:left;padding:7px 10px;background:var(--card2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
-tr:hover td{background:rgba(255,255,255,.02)}
+tr:hover td{background:var(--card2)}
 .pos{color:var(--green)} .neu{color:var(--yellow)} .neg{color:var(--red)}
 .badge-ok{color:var(--green)} .badge-err{color:var(--red)} .badge-warn{color:var(--yellow)}
 .url{font-size:11px;color:var(--muted);word-break:break-all}
@@ -167,24 +179,46 @@ form.inline{display:inline}
 button{cursor:pointer;border:none;border-radius:4px;padding:4px 10px;font-size:12px;font-weight:600}
 .btn-ok{background:#16a34a;color:#fff} .btn-ok:hover{background:#15803d}
 .btn-del{background:#b91c1c;color:#fff} .btn-del:hover{background:#991b1b}
-.btn-out{background:transparent;border:1px solid var(--border);color:var(--muted);padding:4px 12px;font-size:13px}
+.btn-out{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:5px 12px;font-size:13px;border-radius:6px}
 .btn-out:hover{color:var(--text)}
-.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap}
+.top-actions{display:flex;gap:8px;align-items:center}
 .mins-ok{color:var(--green)} .mins-warn{color:var(--yellow)} .mins-old{color:var(--red)}
 a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 .empty{color:var(--muted);font-style:italic;padding:10px 0}
 .note{font-size:12px;color:var(--muted);margin-top:6px}
+.welcome-row{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start;margin-bottom:12px}
+.welcome-block{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:14px 18px;min-width:180px}
+.welcome-block h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
+.loc-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
+.loc-bar-fill{height:8px;border-radius:4px;background:var(--accent);min-width:4px;transition:width .3s}
 </style>
 </head>
 <body>
+<script>
+if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('light');
+</script>
 
 <div class="top-bar">
   <h1>📻 Radio Argentina — Admin v2</h1>
-  <form method="post">
-    <input type="hidden" name="action" value="logout">
-    <button class="btn-out" type="submit">Cerrar sesión</button>
-  </form>
+  <div class="top-actions">
+    <button class="btn-out" id="theme-btn" onclick="toggleTheme()">☀️ Claro</button>
+    <form method="post" style="margin:0">
+      <input type="hidden" name="action" value="logout">
+      <button class="btn-out" type="submit">Cerrar sesión</button>
+    </form>
+  </div>
 </div>
+<script>
+var themeBtn = document.getElementById('theme-btn');
+function toggleTheme() {
+  var light = document.body.classList.toggle('light');
+  localStorage.setItem('radio_theme', light ? 'light' : 'dark');
+  themeBtn.textContent = light ? '🌙 Oscuro' : '☀️ Claro';
+}
+// Sincronizar texto del botón con estado actual
+if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscuro';
+</script>
 
 <!-- ── Resumen ─────────────────────────────────────────────────────────────── -->
 <h2 id="resumen">Resumen</h2>
@@ -203,13 +237,41 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 <!-- ── Encuestas ───────────────────────────────────────────────────────────── -->
 <h2 id="encuestas">Encuestas</h2>
 
-<p style="margin-bottom:10px;color:var(--muted);font-size:13px">
-  <strong style="color:var(--text)">Toast bienvenida v2</strong> —
-  <span class="pos">👍 <?= $welcome_map[1] ?></span> &nbsp;
-  <span class="neu">😐 <?= $welcome_map[0] ?></span> &nbsp;
-  <span class="neg">👎 <?= $welcome_map[-1] ?></span>
-  &nbsp; (total: <?= array_sum($welcome_map) ?>)
-</p>
+<?php
+$w_total = array_sum($wrating);
+$loc_total = array_sum(array_column($welcome_loc, 'cnt'));
+?>
+<div class="welcome-row">
+  <div class="welcome-block">
+    <h3>¿Qué te parece el sitio? (<?= $w_total ?>)</h3>
+    <?php if ($w_total > 0): ?>
+      <?php foreach ([1=>'👍 Me gusta', 0=>'😐 Regular', -1=>'👎 No me convence'] as $r => $lbl): ?>
+      <div class="loc-bar">
+        <span style="min-width:130px"><?= $lbl ?></span>
+        <div class="loc-bar-fill" style="width:<?= $w_total > 0 ? round($wrating[$r]/$w_total*120) : 0 ?>px"></div>
+        <span style="color:var(--muted)"><?= $wrating[$r] ?></span>
+      </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
+    <?php endif; ?>
+  </div>
+
+  <div class="welcome-block">
+    <h3>¿Desde dónde escuchás? (<?= $loc_total ?>)</h3>
+    <?php if ($welcome_loc): ?>
+      <?php foreach ($welcome_loc as $loc): ?>
+      <div class="loc-bar">
+        <span style="min-width:130px"><?= ($loc_icons[$loc['location']] ?? '📍') . ' ' . h(ucfirst($loc['location'])) ?></span>
+        <div class="loc-bar-fill" style="width:<?= $loc_total > 0 ? round($loc['cnt']/$loc_total*120) : 0 ?>px"></div>
+        <span style="color:var(--muted)"><?= (int)$loc['cnt'] ?></span>
+      </div>
+      <?php endforeach; ?>
+    <?php else: ?>
+      <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
+    <?php endif; ?>
+  </div>
+</div>
 
 <?php if ($station_surveys): ?>
 <table>
@@ -295,9 +357,7 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
   <tr>
     <td><a href="/radio/<?= h($ic['slug']) ?>/" target="_blank"><?= h($ic['nombre']) ?></a></td>
     <td><?= h($ic['stream_title']) ?></td>
-    <td class="<?= $cls ?>" style="font-size:12px;white-space:nowrap">
-      <?= ago($ic['last_checked']) ?>
-    </td>
+    <td class="<?= $cls ?>" style="font-size:12px;white-space:nowrap"><?= ago($ic['last_checked']) ?></td>
   </tr>
   <?php endforeach; ?>
   </tbody>
@@ -321,11 +381,10 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
     <td><strong><?= h($cr['crawler']) ?></strong></td>
     <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($cr['started_at']) ?></td>
     <td style="white-space:nowrap">
-      <?php if ($cr['secs'] !== null): ?>
-        <?= $cr['secs'] >= 60
-            ? floor($cr['secs']/60) . 'min ' . ($cr['secs']%60) . 's'
-            : $cr['secs'] . 's' ?>
-      <?php else: echo '—'; endif; ?>
+      <?php if ($cr['secs'] !== null):
+        $s = (int)$cr['secs'];
+        echo $s >= 60 ? floor($s/60).'min '.($s%60).'s' : $s.'s';
+      else: echo '—'; endif; ?>
     </td>
     <td><?= $cr['stations_checked'] ?: '—' ?></td>
     <td class="<?= $cr['changes_detected'] > 0 ? 'pos' : '' ?>"><?= $cr['changes_detected'] ?: '—' ?></td>
@@ -339,13 +398,8 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 <p class="empty">Sin ejecuciones registradas todavía.</p>
 <?php endif; ?>
 
-<p class="note">
-  Los crawlers Python (check-streams, hunt-stations) registran aquí sus runs.
-  El cron PHP (icy_refresh) muestra sus datos en la sección ICY de arriba.
-</p>
-
 <p style="margin-top:32px;font-size:11px;color:var(--border);text-align:center">
-  Radio Argentina Admin · <?= date('Y-m-d H:i') ?> UTC
+  Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
 </p>
 
 </body>
