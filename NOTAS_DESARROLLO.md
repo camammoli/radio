@@ -4,6 +4,76 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0710 — 2026-06-25 — Radio v2: fix ICY crawler + HLS lazy load + share API + beta estabilización
+
+### Contexto
+Beta v2 en `/radio/beta/`. Producción en `/radio/` sigue en v1 (revertido en sesión anterior).
+Varios problemas detectados durante las pruebas beta y resueltos en esta sesión.
+
+### Causa raíz: icy_cache.stream_title siempre NULL
+
+El crawler `check_streams_v2.py` llamaba a `_read_icy_title()` pero todos los títulos
+llegaban como NULL. Diagnóstico: la función leía el primer bloque de metadata ICY y si
+`meta_len == 0` retornaba `None` inmediatamente. Algunos servidores (Shoutcast/SHOUTcast en
+`solumedia.com.ar:81xx`) envían el **primer bloque vacío** y el título aparece recién en el
+segundo o tercer bloque.
+
+**Fix:** loop de hasta 4 bloques; timeout mínimo de 15s (a 48 kbps leer 16 KB tarda ~2.7s,
+necesitamos tiempo para al menos 2 bloques). También se extendió la ventana del batch endpoint
+de 2h a 7h (el crawler corre cada 6h → había 4h de ventana muerta donde el batch devolvía `{}`).
+
+### El cron de GitHub Actions no corría
+
+`check-streams-v2.yml` solo existía en la rama `v2`. GitHub Actions solo agenda crons desde
+la rama por defecto (`master`). Agregado a `master` con la condición `if` eliminada (el checkout
+siempre usa `ref: v2`). Primer run manual disparado desde `gh workflow run`.
+
+### Otros cambios v2 en esta sesión
+
+**HLS.js lazy loading** (`player.js`)
+- HLS.js (543 KB) no se carga hasta que el usuario clickea una emisora `.m3u8`
+- Sistema de callbacks para manejar requests concurrentes mientras carga
+- `getAudio()` expuesto en la API pública del player
+
+**Share API** (`api/share.php`)
+- Nuevo endpoint `GET /api/share?slug=SLUG&channel=copy|wa|qr`
+- Notifica por Telegram si `NOTIFY_OYENTES=true` (producción) o silencioso si false (beta)
+- Integrado en `listing.php` y `station.php` via `pingShare()`
+
+**Mejoras de UI en listing.php**
+- Campo "Verificado" (last_checked) visible en cada tarjeta de emisora
+- ICY title pasivo vía `GET /api/nowplaying?batch=1` al cargar la página
+- Volume slider en la barra del player
+- CSS `.station-icy-passive` para el título pasivo
+
+**station.php**
+- Volume control show/hide según estado del player (en `onState` callback)
+- `pingShare()` en botones de compartir
+
+**head.php**
+- Meta `noindex, nofollow` cuando `RADIO_BASE` está definido (staging)
+
+**robots.txt** (producción)
+- `Disallow: /radio/beta/` y `Disallow: /radio/api/`
+
+### Archivos modificados
+- `crawlers/check_streams_v2.py` — fix `_read_icy_title()`, timeout, loop 4 bloques
+- `web/api/nowplaying.php` — cURL state machine, batch endpoint, ventana 7h
+- `web/api/share.php` — nuevo endpoint
+- `web/assets/player.js` — HLS lazy loading, getAudio()
+- `web/assets/style.css` — `.station-icy-passive`
+- `web/components/head.php` — noindex en staging
+- `web/pages/listing.php` — verificado, ICY pasivo, volume slider, pingShare
+- `web/pages/station.php` — volume control, pingShare
+- `.github/workflows/check-streams-v2.yml` — agregado a `master` para habilitar cron
+
+### Deploy
+- Commits: `98628ca` (v2) + `63fbccb` (master workflow)
+- FTP: `nowplaying.php` a `/radio/api/` y `/radio/beta/api/`
+- GitHub Actions workflow disparado manualmente post-fix
+
+---
+
 ## Nota operativa — Ancho de banda del hosting
 
 El stream de audio va **directo** desde el servidor de la radio al navegador del oyente.
