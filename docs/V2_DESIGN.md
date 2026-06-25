@@ -1,16 +1,15 @@
 # Radio Argentina v2 — Documento de Diseño
 
-**Estado:** en desarrollo  
-**Rama:** `v2` (master = v1 en producción, intocable)  
-**Fecha de inicio:** 2026-06-24  
+**Estado:** en producción desde 2026-06-25  
+**Rama:** `master` (= v2). Rama `v2` preservada. `v1-archive` = snapshot de v1.
 
 ---
 
 ## Contexto — Por qué v2
 
-v1 fue construida por acreción: cada feature se pegó encima de la anterior en un solo archivo `index.php` que llegó a 1811 líneas. El modelo de datos son archivos JSON planos con race conditions en escrituras concurrentes. Los crawlers no tienen memoria — cada run parte de cero. El player tiene dos implementaciones distintas (listado vs. página individual) que divergieron y requirieron fixes manuales.
+v1 fue construida por acreción: cada feature se pegó encima de la anterior en un solo archivo `index.php` que llegó a 1811 líneas. El modelo de datos eran archivos JSON planos con race conditions en escrituras concurrentes. Los crawlers no tenían memoria — cada run partía de cero. El player tenía dos implementaciones distintas (listado vs. página individual) que divergieron y requirieron fixes manuales.
 
-v2 se diseña top-down con el mismo stack (PHP + vanilla JS, sin frameworks, sin build steps) pero con separación de responsabilidades real.
+v2 se diseñó top-down con el mismo stack (PHP + vanilla JS, sin frameworks, sin build steps) pero con separación de responsabilidades real.
 
 ---
 
@@ -24,164 +23,104 @@ v2 se diseña top-down con el mismo stack (PHP + vanilla JS, sin frameworks, sin
 
 ---
 
-## Estrategia de repo
+## Estrategia de ramas
 
 ```
 camammoli/radio
-├── master  →  v1 en producción (no tocar)
-├── v2      →  desarrollo v2
-└── cli/    →  radio.sh + evolución CLI (en ambas ramas)
+├── master      →  v2 en producción
+├── v2          →  desarrollo (mergeada a master en cutover 2026-06-25)
+└── v1-archive  →  snapshot v1 antes del cutover (tag: v1-final)
 ```
 
-- Las GitHub Actions de deploy solo corren en `master`.
-- Cuando v2 esté listo: merge a `master`, FTP deploy, corte instantáneo.
-- Rollback: FTP deploy del estado anterior de `master` (2 minutos).
+Las GitHub Actions corren en `master` (default branch). El checkout es siempre `ref: v2` para los workflows de crawlers, ya que el código de crawlers está en esa rama.
+
+Rollback a v1: subir `/v1-archive/index.php` vía FTP a `/radio/index.php`. El resto del sitio no interfiere — v1 era un monolito autocontenido.
 
 ---
 
-## Arquitectura
+## Arquitectura implementada
 
 ### Backend
 
 ```
 web/
-├── index.php          ← router liviano (no lógica de negocio)
+├── index.php          ← router (35 líneas): ?m3u=1→301, ?n→slug, ?station→page, default→listing
+├── admin.php          ← panel admin con auth sesión PHP (noindex, sin redirect en login)
+├── sitemap.php        ← sitemap dinámico desde v_stations (SQLite)
 ├── api/
-│   ├── stations.php   ← GET /api/stations, GET /api/stations/{slug}
-│   ├── playlist.php   ← GET /api/playlist.m3u  (reemplaza ?m3u=1)
-│   ├── listeners.php  ← ping / stop / count / top
-│   ├── nowplaying.php ← ICY metadata por URL
-│   ├── survey.php     ← POST rating
-│   └── suggest.php    ← POST sugerencia
+│   ├── _db.php        ← PDO singleton, WAL mode, busy_timeout=3000
+│   ├── _helpers.php   ← api_response(), api_error(), client_ip(), ip_hash()
+│   ├── stations.php   ← GET /api/stations[?slug=][?search=][?estado=][?genero=]
+│   ├── playlist.php   ← GET /api/playlist.m3u[?buscar=][?genero=][?estado=]
+│   ├── listeners.php  ← POST ping/stop, GET count/top
+│   ├── nowplaying.php ← GET ICY metadata por URL o batch por slug
+│   ├── survey.php     ← POST rating (-1/0/1) + location
+│   ├── suggest.php    ← POST sugerencia de emisora
+│   └── share.php      ← POST notificación de compartir
 ├── pages/
-│   ├── listing.php    ← directorio principal
-│   └── station.php    ← página individual de emisora
+│   ├── listing.php    ← directorio, filtros client-side, ICY sync en card activa
+│   └── station.php    ← página individual (3x JSON-LD, VLC, QR, compartir, volume)
 ├── components/
-│   └── player.php     ← HTML del player (incluido desde listing y station)
-├── assets/
-│   ├── player.js      ← componente JS único del player
-│   ├── theme.js       ← dark/light toggle
-│   └── style.css      ← variables + componentes
-└── db/
-    └── radio.sqlite   ← base de datos (gitignoreada)
+│   └── head.php       ← <head> compartido, usa constante RADIO_BASE
+└── assets/
+    ├── player.js      ← RadioPlayer(opts): idle→connecting→playing→buffering→error
+    ├── player.css     ← namespace rp-*, variables CSS dark/light
+    ├── theme.js       ← RadioTheme.init(btn), localStorage 'radio_theme'
+    └── style.css      ← CSS global
 ```
 
-### CLI (`cli/`)
+### Crawlers
 
 ```
-cli/
-├── radio.sh           ← v1 actual (no romper)
-└── radio2.sh          ← v2: consume API, muestra ICY/oyentes, mismo branding
+crawlers/
+├── check_streams_v2.py  ← verifica streams (30 workers), detecta went_down/came_back/icy_*
+├── enrich_v2.py         ← Radio Browser API → logo, codec, bitrate, rb_votes
+├── hunt_stations_v2.py  ← descubre emisoras nuevas (inserta con approved=0)
+├── icy_refresh.php      ← cURL Multi PHP (20 concurrentes), cron cPanel cada 10min
+└── db/radio_db.py       ← conexión Python compartida
 ```
+
+### Base de datos (`db/radio_v2.sqlite`)
+
+9 tablas + 2 vistas:
+
+| Tabla | Contenido |
+|---|---|
+| `stations` | directorio (~1200 emisoras AR) |
+| `stream_status` | estado actual (ok/dudoso/muerto) |
+| `stream_history` | historial de verificaciones |
+| `station_events` | eventos detectados por crawlers |
+| `icy_cache` | título ICY actual + supported flag |
+| `plays` | historial de reproducciones |
+| `listeners` | oyentes activos (TTL 90s) |
+| `surveys` | calificaciones (rating -1/0/1 + location) |
+| `crawler_runs` | log de ejecuciones |
+
+Vistas: `v_stations` (join completo con estado, ICY, plays, votes), `v_active_listeners`.
+
+Slugs únicos: `_radio_slug()` PHP / `_slug()` Python — accent norm + lowercase + sufijo `-{n}` anti-colisión.
 
 ---
 
-## Player unificado
-
-Un solo `player.js` instanciado igual en listado y en página individual:
-
-```
-estados: idle → connecting → playing → buffering → stopped → error
-```
-
-Mismo comportamiento en todos los contextos:
-- Heartbeat a `listeners.php` (ping al iniciar, cada 30s, stop en pausa/error/beforeunload)
-- ICY polling cada 30s mientras reproduce (si el stream lo soporta)
-- Survey de satisfacción a los 3 minutos
-- Compartir: link / WhatsApp / QR
-
-En el **listado**: el player flota sobre la grilla, permite cambiar de emisora sin recargar.  
-En la **página individual**: el player es el elemento central de la página.  
-En el **CLI**: mismo modelo de estados, render en terminal (ANSI).
-
----
-
-## Contratos que no pueden romperse
+## Contratos que no se rompieron
 
 | Contrato | v1 | v2 |
 |---|---|---|
-| URL del M3U | `?m3u=1` | `/api/playlist.m3u` + redirect 301 desde `?m3u=1` |
-| URLs de emisoras | `/radio/{slug}/` | igual |
-| URLs de páginas | `/radio/?provincia=X` etc. | igual |
-| radio.sh | descarga M3U, filtra localmente | sin cambios (M3U sigue existiendo) |
+| URL del M3U | `?m3u=1` | `/api/playlist.m3u` + redirect 301 desde `?m3u=1` ✓ |
+| URLs de emisoras | `/radio/{slug}/` | igual ✓ |
+| radio.sh | descarga M3U, filtra localmente | sin cambios ✓ |
+| emisoras.json / emisoras.txt | en repo | siguen presentes (para radio.sh CLI) ✓ |
 
 ---
 
-## Modelo de datos
+## GitHub Actions
 
-Ver `db/schema.sql`.
+| Workflow | Frecuencia | Qué hace |
+|---|---|---|
+| `check-streams-v2.yml` | cada 6hs | verifica streams, Telegram, sube DB |
+| `enrich-v2.yml` | días 1 y 15 | enriquece metadatos, sube DB |
 
-Tablas principales:
-- `stations` — directorio de emisoras
-- `stream_status` — estado actual por emisora (actualizado por crawler)
-- `stream_history` — log de cada verificación (da memoria a los crawlers)
-- `station_events` — cambios detectados: ICY ganada/perdida, URL cambió, volvió online
-- `icy_cache` — estado ICY actual + última canción detectada
-- `plays` — historial de reproducciones
-- `listeners` — oyentes activos (TTL 90s)
-- `surveys` — calificaciones
-- `crawler_runs` — log de ejecuciones de crawlers
-
----
-
-## Evolución de crawlers
-
-### check-streams (hoy: verifica si el stream responde)
-**v2:** además actualiza `stream_status`, inserta en `stream_history`, detecta cambios contra el run anterior y genera `station_events`.
-
-Eventos que detecta:
-- `came_back` — estaba muerto, ahora responde
-- `went_down` — estaba ok, ahora no responde
-- `icy_gained` — ahora tiene ICY metadata, antes no
-- `icy_lost` — tenía ICY metadata, ya no
-- `url_changed` — redirect permanente a nueva URL
-- `codec_changed` — cambió el formato del stream
-
-Cada evento con `notified = 0` dispara Telegram automáticamente.
-
-### icy-check (hoy: script manual que genera icy_stations.json)
-**v2:** job periódico (Actions, diario o semanal) que actualiza `icy_cache` en la DB. El JSON estático desaparece — el badge en el listado lo sirve la API.
-
-### hunt-stations (hoy: busca emisoras nuevas)
-**v2:** igual, pero inserta en `stations` en lugar de proponer a emisoras.txt. Mantiene `source` para saber de dónde vino cada emisora.
-
----
-
-## Migración de datos (v1 → v2, antes del corte)
-
-| Archivo v1 | Destino v2 |
-|---|---|
-| `emisoras.json` | tabla `stations` |
-| `web/plays.json` | tabla `plays` (bulk insert) |
-| `web/data/survey.csv` | tabla `surveys` |
-| `web/icy_stations.json` | tabla `icy_cache` (supported=true) |
-| `web/listeners.json` | descartar (datos transientes) |
-| `web/status.json` | tabla `stream_status` |
-
-Script: `db/migrate_v1.py` — corre una sola vez antes del corte.
-
----
-
-## CLI v2 — Modernización
-
-- Mismo branding que el web (nombre, versión, tagline en header ANSI)
-- Consume `/api/stations` para buscar por nombre/provincia/género
-- Muestra oyentes en tiempo real al reproducir (query a `listeners.php`)
-- Muestra ICY now-playing en el terminal si el stream lo soporta
-- Sigue siendo shell puro (bash), sin dependencias nuevas
-- Parámetros existentes de radio.sh: todos compatibles
-
----
-
-## Staging y rollout
-
-1. Desarrollar en rama `v2`, testear en `/radio/beta/` (subpath temporal)
-2. Cuando player unificado + API + páginas funcionen: corte
-3. Corte = merge a `master` + FTP deploy
-4. Rollback = FTP deploy del último estado de `master` antes del merge
-
-v2.0 puede salir sin algunas features menores de v1 si están documentadas para v2.1.  
-La condición mínima para el corte: M3U funciona, player funciona, crawlers escriben a DB.
+Ambos: descarga DB por FTP → corre crawler → sube DB actualizada. Secrets: `FTP_PASS`, `TG_TOKEN`, `TG_CHAT_ID`.
 
 ---
 
@@ -189,12 +128,12 @@ La condición mínima para el corte: M3U funciona, player funciona, crawlers esc
 
 | TKT | Descripción | Estado |
 |---|---|---|
-| V2-001 | Modelo de datos + schema.sql | en curso |
-| V2-002 | Script de migración v1 → v2 | pendiente |
-| V2-003 | API REST: stations, playlist, listeners | pendiente |
-| V2-004 | Player unificado (player.js) | pendiente |
-| V2-005 | Router + páginas listing y station | pendiente |
-| V2-006 | Crawlers escriben a DB + station_events | pendiente |
-| V2-007 | CLI v2 (radio2.sh) con API + ICY + oyentes | pendiente |
-| V2-008 | Script de migración + staging test | pendiente |
-| V2-009 | Cutover a producción | pendiente |
+| V2-001 | Modelo de datos + schema.sql | ✅ completado |
+| V2-002 | Script de migración v1 → v2 | ✅ completado (db/migrate_v1.py) |
+| V2-003 | API REST: stations, playlist, listeners, nowplaying, survey, suggest, share | ✅ completado |
+| V2-004 | Player unificado (player.js) con HLS.js lazy + volumen + ICY sync | ✅ completado |
+| V2-005 | Router + páginas listing y station (SEO, JSON-LD, QR, VLC) | ✅ completado |
+| V2-006 | Crawlers v2 con memoria + station_events + Telegram | ✅ completado |
+| V2-007 | CLI v2 (radio2.sh) con API + ICY + oyentes | ✅ completado |
+| V2-008 | Admin panel (auth, encuestas, sugerencias, ICY activas, crawler log) | ✅ completado |
+| V2-009 | Cutover a producción (2026-06-25) | ✅ completado |
