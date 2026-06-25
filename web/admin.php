@@ -20,9 +20,9 @@ $act = $_POST['action'] ?? '';
 
 if ($act === 'login') {
     if (($_POST['u'] ?? '') === $ADMIN_USER && ($_POST['p'] ?? '') === $ADMIN_PASS) {
-        session_regenerate_id(true);
         $_SESSION['radio_admin'] = true;
         $_SESSION['csrf']        = bin2hex(random_bytes(16));
+        session_write_close();
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Pragma: no-cache');
         header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
