@@ -1,0 +1,49 @@
+name: Verificar streams v2
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'   # cada 6 horas
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # El checkout siempre usa ref: v2, así que la rama de trigger no importa
+
+    steps:
+      - name: Checkout (rama v2)
+        uses: actions/checkout@v4
+        with:
+          ref: v2
+
+      - name: Instalar lftp
+        run: sudo apt-get install -y lftp
+
+      - name: Descargar DB del servidor
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          mkdir -p db
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
+          set ssl:verify-certificate no
+          get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
+          bye
+          LFTP
+
+      - name: Verificar streams y detectar cambios
+        env:
+          TG_TOKEN:   ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          python3 crawlers/check_streams_v2.py --notify --icy --workers 40
+
+      - name: Subir DB actualizada al servidor
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
+          set ssl:verify-certificate no
+          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite
+          bye
+          LFTP
