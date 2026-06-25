@@ -23,17 +23,21 @@ if ($act === 'login') {
         $_SESSION['radio_admin'] = true;
         $_SESSION['csrf']        = bin2hex(random_bytes(16));
         session_write_close();
-        header('Cache-Control: no-store, no-cache, must-revalidate');
-        header('Pragma: no-cache');
-        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+        $redir = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?'), ENT_QUOTES);
+        echo '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+           . '<meta name="robots" content="noindex,nofollow"></head><body>'
+           . '<script>location.replace("' . $redir . '")</script>'
+           . '</body></html>';
         exit;
     }
     $login_err = true;
 }
 if ($act === 'logout') {
     session_destroy();
-    header('Cache-Control: no-store, no-cache, must-revalidate');
-    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
+    $redir = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?'), ENT_QUOTES);
+    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'
+       . '<script>location.replace("' . $redir . '")</script>'
+       . '</body></html>';
     exit;
 }
 
