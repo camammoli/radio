@@ -21,6 +21,8 @@ if ($act === 'login') {
         session_regenerate_id(true);
         $_SESSION['radio_admin'] = true;
         $_SESSION['csrf']        = bin2hex(random_bytes(16));
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        header('Pragma: no-cache');
         header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
         exit;
     }
@@ -28,9 +30,12 @@ if ($act === 'login') {
 }
 if ($act === 'logout') {
     session_destroy();
+    header('Cache-Control: no-store, no-cache, must-revalidate');
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
     exit;
 }
+
+header('Cache-Control: no-store, private');
 
 if (empty($_SESSION['radio_admin'])) {
     login_page($login_err ?? false);
@@ -373,7 +378,7 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
 <table>
   <thead><tr>
     <th>Crawler</th><th>Inicio</th><th>Duración</th>
-    <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
+    <th>Chequeadas</th><th>Con título</th><th>Sin título</th><th>Notas</th>
   </tr></thead>
   <tbody>
   <?php foreach ($crawler_runs as $cr): ?>
@@ -388,7 +393,7 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
     </td>
     <td><?= $cr['stations_checked'] ?: '—' ?></td>
     <td class="<?= $cr['changes_detected'] > 0 ? 'pos' : '' ?>"><?= $cr['changes_detected'] ?: '—' ?></td>
-    <td class="<?= $cr['errors'] > 0 ? 'neg' : '' ?>"><?= $cr['errors'] ?: '—' ?></td>
+    <td style="color:var(--muted)"><?= $cr['errors'] ?: '—' ?></td>
     <td style="font-size:12px;color:var(--muted)"><?= h($cr['notes'] ?? '') ?></td>
   </tr>
   <?php endforeach; ?>
@@ -397,6 +402,10 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
 <?php else: ?>
 <p class="empty">Sin ejecuciones registradas todavía.</p>
 <?php endif; ?>
+
+<p class="note" style="margin-top:8px">
+  "Sin título" = emisoras que en ese momento no devolvieron StreamTitle (offline, silencio, ICY vacío). No son errores del cron.
+</p>
 
 <p style="margin-top:32px;font-size:11px;color:var(--border);text-align:center">
   Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
