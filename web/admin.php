@@ -8,6 +8,8 @@ require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/api/_db.php';
 
 session_start();
+header('Cache-Control: no-store, no-cache, must-revalidate');
+header('Pragma: no-cache');
 
 $ADMIN_USER = defined('ADMIN_USER') ? ADMIN_USER : 'admin';
 $ADMIN_PASS = defined('ADMIN_PASS') ? ADMIN_PASS : (defined('RADIO_ADMIN_KEY') ? RADIO_ADMIN_KEY : 'mammoli_radio_2026');
@@ -34,8 +36,6 @@ if ($act === 'logout') {
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?'));
     exit;
 }
-
-header('Cache-Control: no-store, private');
 
 if (empty($_SESSION['radio_admin'])) {
     login_page($login_err ?? false);
