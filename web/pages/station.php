@@ -156,6 +156,9 @@ if ($prov) {
     <?php if ($s['icy_supported']): ?>
     <div class="info-row"><span class="info-lbl">Metadata</span><span class="info-val"><span class="icy-badge">♪ ahora suena</span></span></div>
     <?php endif; ?>
+    <?php if ($s['last_checked']): ?>
+    <div class="info-row"><span class="info-lbl">Verificado</span><span class="info-val" style="color:var(--muted)"><?= htmlspecialchars(str_replace('T', ' ', substr($s['last_checked'], 0, 19))) ?></span></div>
+    <?php endif; ?>
   </div>
 
   <!-- Compartir -->
