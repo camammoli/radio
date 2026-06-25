@@ -122,6 +122,26 @@ $crawler_runs = $db->query(
      FROM crawler_runs ORDER BY started_at DESC LIMIT 30"
 )->fetchAll(PDO::FETCH_ASSOC);
 
+// Detalle de encuestas con ip_hash (últimas 100)
+$surveys_detalle = $db->query(
+    "SELECT sv.rating, sv.location, sv.ip_hash, sv.created_at,
+            s.nombre, s.slug
+     FROM surveys sv
+     LEFT JOIN stations s ON s.id = sv.station_id
+     ORDER BY sv.created_at DESC
+     LIMIT 100"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Plays recientes (últimas 200)
+$plays_recientes = $db->query(
+    "SELECT p.played_at, p.ip_hash, p.source, p.session_id,
+            s.nombre, s.slug
+     FROM plays p
+     LEFT JOIN stations s ON s.id = p.station_id
+     ORDER BY p.played_at DESC
+     LIMIT 200"
+)->fetchAll(PDO::FETCH_ASSOC);
+
 // ICY cache — resumen
 $icy = $db->query(
     "SELECT COUNT(*) AS total,
@@ -297,6 +317,57 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
 </table>
 <?php else: ?>
 <p class="empty">Sin encuestas de emisoras todavía.</p>
+<?php endif; ?>
+
+<!-- ── Detalle encuestas ───────────────────────────────────────────────────── -->
+<h2 id="encuestas-detalle">Encuestas — detalle (últimas 100)</h2>
+<p class="note" style="margin-bottom:10px">IP hasheada: identificador anónimo consistente (misma IP = mismo hash).</p>
+<?php if ($surveys_detalle): ?>
+<table>
+  <thead><tr>
+    <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th>IP hash</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($surveys_detalle as $sv):
+    $rlbl = $sv['rating'] ==  1 ? '<span class="pos">👍</span>'
+          : ($sv['rating'] == -1 ? '<span class="neg">👎</span>'
+                                 : '<span class="neu">😐</span>');
+  ?>
+  <tr>
+    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sv['created_at'],0,19))) ?></td>
+    <td><?= $rlbl ?></td>
+    <td><?php if ($sv['slug']): ?><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">bienvenida</span><?php endif; ?></td>
+    <td style="color:var(--muted)"><?= $sv['location'] ? h(ucfirst($sv['location'])) : '—' ?></td>
+    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sv['ip_hash'] ?? '', 0, 16)) ?>…</td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">Sin encuestas todavía.</p>
+<?php endif; ?>
+
+<!-- ── Reproducciones ──────────────────────────────────────────────────────── -->
+<h2 id="plays">Reproducciones recientes (últimas 200)</h2>
+<?php if ($plays_recientes): ?>
+<table>
+  <thead><tr>
+    <th>Fecha / Hora</th><th>Emisora</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($plays_recientes as $pl): ?>
+  <tr>
+    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
+    <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
+    <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
+    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
+    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">Sin reproducciones registradas todavía.</p>
 <?php endif; ?>
 
 <!-- ── Sugerencias ─────────────────────────────────────────────────────────── -->
