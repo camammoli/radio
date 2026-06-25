@@ -22,22 +22,17 @@ if ($act === 'login') {
     if (($_POST['u'] ?? '') === $ADMIN_USER && ($_POST['p'] ?? '') === $ADMIN_PASS) {
         $_SESSION['radio_admin'] = true;
         $_SESSION['csrf']        = bin2hex(random_bytes(16));
-        session_write_close();
-        $redir = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?'), ENT_QUOTES);
-        echo '<!DOCTYPE html><html><head><meta charset="UTF-8">'
-           . '<meta name="robots" content="noindex,nofollow"></head><body>'
-           . '<script>location.replace("' . $redir . '")</script>'
-           . '</body></html>';
-        exit;
+        // Sin redirect: renderizar el dashboard directamente evita cualquier flash intermedio
+    } else {
+        $login_err = true;
     }
-    $login_err = true;
 }
 if ($act === 'logout') {
     session_destroy();
-    $redir = htmlspecialchars(strtok($_SERVER['REQUEST_URI'], '?'), ENT_QUOTES);
-    echo '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body>'
-       . '<script>location.replace("' . $redir . '")</script>'
-       . '</body></html>';
+    session_start(); // sesión limpia para la página de login
+    header('Cache-Control: no-store, no-cache, must-revalidate');
+    header('Pragma: no-cache');
+    login_page(false);
     exit;
 }
 
