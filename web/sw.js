@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radio-ar-v1';
+const CACHE_NAME = 'radio-ar-v2';
 const PRECACHE = ['/radio/', '/radio/manifest.json'];
 
 self.addEventListener('install', function(e) {
