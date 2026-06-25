@@ -9,13 +9,9 @@ jobs:
   check:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # El checkout siempre usa ref: v2, así que la rama de trigger no importa
-
     steps:
-      - name: Checkout (rama v2)
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: v2
 
       - name: Instalar lftp
         run: sudo apt-get install -y lftp
