@@ -432,18 +432,19 @@ function login_page(bool $err): void {
 <title>Admin — Radio Argentina</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{background:#0f172a;color:#e2e8f0;font:14px/1.5 system-ui,sans-serif;
+body{background:#f1f5f9;color:#1e293b;font:14px/1.5 system-ui,sans-serif;
      display:flex;align-items:center;justify-content:center;min-height:100vh}
-.box{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:32px;width:320px}
+.box{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:32px;width:320px;
+     box-shadow:0 4px 24px rgba(0,0,0,.07)}
 h1{font-size:18px;margin-bottom:20px;text-align:center}
-label{display:block;font-size:12px;color:#94a3b8;margin-bottom:4px}
-input{width:100%;background:#0f172a;border:1px solid #334155;border-radius:6px;
-      padding:9px 12px;color:#e2e8f0;font-size:14px;margin-bottom:14px;outline:none}
-input:focus{border-color:#3b82f6}
+label{display:block;font-size:12px;color:#64748b;margin-bottom:4px}
+input{width:100%;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;
+      padding:9px 12px;color:#1e293b;font-size:14px;margin-bottom:14px;outline:none}
+input:focus{border-color:#3b82f6;background:#fff}
 button{width:100%;background:#3b82f6;color:#fff;border:none;border-radius:6px;
        padding:10px;font-size:14px;font-weight:600;cursor:pointer;margin-top:4px}
 button:hover{background:#2563eb}
-.err{color:#ef4444;font-size:13px;text-align:center;margin-bottom:12px}
+.err{color:#dc2626;font-size:13px;text-align:center;margin-bottom:12px}
 </style>
 </head>
 <body>
