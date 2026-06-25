@@ -34,7 +34,9 @@
   var HB_MS     = 30000;   // heartbeat cada 30s
   var NP_MS     = 30000;   // now-playing poll cada 30s
   var TIMEOUT_MS = 12000;  // timeout de carga de stream
-  var SURVEY_SECS = 180;   // 3 minutos para mostrar encuesta
+  var SURVEY_SECS   = 180;   // 3 minutos para mostrar encuesta
+  var WELCOME_SECS  = 90;    // 90s para mostrar toast de bienvenida v2
+  var WELCOME_KEY   = 'radio_welcome_v2';
 
   function RadioPlayer(opts) {
     // ── Config ──────────────────────────────────────────────────────────────
@@ -58,6 +60,7 @@
     var survTimer  = 0;
     var survSecs   = 0;
     var survShown  = false;
+    var welcomeTimer = 0;
     var destroyed  = false;
 
     // SID persistido en sessionStorage: un SID por pestaña del navegador
@@ -74,6 +77,7 @@
       lStart();
       npStart();
       survStart();
+      welcomeStart();
     });
 
     audio.addEventListener('waiting', function () {
@@ -87,6 +91,7 @@
       lStop(true);
       npStop();
       survStop();
+      welcomeStop();
       onNowPlaying(null);
       onError(url, nombre, 'no disponible en web');
     });
@@ -217,6 +222,7 @@
       lStop(true);
       npStop();
       survStop();
+      welcomeStop();
       onNowPlaying(null);
     }
 
@@ -287,15 +293,113 @@
     }
 
     // ── Now playing (ICY) ─────────────────────────────────────────────────────
-    function fetchNP() {
-      if (!slug) return;
+
+    // Fetch ICY directo desde el browser (streams HTTPS con CORS).
+    // onOk(title|null) si se pudo parsear; onFail() si hay error de red/CORS.
+    function fetchIcyBrowser(rawUrl, onOk, onFail) {
+      if (/\.(pls|m3u)(\?|$)/i.test(rawUrl)) { onFail(); return; }
+      if (/\.m3u8(\?|$)/i.test(rawUrl))       { onFail(); return; }
+      // HTTP en página HTTPS → mixed content, no se puede fetchear directo
+      if (location.protocol === 'https:' && rawUrl.indexOf('http://') === 0) { onFail(); return; }
+
+      var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      var done = false;
+
+      var tmo = setTimeout(function () {
+        if (done) return;
+        done = true;
+        if (ctrl) ctrl.abort();
+        onFail();
+      }, 15000);
+
+      fetch(rawUrl, {
+        headers: { 'Icy-MetaData': '1' },
+        signal:  ctrl ? ctrl.signal : undefined,
+        cache:   'no-store',
+      }).then(function (resp) {
+        if (!resp.ok || !resp.body) { clearTimeout(tmo); onFail(); return; }
+        var metaint = parseInt(resp.headers.get('icy-metaint') || '0', 10);
+        if (!metaint) { clearTimeout(tmo); resp.body.cancel(); onFail(); return; }
+
+        var reader  = resp.body.getReader();
+        var buf     = new Uint8Array(0);
+        var attempt = 0;
+
+        function finish(title) {
+          if (done) return;
+          done = true;
+          clearTimeout(tmo);
+          reader.cancel().catch(function () {});
+          onOk(title);
+        }
+
+        function concat(a, b) {
+          var c = new Uint8Array(a.length + b.length);
+          c.set(a); c.set(b, a.length);
+          return c;
+        }
+
+        function pump() {
+          reader.read().then(function (r) {
+            if (done) return;
+            if (r.done) { clearTimeout(tmo); done = true; onFail(); return; }
+            buf = concat(buf, r.value);
+
+            // Procesar bloques completos disponibles en buf
+            while (buf.length >= metaint + 1) {
+              var metaLen = buf[metaint] * 16;
+
+              if (metaLen === 0) {
+                // Bloque vacío — avanzar al siguiente
+                buf = buf.slice(metaint + 1);
+                attempt++;
+                if (attempt >= 4) { finish(null); return; }
+                continue;
+              }
+
+              if (buf.length < metaint + 1 + metaLen) break; // esperar más datos
+
+              var metaBytes = buf.slice(metaint + 1, metaint + 1 + metaLen);
+              var metaStr   = new TextDecoder('utf-8').decode(metaBytes).replace(/\x00+$/, '');
+              var m         = metaStr.match(/StreamTitle='([^']*)'/);
+              finish(m ? m[1].trim() || null : null);
+              return;
+            }
+
+            pump();
+          }).catch(function () {
+            if (!done) { clearTimeout(tmo); done = true; onFail(); }
+          });
+        }
+
+        pump();
+
+      }).catch(function () {
+        clearTimeout(tmo);
+        if (!done) { done = true; onFail(); }
+      });
+    }
+
+    // Fetch via servidor (para HTTP streams o cuando browser fetch falla)
+    function fetchNPServer() {
       fetch(API_BASE + '/nowplaying?slug=' + encodeURIComponent(slug))
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
-          var title = (d && d.ok && d.data && d.data.title) ? d.data.title : null;
-          onNowPlaying(title);
+          onNowPlaying((d && d.ok && d.data && d.data.title) ? d.data.title : null);
         })
         .catch(function () {});
+    }
+
+    function fetchNP() {
+      if (!slug) return;
+      // HTTP en HTTPS → el browser no puede fetchear directo → server hace el real-time fetch
+      var serverOnly = location.protocol === 'https:' && url.indexOf('http://') === 0;
+      if (serverOnly) {
+        fetchNPServer();
+      } else {
+        // HTTPS stream → intentar directo desde el browser; si falla, usar server
+        fetchIcyBrowser(url, function (title) { onNowPlaying(title); }, fetchNPServer);
+      }
     }
 
     function npStart() {
@@ -366,6 +470,95 @@
       });
       toast.querySelector('.rp-survey-skip').addEventListener('click', function () { dismiss(7); });
       toast.querySelector('.rp-survey-close').addEventListener('click', function () { dismiss(7); });
+    }
+
+    // ── Toast bienvenida v2 ───────────────────────────────────────────────────
+    function welcomeStart() {
+      if (localStorage.getItem(WELCOME_KEY)) return;
+      clearTimeout(welcomeTimer);
+      welcomeTimer = setTimeout(showWelcome, WELCOME_SECS * 1000);
+    }
+
+    function welcomeStop() {
+      clearTimeout(welcomeTimer); welcomeTimer = 0;
+    }
+
+    function showWelcome() {
+      if (localStorage.getItem(WELCOME_KEY)) return;
+
+      var toast = document.createElement('div');
+      toast.className = 'rp-welcome';
+      toast.innerHTML =
+        '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
+        '<h3>&#x1F3B5; &#xA1;El sitio se renov&#xF3;!</h3>' +
+        '<ul>' +
+          '<li>Ves qu&#xE9; canci&#xF3;n est&#xE1; sonando en cada emisora</li>' +
+          '<li>Player con control de volumen</li>' +
+          '<li>Carga mucho m&#xE1;s r&#xE1;pido que antes</li>' +
+          '<li>M&#xE1;s de 1.200 radios argentinas, todas verificadas</li>' +
+        '</ul>' +
+        '<div class="rp-welcome-privacy">' +
+          '&#x1F512; No te rastreamos ni guardamos tus datos personales. ' +
+          'Lo de abajo es an&#xF3;nimo y nos ayuda a mejorar.' +
+        '</div>' +
+        '<div class="rp-welcome-q">&#xBF;Qu&#xE9; te parece el sitio?</div>' +
+        '<div class="rp-welcome-btns" id="_rwq1">' +
+          '<button data-r="1">&#x1F44D; Me gusta</button>' +
+          '<button data-r="0">&#x1F610; Regular</button>' +
+          '<button data-r="-1">&#x1F44E; No me convence</button>' +
+        '</div>' +
+        '<div class="rp-welcome-q">&#xBF;Desde d&#xF3;nde escuch&#xE1;s?</div>' +
+        '<div class="rp-welcome-btns" id="_rwq2">' +
+          '<button data-l="casa">&#x1F3E0; Casa</button>' +
+          '<button data-l="trabajo">&#x1F4BC; Trabajo</button>' +
+          '<button data-l="viaje">&#x1F697; Viajando</button>' +
+          '<button data-l="caminando">&#x1F4F1; Caminando</button>' +
+        '</div>' +
+        '<button class="rp-welcome-cta">&#xA1;Listo, a escuchar! &#x2192;</button>' +
+        '<p class="rp-welcome-footer">' +
+          'No te volvemos a molestar hasta que tengamos m&#xE1;s novedades para contarte.' +
+        '</p>';
+
+      document.body.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+
+      var selRating = null;
+      var selLoc    = null;
+
+      toast.querySelectorAll('#_rwq1 [data-r]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          toast.querySelectorAll('#_rwq1 [data-r]').forEach(function (b) { b.classList.remove('rp-sel'); });
+          btn.classList.add('rp-sel');
+          selRating = parseInt(btn.dataset.r, 10);
+        });
+      });
+
+      toast.querySelectorAll('#_rwq2 [data-l]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          toast.querySelectorAll('#_rwq2 [data-l]').forEach(function (b) { b.classList.remove('rp-sel'); });
+          btn.classList.add('rp-sel');
+          selLoc = btn.dataset.l;
+        });
+      });
+
+      function dismiss() {
+        localStorage.setItem(WELCOME_KEY, String(Date.now()));
+        toast.classList.remove('rp-welcome--in');
+        toast.classList.add('rp-welcome--out');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+      }
+
+      toast.querySelector('.rp-welcome-close').addEventListener('click', dismiss);
+      toast.querySelector('.rp-welcome-cta').addEventListener('click', function () {
+        if (selRating !== null) {
+          fetch(API_BASE + '/survey', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug: '_welcome_v2', rating: selRating, location: selLoc })
+          }).catch(function () {});
+        }
+        dismiss();
+      });
     }
 
     // ── Utilidades ────────────────────────────────────────────────────────────

@@ -232,10 +232,10 @@ body.light .station:hover { background: #e5e7eb; border-color: #9ca3af; }
 body.light .station-tag { background: rgba(109,40,217,.10); color: #6d28d9; }
 
 .station-icy-passive {
-  font-size: 10px; color: #7c3aed; margin-top: 3px;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;
+  font-size: 11px; color: var(--accent); font-weight: 500;
+  margin-top: 4px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;
 }
-body.light .station-icy-passive { color: #6d28d9; }
 
 .codec-badge {
   font-size: 10px; color: var(--muted); white-space: nowrap;
@@ -278,7 +278,7 @@ body.light #player-bar { background: #ffffff; border-top-color: #d1d5db; }
 
 #player-title { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #player-prov  { font-size: 11px; color: var(--muted); }
-#player-np    { font-size: 12px; color: var(--accent); min-height: 15px; }
+#player-np    { font-size: 12px; color: var(--accent); font-weight: 600; min-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 120px); }
 
 #btn-stop {
   position: absolute; right: 14px; top: 12px;
@@ -433,7 +433,22 @@ body.light .sbtn.copied { color: #15803d; }
 /* ── Estado / ahora suena (página individual) ────────────────────────────── */
 
 .st-status { font-size: 13px; color: var(--muted); min-height: 18px; margin: 8px 0 4px; }
-.st-np     { font-size: 13px; color: var(--accent); min-height: 18px; margin-bottom: 4px; }
+.st-np {
+  font-size: 16px; font-weight: 700; color: var(--accent);
+  min-height: 24px; margin: 10px 0 6px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 100%;
+}
+.np-dot {
+  display: inline-block; flex-shrink: 0;
+  width: 8px; height: 8px;
+  background: var(--accent); border-radius: 50%;
+  animation: np-pulse 1.5s ease-in-out infinite;
+}
+@keyframes np-pulse {
+  0%, 100% { opacity: 1;   transform: scale(1); }
+  50%       { opacity: .2; transform: scale(.5); }
+}
 .st-live   { color: var(--green); font-weight: 600; }
 .st-listeners { font-size: 12px; color: var(--green); min-height: 16px; }
 
@@ -451,6 +466,96 @@ body.light .sbtn.copied { color: #15803d; }
 #qr-close-st {
   background: #f3f4f6; border: none; border-radius: 6px;
   padding: 7px 18px; font-size: 13px; cursor: pointer; color: #374151;
+}
+
+/* ── Toast de bienvenida v2 ──────────────────────────────────────────────── */
+
+.rp-welcome {
+  position: fixed;
+  bottom: 20px; right: 20px;
+  width: 320px; max-width: calc(100vw - 32px);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 8px 36px rgba(0,0,0,.5);
+  padding: 20px;
+  z-index: 9100;
+  font-size: 14px; line-height: 1.5;
+  transform: translateY(24px); opacity: 0;
+  transition: transform .35s cubic-bezier(.22,.68,0,1.2), opacity .3s;
+}
+.rp-welcome--in  { transform: translateY(0); opacity: 1; }
+.rp-welcome--out { transform: translateY(24px); opacity: 0; }
+
+.rp-welcome-close {
+  position: absolute; top: 10px; right: 12px;
+  background: none; border: none;
+  color: var(--muted); cursor: pointer;
+  font-size: 17px; line-height: 1; padding: 4px;
+}
+.rp-welcome-close:hover { color: var(--text); }
+
+.rp-welcome h3 {
+  margin: 0 24px 10px 0;
+  font-size: 16px; font-weight: 700;
+  color: var(--accent);
+}
+.rp-welcome ul {
+  margin: 0 0 10px; padding: 0;
+  list-style: none; font-size: 13px;
+}
+.rp-welcome ul li { margin-bottom: 3px; }
+.rp-welcome ul li::before { content: '✓ '; color: var(--accent); font-weight: 700; }
+
+.rp-welcome-privacy {
+  font-size: 11px; color: var(--muted);
+  background: rgba(0,0,0,.12);
+  border-radius: 7px; padding: 7px 9px;
+  margin-bottom: 12px;
+}
+body.light .rp-welcome-privacy { background: rgba(0,0,0,.05); }
+
+.rp-welcome-q {
+  font-size: 13px; font-weight: 600;
+  margin: 10px 0 6px;
+}
+
+.rp-welcome-btns {
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.rp-welcome-btns button {
+  flex: 1; min-width: 0;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 12px; padding: 6px 4px;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, color .15s;
+  white-space: nowrap;
+}
+.rp-welcome-btns button:hover { border-color: var(--accent); }
+.rp-welcome-btns button.rp-sel {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.rp-welcome-cta {
+  display: block; width: 100%;
+  margin-top: 14px; padding: 10px;
+  background: var(--accent);
+  border: none; border-radius: 9px;
+  color: #fff; font-size: 14px; font-weight: 700;
+  cursor: pointer; text-align: center;
+  transition: opacity .15s;
+}
+.rp-welcome-cta:hover { opacity: .85; }
+
+.rp-welcome-footer {
+  margin-top: 10px;
+  font-size: 11px; color: var(--muted);
+  text-align: center;
 }
 
 /* ── Footer ──────────────────────────────────────────────────────────────── */

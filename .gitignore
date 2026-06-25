@@ -16,3 +16,6 @@ web/api/config.php
 __pycache__/
 *.pyc
 *.pyo
+
+# Config con credenciales
+web/api/config.php

@@ -159,7 +159,7 @@ if ($prov) {
       </span>
     </div>
     <?php if ($s['icy_supported']): ?>
-    <div class="info-row"><span class="info-lbl">Metadata</span><span class="info-val"><span class="icy-badge">♪ ahora suena</span></span></div>
+    <div class="info-row"><span class="info-lbl">Metadata</span><span class="info-val"><span class="icy-badge">♪</span> muestra canción en tiempo real</span></div>
     <?php endif; ?>
     <?php if ($s['last_checked']): ?>
     <div class="info-row"><span class="info-lbl">Verificado</span><span class="info-val" style="color:var(--muted)"><?= htmlspecialchars(str_replace('T', ' ', substr($s['last_checked'], 0, 19))) ?></span></div>
@@ -272,7 +272,13 @@ if ($prov) {
     },
 
     onNowPlaying: function (title) {
-      stNp.textContent = title ? '♪ ' + title : '';
+      stNp.innerHTML = '';
+      if (!title) return;
+      var dot = document.createElement('span');
+      dot.className = 'np-dot';
+      var txt = document.createTextNode(' en el aire — ' + title);
+      stNp.appendChild(dot);
+      stNp.appendChild(txt);
     },
 
     onListeners: function (total) {

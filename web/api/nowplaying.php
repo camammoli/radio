@@ -57,6 +57,7 @@ if ($station_id) {
     $cache->execute([$station_id]);
     $cached = $cache->fetch();
 
+    // Servir desde caché si fue chequeado en los últimos 60s
     if ($cached && $cached['age_s'] < 60 && $cached['stream_title']) {
         api_response([
             'title'      => $cached['stream_title'],
@@ -71,16 +72,16 @@ if ($station_id) {
 function fetch_icy_title(string $url, int $timeout = 6): ?string {
     if (!function_exists('curl_init')) return null;
 
-    // Estado de la máquina de parseo ICY
+    // attempts: algunos servidores envían el primer bloque de metadata vacío
     $st = ['metaint' => 0, 'phase' => 'audio', 'audio_left' => 0,
-           'meta_len' => 0, 'buf' => '', 'title' => null];
+           'meta_len' => 0, 'buf' => '', 'title' => null, 'attempts' => 0];
 
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_FOLLOWLOCATION => true,
         CURLOPT_MAXREDIRS      => 3,
-        CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_TIMEOUT        => max($timeout, 15),  // mínimo 15s: a 48kbps un bloque tarda ~2.7s
+        CURLOPT_CONNECTTIMEOUT => 6,
         CURLOPT_USERAGENT      => 'WinampMPEG/5.0',
         CURLOPT_HTTPHEADER     => ['Icy-MetaData: 1'],
         CURLOPT_SSL_VERIFYPEER => false,
@@ -110,9 +111,16 @@ function fetch_icy_title(string $url, int $timeout = 6): ?string {
                 } elseif ($st['phase'] === 'meta_len') {
                     $st['meta_len'] = ord($chunk[$pos]) * 16;
                     $pos++;
-                    if ($st['meta_len'] === 0) { $st['phase'] = 'done'; return -1; }
-                    $st['phase'] = 'meta';
-                    $st['buf']   = '';
+                    if ($st['meta_len'] === 0) {
+                        // Bloque vacío — intentar el siguiente (máx 4)
+                        $st['attempts']++;
+                        if ($st['attempts'] >= 4) { $st['phase'] = 'done'; return -1; }
+                        $st['phase']      = 'audio';
+                        $st['audio_left'] = $st['metaint'];
+                    } else {
+                        $st['phase'] = 'meta';
+                        $st['buf']   = '';
+                    }
 
                 } elseif ($st['phase'] === 'meta') {
                     $need = $st['meta_len'] - strlen($st['buf']);
@@ -120,7 +128,7 @@ function fetch_icy_title(string $url, int $timeout = 6): ?string {
                     $st['buf'] .= substr($chunk, $pos, $take);
                     $pos += $take;
                     if (strlen($st['buf']) >= $st['meta_len']) {
-                        if (preg_match("/StreamTitle='([^;]*)'/i", $st['buf'], $m)) {
+                        if (preg_match("/StreamTitle='([^']*)'/i", $st['buf'], $m)) {
                             $t = trim($m[1]);
                             $st['title'] = $t !== '' ? $t : null;
                         }
@@ -140,6 +148,15 @@ function fetch_icy_title(string $url, int $timeout = 6): ?string {
 
 $title = fetch_icy_title($url);
 $now   = gmdate('Y-m-d H:i:s');
+
+// Si el fetch en tiempo real falló pero tenemos datos en caché, usar de fallback
+if ($title === null && isset($cached) && $cached && $cached['stream_title']) {
+    api_response([
+        'title'      => $cached['stream_title'],
+        'cached'     => true,
+        'checked_at' => $cached['last_checked'],
+    ]);
+}
 
 // ── Actualizar caché en DB ────────────────────────────────────────────────────
 
