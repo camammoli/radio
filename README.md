@@ -209,7 +209,7 @@ Script PHP para cPanel cron. Barre todas las emisoras con `icy_supported=1` usan
 | `check-streams-v2.yml` | cada 6hs | verifica streams, notifica cambios por Telegram |
 | `enrich-v2.yml` | días 1 y 15 | enriquece metadatos desde Radio Browser |
 
-Los workflows se activan desde `master` (default branch). Ambos hacen checkout de `v2`, descargan la DB por FTP, corren el crawler, y suben la DB actualizada.
+Los workflows se activan desde `master` (default branch). Descargan la DB por FTP, corren el crawler, y suben la DB actualizada.
 
 ---
 
@@ -240,13 +240,14 @@ Secciones: resumen de estadísticas, encuestas con resultado por estación, suge
 
 ---
 
-## Ramas
+## Versiones
 
-| Rama | Descripción |
+Un solo branch (`master` = producción). Las versiones se marcan con tags:
+
+| Tag | Descripción |
 |---|---|
-| `master` | producción — v2 activa en mammoli.ar/radio/ |
-| `v2` | desarrollo — mergeada a master en cutover 2026-06-25 |
-| `v1-archive` | snapshot de v1 antes del cutover (tag: `v1-final`) |
+| `v1-final` | último estado de v1 antes del cutover a v2 (2026-06-25) |
+| HEAD | v2 activa en mammoli.ar/radio/ |
 
 ---
 
