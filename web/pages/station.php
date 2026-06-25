@@ -149,9 +149,6 @@ if ($prov) {
     <?php if ($codec_s): ?>
     <div class="info-row"><span class="info-lbl">Formato</span><span class="info-val"><?= htmlspecialchars($codec_s) ?></span></div>
     <?php endif; ?>
-    <?php if ($s['homepage']): ?>
-    <div class="info-row"><span class="info-lbl">Sitio web</span><span class="info-val"><a href="<?= htmlspecialchars($s['homepage']) ?>" target="_blank" rel="noopener">🌐 <?= htmlspecialchars($s['homepage']) ?></a></span></div>
-    <?php endif; ?>
     <div class="info-row">
       <span class="info-lbl">Estado</span>
       <span class="info-val" style="color:<?= $s['estado']==='ok' ? '#22c55e' : ($s['estado']==='muerto' ? '#ef4444' : '#f59e0b') ?>">
@@ -172,6 +169,12 @@ if ($prov) {
     <a class="sbtn" id="sbtn-wa" href="https://wa.me/?text=<?= urlencode('📻 Escuchá ' . $s['nombre'] . ' en vivo 👉 ' . $pg_url) ?>" target="_blank" rel="noopener">💬 WhatsApp</a>
     <button class="sbtn" id="sbtn-qr">⬛ QR</button>
   </div>
+
+  <?php if ($s['homepage']): ?>
+  <div style="margin-bottom:8px;font-size:11px;color:var(--muted)">
+    <a href="<?= htmlspecialchars($s['homepage']) ?>" target="_blank" rel="noopener" style="color:var(--muted)">sitio oficial de la emisora ↗</a>
+  </div>
+  <?php endif; ?>
 
   <!-- Reportar caída -->
   <?php
@@ -217,6 +220,13 @@ if ($prov) {
     <?php endif; ?>
   </div>
   <?php endif; ?>
+
+  <!-- CTA directorio -->
+  <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
+    <a href="/radio/" style="display:inline-block;padding:14px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.01em">
+      Explorá las 1200+ emisoras argentinas
+    </a>
+  </div>
 
 </div><!-- /.station-page -->
 
