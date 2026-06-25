@@ -176,4 +176,23 @@ foreach (array_chunk($rows, $BATCH_SIZE) as $batch) {
 }
 
 $elapsed = round(microtime(true) - $t0, 1);
+$now_fin  = gmdate('Y-m-d H:i:s');
 echo "Listo: {$updated} actualizadas, {$failed} sin título, {$skipped} sin soporte ({$elapsed}s)\n";
+
+// Registrar en crawler_runs para el panel admin
+try {
+    $db->prepare(
+        'INSERT INTO crawler_runs (crawler, started_at, finished_at, stations_checked, changes_detected, errors, notes)
+         VALUES (?,?,?,?,?,?,?)'
+    )->execute([
+        'icy-refresh',
+        gmdate('Y-m-d H:i:s', (int)$t0),
+        $now_fin,
+        $updated + $failed,
+        $updated,
+        $failed,
+        "skipped: {$skipped}",
+    ]);
+} catch (Exception $e) {
+    // No interrumpir si falla el log
+}

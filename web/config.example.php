@@ -1,6 +1,8 @@
 <?php
 // Copiá este archivo como config.php y completá los valores
 define('RADIO_ADMIN_KEY', 'cambiame');
+define('ADMIN_USER', 'admin');   // usuario del panel /admin.php
+define('ADMIN_PASS', 'cambiame'); // contraseña del panel /admin.php
 define('TG_TOKEN',  'botTOKEN:xxxx');
 define('TG_CHAT_ID', '12345678');
 define('NOTIFY_OYENTES', false); // true para recibir notificaciones cuando hay oyentes
