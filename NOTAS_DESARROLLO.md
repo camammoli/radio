@@ -50,10 +50,14 @@ mantener M3U y Gist disponibles, solo v2 en repo.
 - Conflicto en `check-streams-v2.yml` resuelto: eliminada condición `if:` de rama, checkout
   siempre usa `ref: v2` explícitamente
 
-### Pendiente
-- Borrar `/radio/beta/` una vez que Carlos verifique producción (pendiente confirmación)
-- Verificar M3U `/radio/api/playlist.m3u` en producción
-- Verificar Gist sync sigue funcionando
+### Cierre (2026-06-25)
+- `/radio/beta/` eliminada del servidor — Carlos confirmó que producción funciona
+- Branch `v2` eliminado (local y remoto) — código ya en `master`
+- Branch `v1-archive` eliminado — snapshot accesible por tag `v1-final`
+- Tag `v2.0.0` creado y pusheado — release oficial de v2
+- README y V2_DESIGN actualizados: un solo branch `master`, versiones por tags
+- GitHub About actualizado: descripción y homepage correctos
+- Repo normalizado según convenciones estándar
 
 ---
 
