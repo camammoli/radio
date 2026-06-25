@@ -4,6 +4,59 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0712 — 2026-06-25 — Cutover v1→v2 a producción + panel admin
+
+### Contexto
+v2 en beta desde semanas anteriores. Cutover definitivo a producción con los siguientes requisitos:
+no interrumpir oyentes activos, archivar v1, no romper SEO/crawlers, activar notificaciones Telegram,
+mantener M3U y Gist disponibles, solo v2 en repo.
+
+### Cambios
+
+**Archivado v1**
+- Branch `v1-archive` creado con snapshot completo de todos los PHP v1 (index.php 83KB monolito + endpoints)
+- Tag `v1-final` aplicado en ese commit
+- Pusheados a GitHub: `origin/v1-archive`, tag `v1-final`
+
+**Admin panel** (`web/admin.php`)
+- Panel completo con auth (sesión PHP, sin redireccionamiento para evitar race conditions)
+- Noindex, Cache-Control: no-store en todas las respuestas
+- Secciones: Resumen (9 stat cards), Encuestas (rating + location), Sugerencias (aprobar/rechazar con CSRF),
+  ICY activas (semáforo de frescura), Log de crawlers
+- Tema claro/oscuro con toggle localStorage synced con el resto del sitio
+- Login con tema claro fijo
+- Credenciales: `carlos` / en config.php (no commiteado)
+
+**ICY tiempo real (admin + listing)**
+- `admin.php` muestra tabla ICY activas con columna de frescura (verde <15min, amarillo <1h, rojo >1h)
+- `listing.php`: card activa sincroniza el título vía `onNowPlaying` callback del player
+
+**Crawler ICY PHP** (`crawlers/icy_refresh.php`)
+- cURL Multi con 20 conexiones concurrentes, barre todas las estaciones cada 10min (cron cPanel)
+- Logging a tabla `crawler_runs`
+- Encuesta: campo `location` agregado en `surveys` table vía migración automática
+
+**sw.js**
+- `CACHE_NAME` bumpeado de `radio-ar-v1` a `radio-ar-v2` para forzar invalidación en browsers
+
+**Deploy producción**
+- `index.php` reemplazado: router v2 (1KB) en lugar del monolito v1 (83KB)
+- `admin.php`, `sw.js`, `sitemap.php`, `api/`, `pages/`, `assets/`, `components/` actualizados
+- `crawlers/icy_refresh.php` subido a `/radio/crawlers/`
+- `config.php` ya tenía `NOTIFY_OYENTES=true`, `ADMIN_USER`, `ADMIN_PASS`, `RADIO_DB` → sin cambios
+
+**Git**
+- v2 mergeado a `master` (default branch) → GitHub Actions crons activos
+- Conflicto en `check-streams-v2.yml` resuelto: eliminada condición `if:` de rama, checkout
+  siempre usa `ref: v2` explícitamente
+
+### Pendiente
+- Borrar `/radio/beta/` una vez que Carlos verifique producción (pendiente confirmación)
+- Verificar M3U `/radio/api/playlist.m3u` en producción
+- Verificar Gist sync sigue funcionando
+
+---
+
 ## TKT-0710 — 2026-06-25 — Radio v2: fix ICY crawler + HLS lazy load + share API + beta estabilización
 
 ### Contexto
