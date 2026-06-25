@@ -1,0 +1,46 @@
+name: Enriquecer emisoras v2
+
+on:
+  schedule:
+    - cron: '0 10 1,15 * *'   # días 1 y 15 de cada mes
+  workflow_dispatch:
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    if: github.ref == 'refs/heads/v2' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout (rama v2)
+        uses: actions/checkout@v4
+        with:
+          ref: v2
+
+      - name: Instalar lftp
+        run: sudo apt-get install -y lftp
+
+      - name: Descargar DB del servidor
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          mkdir -p db
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
+          set ssl:verify-certificate no
+          get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
+          bye
+          LFTP
+
+      - name: Enriquecer con Radio Browser + ICY
+        run: |
+          python3 crawlers/enrich_v2.py --icy --workers 15 --force
+
+      - name: Subir DB actualizada
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
+        run: |
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
+          set ssl:verify-certificate no
+          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite
+          bye
+          LFTP

@@ -9,3 +9,13 @@ trafico_github.py
 trafico_github.json
 web/logs/
 .ftp.conf
+db/*.sqlite
+web/api/config.php
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Config con credenciales
+web/api/config.php

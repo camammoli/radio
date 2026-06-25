@@ -1,0 +1,299 @@
+/*
+ * player.css — Estilos del RadioPlayer v2
+ * Namespace rp-* para no colisionar con estilos de página.
+ * Usa las variables CSS del tema (--bg, --surface, --text, --accent, etc.)
+ */
+
+/* ── Botón principal de reproducción ──────────────────────────────────────── */
+
+.rp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, opacity .15s, transform .1s;
+  background: var(--accent, #3b82f6);
+  color: #fff;
+  min-width: 170px;
+  justify-content: center;
+}
+.rp-btn:active { transform: scale(.97); }
+
+.rp-btn--idle,
+.rp-btn--stopped  { background: var(--accent, #3b82f6); }
+.rp-btn--connecting,
+.rp-btn--buffering { background: var(--muted, #6b7280); cursor: default; }
+.rp-btn--playing  { background: #dc2626; }
+.rp-btn--error    { background: #dc2626; opacity: .8; }
+
+/* ── Estado / ahora suena ────────────────────────────────────────────────── */
+
+.rp-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.rp-status {
+  font-size: 13px;
+  color: var(--muted, #9ca3af);
+  min-height: 18px;
+  margin-top: 4px;
+}
+
+.rp-np {
+  font-size: 13px;
+  color: var(--accent, #3b82f6);
+  min-height: 18px;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+/* ── Badge oyentes ───────────────────────────────────────────────────────── */
+
+.rp-listeners {
+  font-size: 12px;
+  color: #22c55e;
+  min-height: 16px;
+  margin-top: 2px;
+}
+
+/* ── Player bar (listado) ────────────────────────────────────────────────── */
+
+.rp-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: var(--surface, #1f2937);
+  border-top: 1px solid var(--border, #374151);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  z-index: 100;
+  transform: translateY(100%);
+  transition: transform .25s ease;
+  box-shadow: 0 -4px 16px rgba(0,0,0,.3);
+}
+.rp-bar.rp-bar--visible {
+  transform: translateY(0);
+}
+
+.rp-bar-info {
+  flex: 1;
+  min-width: 0;
+}
+.rp-bar-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text, #f9fafb);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rp-bar-sub {
+  font-size: 12px;
+  color: var(--muted, #9ca3af);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rp-bar-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.rp-bar-btn {
+  background: none;
+  border: 1px solid var(--border, #374151);
+  border-radius: 6px;
+  padding: 5px 10px;
+  color: var(--text, #f9fafb);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.rp-bar-btn:hover { background: var(--border, #374151); }
+
+.rp-bar-stop {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #fff;
+  font-weight: 600;
+}
+.rp-bar-stop:hover { background: #b91c1c; border-color: #b91c1c; }
+
+/* ── VLC fallback ────────────────────────────────────────────────────────── */
+
+.rp-vlc {
+  font-size: 12px;
+  color: var(--muted, #9ca3af);
+  text-decoration: none;
+  border: 1px solid var(--border, #374151);
+  border-radius: 6px;
+  padding: 4px 8px;
+  white-space: nowrap;
+}
+.rp-vlc:hover { color: var(--text, #f9fafb); }
+
+/* ── Share row ───────────────────────────────────────────────────────────── */
+
+.rp-share {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.rp-share--visible { display: flex; }
+
+.rp-share-btn {
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border, #374151);
+  background: none;
+  color: var(--text, #f9fafb);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s;
+}
+.rp-share-btn:hover { background: var(--border, #374151); }
+.rp-share-btn--copied { background: #16a34a; border-color: #16a34a; color: #fff; }
+
+/* ── QR modal ────────────────────────────────────────────────────────────── */
+
+.rp-qr-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.7);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+}
+.rp-qr-modal--visible { display: flex; }
+
+.rp-qr-box {
+  background: var(--surface, #1f2937);
+  border: 1px solid var(--border, #374151);
+  border-radius: 12px;
+  padding: 24px;
+  text-align: center;
+  max-width: 260px;
+  width: 90%;
+}
+.rp-qr-box img { width: 180px; height: 180px; border-radius: 8px; }
+.rp-qr-name {
+  font-weight: 600;
+  margin-top: 12px;
+  color: var(--text, #f9fafb);
+  font-size: 14px;
+}
+.rp-qr-url {
+  font-size: 11px;
+  color: var(--muted, #9ca3af);
+  word-break: break-all;
+  margin: 4px 0 12px;
+}
+.rp-qr-close {
+  background: var(--accent, #3b82f6);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 20px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Survey toast ────────────────────────────────────────────────────────── */
+
+.rp-survey {
+  position: fixed;
+  bottom: 80px;
+  right: 16px;
+  background: var(--surface, #1f2937);
+  border: 1px solid var(--border, #374151);
+  border-radius: 12px;
+  padding: 14px 16px 12px;
+  z-index: 150;
+  min-width: 220px;
+  max-width: 300px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.35);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity .3s, transform .3s;
+}
+.rp-survey--in  { opacity: 1; transform: translateY(0); }
+.rp-survey--out { opacity: 0; transform: translateY(12px); }
+
+.rp-survey-q {
+  display: block;
+  font-size: 13px;
+  color: var(--text, #f9fafb);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+.rp-survey-btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.rp-survey-btns button {
+  font-size: 22px;
+  background: none;
+  border: 1px solid var(--border, #374151);
+  border-radius: 8px;
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: background .15s, transform .1s;
+  flex: 1;
+}
+.rp-survey-btns button:hover { background: var(--border, #374151); transform: scale(1.1); }
+
+.rp-survey-skip {
+  font-size: 12px;
+  color: var(--muted, #9ca3af);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+.rp-survey-close {
+  position: absolute;
+  top: 8px; right: 10px;
+  background: none;
+  border: none;
+  color: var(--muted, #9ca3af);
+  font-size: 14px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px;
+}
+
+/* ── Card activa en el listado ───────────────────────────────────────────── */
+
+.station.rp-active  { border-color: var(--accent, #3b82f6); }
+.station.rp-loading { border-color: var(--muted,  #6b7280); }
+.station.rp-error   { border-color: #dc2626; }
+
+/* ── Modo claro ──────────────────────────────────────────────────────────── */
+
+body.light .rp-bar         { box-shadow: 0 -4px 16px rgba(0,0,0,.1); }
+body.light .rp-survey      { box-shadow: 0 8px 24px rgba(0,0,0,.12); }
+body.light .rp-qr-modal    { background: rgba(0,0,0,.4); }

@@ -4,7 +4,23 @@ RewriteBase /radio/
 # sitemap.xml → sitemap.php
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 
-# Páginas de emisora: /radio/{slug}/ → index.php?station={slug}
+# ── API v2 ────────────────────────────────────────────────────────────────────
+
+# Retrocompatibilidad v1: ?m3u=1 → api/playlist.php
+RewriteCond %{QUERY_STRING} (?:^|&)m3u=1
+RewriteRule ^$ api/playlist.php? [R=301,L]
+
+# /api/stations/{slug} → stations.php?slug=...
+RewriteRule ^api/stations/([a-z0-9][a-z0-9-]{0,80})/?$ api/stations.php?slug=$1 [L,QSA]
+
+# /api/playlist.m3u → playlist.php
+RewriteRule ^api/playlist\.m3u$ api/playlist.php [L,QSA]
+
+# /api/{endpoint} → api/{endpoint}.php
+RewriteRule ^api/([a-z][a-z0-9_-]{1,30})/?$ api/$1.php [L,QSA]
+
+# ── Páginas de emisora (v1 compat) ───────────────────────────────────────────
+
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^([a-z0-9][a-z0-9-]{0,80})/?$ index.php?station=$1 [L,QSA]

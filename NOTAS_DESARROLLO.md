@@ -4,6 +4,147 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0710 — 2026-06-25 — Radio v2: fix ICY crawler + HLS lazy load + share API + beta estabilización
+
+### Contexto
+Beta v2 en `/radio/beta/`. Producción en `/radio/` sigue en v1 (revertido en sesión anterior).
+Varios problemas detectados durante las pruebas beta y resueltos en esta sesión.
+
+### Causa raíz: icy_cache.stream_title siempre NULL
+
+El crawler `check_streams_v2.py` llamaba a `_read_icy_title()` pero todos los títulos
+llegaban como NULL. Diagnóstico: la función leía el primer bloque de metadata ICY y si
+`meta_len == 0` retornaba `None` inmediatamente. Algunos servidores (Shoutcast/SHOUTcast en
+`solumedia.com.ar:81xx`) envían el **primer bloque vacío** y el título aparece recién en el
+segundo o tercer bloque.
+
+**Fix:** loop de hasta 4 bloques; timeout mínimo de 15s (a 48 kbps leer 16 KB tarda ~2.7s,
+necesitamos tiempo para al menos 2 bloques). También se extendió la ventana del batch endpoint
+de 2h a 7h (el crawler corre cada 6h → había 4h de ventana muerta donde el batch devolvía `{}`).
+
+### El cron de GitHub Actions no corría
+
+`check-streams-v2.yml` solo existía en la rama `v2`. GitHub Actions solo agenda crons desde
+la rama por defecto (`master`). Agregado a `master` con la condición `if` eliminada (el checkout
+siempre usa `ref: v2`). Primer run manual disparado desde `gh workflow run`.
+
+### Otros cambios v2 en esta sesión
+
+**HLS.js lazy loading** (`player.js`)
+- HLS.js (543 KB) no se carga hasta que el usuario clickea una emisora `.m3u8`
+- Sistema de callbacks para manejar requests concurrentes mientras carga
+- `getAudio()` expuesto en la API pública del player
+
+**Share API** (`api/share.php`)
+- Nuevo endpoint `GET /api/share?slug=SLUG&channel=copy|wa|qr`
+- Notifica por Telegram si `NOTIFY_OYENTES=true` (producción) o silencioso si false (beta)
+- Integrado en `listing.php` y `station.php` via `pingShare()`
+
+**Mejoras de UI en listing.php**
+- Campo "Verificado" (last_checked) visible en cada tarjeta de emisora
+- ICY title pasivo vía `GET /api/nowplaying?batch=1` al cargar la página
+- Volume slider en la barra del player
+- CSS `.station-icy-passive` para el título pasivo
+
+**station.php**
+- Volume control show/hide según estado del player (en `onState` callback)
+- `pingShare()` en botones de compartir
+
+**head.php**
+- Meta `noindex, nofollow` cuando `RADIO_BASE` está definido (staging)
+
+**robots.txt** (producción)
+- `Disallow: /radio/beta/` y `Disallow: /radio/api/`
+
+### Archivos modificados
+- `crawlers/check_streams_v2.py` — fix `_read_icy_title()`, timeout, loop 4 bloques
+- `web/api/nowplaying.php` — cURL state machine, batch endpoint, ventana 7h
+- `web/api/share.php` — nuevo endpoint
+- `web/assets/player.js` — HLS lazy loading, getAudio()
+- `web/assets/style.css` — `.station-icy-passive`
+- `web/components/head.php` — noindex en staging
+- `web/pages/listing.php` — verificado, ICY pasivo, volume slider, pingShare
+- `web/pages/station.php` — volume control, pingShare
+- `.github/workflows/check-streams-v2.yml` — agregado a `master` para habilitar cron
+
+### Deploy
+- Commits: `98628ca` (v2) + `63fbccb` (master workflow)
+- FTP: `nowplaying.php` a `/radio/api/` y `/radio/beta/api/`
+- GitHub Actions workflow disparado manualmente post-fix
+
+---
+
+## TKT-0711 — 2026-06-25 — Radio v2: ICY tiempo real + card sync + cron PHP
+
+### Contexto
+Continuación de TKT-0710. El título ICY en el reproductor se actualizaba pero la
+tarjeta correspondiente en el listado quedaba "pegada" con el dato viejo del batch.
+Además se necesitaba un crawler PHP rápido para refrescar los títulos cada 10-15
+minutos desde cPanel, sin depender del cron de GitHub Actions (cada 6h).
+
+### Fetch ICY tiempo real
+
+**Estrategia híbrida browser + servidor:**
+- Streams HTTPS: el browser hace `fetch()` + `ReadableStream` directamente (CORS libre en
+  Shoutcast). Se parsea el stream ICY con un loop de hasta 4 bloques por si el primero viene vacío.
+- Streams HTTP en página HTTPS: el browser no puede (mixed content). El servidor PHP hace
+  `fetch_icy_title()` en tiempo real (vía `nowplaying.php`) con el mismo loop multi-bloque.
+- Ambos caminos llaman al callback `onNowPlaying(title)`.
+
+**`player.js`**: `fetchIcyBrowser()` → Uint8Array loop; `fetchNPServer()` → `/api/nowplaying`;
+`fetchNP()` elige estrategia según protocolo y URL. Poll cada 30s mientras reproduce.
+
+**`nowplaying.php`**: `fetch_icy_title()` con cURL + `WRITEFUNCTION` que implementa la misma
+state machine. Timeout mínimo 15s; loop de 4 intentos para bloques vacíos. Cache TTL 60s;
+fallback a caché vieja si el fetch real-time falla.
+
+### Sincronización player → tarjeta del listado
+
+`onNowPlaying` en `listing.php` antes solo actualizaba `#player-np` (barra del player).
+Ahora también actualiza `.station-icy-passive` dentro de la tarjeta activa:
+- Si el elemento no existe, lo crea dentro de `.station-info`.
+- Si `title` es null, limpia el texto (no elimina el elemento para evitar layout shift).
+
+### Welcome toast v2
+
+Toast grande (una sola vez por usuario) a los 90s de reproducción continua:
+- Lista de mejoras en lenguaje coloquial, aviso de no-tracking, mini encuesta (rating +
+  lugar), botón CTA. Se guarda en `localStorage` bajo `radio_welcome_v2`.
+- Timer se cancela si el usuario detiene la reproducción; reinicia si vuelve a escuchar.
+
+### "en el aire" pulsing label
+
+`station.php`: `#st-np` muestra `● en el aire — {título}` con `.np-dot` animado (pulse 1.5s).
+`listing.php`: tarjetas pasivas muestran `♪ en el aire — {título}`.
+Player bar: `#player-np` con texto `♪ en el aire — {título}` al reproducir.
+
+### `crawlers/icy_refresh.php` — cron PHP
+
+Script CLI que usa cURL Multi (20 conexiones simultáneas) para refrescar `stream_title`
+en `icy_cache` para todas las emisoras con `supported=1`. Diseñado para cPanel cron.
+
+- Detecta paths automáticamente (producción flat vs dev con `web/`)
+- Lote de 20 handles simultáneos, 20s timeout por conexión
+- Misma state machine ICY (stdClass como estado compartido por el handle del objeto)
+- Actualiza `last_title_change` solo si el título cambia
+- Output log legible: `+ slug: Artista — Tema`
+
+**Configurar en cPanel:**
+```
+*/10 * * * *  php /home/mammoli/public_html/radio/crawlers/icy_refresh.php >> /home/mammoli/logs/icy.log 2>&1
+```
+
+### Archivos modificados
+- `web/pages/listing.php` — `onNowPlaying` sincroniza tarjeta activa
+- `crawlers/icy_refresh.php` — nuevo, cron cURL Multi ICY
+
+### Deploy
+- FTP beta: `listing.php` → `/radio/beta/pages/listing.php`
+- FTP nuevo dir: `/radio/crawlers/icy_refresh.php`
+- Cron cPanel: pendiente de configurar por Carlos
+
+---
+
 ## Nota operativa — Ancho de banda del hosting
 
 El stream de audio va **directo** desde el servidor de la radio al navegador del oyente.
@@ -363,6 +504,162 @@ solo en el servidor, no en web/). Se restauraron manualmente con lftp put.
 **Lección**: el deploy a /radio/ NO debe usar `--delete` o deben excluirse los
 archivos de datos (emisoras.json, emisoras.txt, plays.json, plays/*.json,
 data/sugerencias.json, count.json, listeners.json, logs/).
+
+---
+
+## TKT-0709 — 2026-06-24 — V2-009: Cutover a producción
+
+### Resumen
+Deploy completo de v2 a mammoli.ar/radio/. Producción migrada de PHP monolítico + JSON planos a arquitectura SQLite + API REST + páginas separadas.
+
+### Proceso
+1. Mirror `web/` → `/radio/` sin --delete (conserva datos de servidor: plays.json, status.json, emisoras.json, etc.)
+2. Excluir config.php del mirror → subir production config.php manualmente con RADIO_DB definido
+3. Subir SQLite DB a `/radio/db/radio_v2.sqlite`
+4. Limpiar `/radio/web/` espurio (mirror accidental de sesión anterior)
+
+### Bugs encontrados y corregidos en cutover
+- **RADIO_DB path**: `_db.php` tenía default `__DIR__ . '/../../db/'` (2 niveles arriba desde api/) → correcto para staging (beta/api/), incorrecto para prod (api/). Fix: definir en config.php como `__DIR__ . '/db/radio_v2.sqlite'`. Default cambiado a `/../db/` (1 nivel).
+- **playlist.php WHERE**: `approved = 1` en WHERE era inválido — `v_stations` ya filtra approved y no expone esa columna. Eliminado.
+- **sitemap.php**: reescrito para leer slugs del DB (v_stations) en lugar de JSON de GitHub.
+
+### Verificación final (todos OK)
+```
+https://mammoli.ar/radio/                                     → 1257 emisoras en vivo
+https://mammoli.ar/radio/radio-rivadavia-buenos-aires/        → página individual
+https://mammoli.ar/radio/api/stations?limit=2                 → JSON {ok:true, total:1257}
+https://mammoli.ar/radio/api/playlist.m3u                     → #EXTM3U, 1198 emisoras
+https://mammoli.ar/radio/?m3u=1                               → 301 → api/playlist.php → M3U
+https://mammoli.ar/radio/sitemap.xml                          → 1199 URLs con slugs v2
+```
+
+### Estado post-cutover
+- Producción: v2 activo. SQLite como fuente de verdad.
+- V1 emisoras.json + emisoras.txt: siguen en servidor (no borrados). radio.sh CLI los usa.
+- Staging /radio/beta/: sigue activo (config actualizada también).
+- GitHub Actions check-streams.yml: sigue corriendo (actualiza status.json v1, no SQLite). 
+  Pendiente: migrar a check-streams-v2.yml cuando GitHub Action pueda bajar/subir DB.
+
+---
+
+## TKT-0708 — 2026-06-24 — V2: crawlers SQLite + radio2.sh CLI + staging /radio/beta/
+
+### Resumen
+Continuación del desarrollo v2 — completado V2-006 a V2-008.
+
+### V2-006: Crawlers SQLite
+
+**`db/radio_db.py`** — módulo Python para conexión SQLite compartida (WAL, row_factory, busy_timeout=5000)
+
+**`crawlers/check_streams_v2.py`**
+- Verificación HTTP paralela (30 workers por default)
+- Detecta y registra en station_events: `went_down`, `came_back`, `icy_gained`, `icy_lost`
+- Actualiza `stream_status` (UPSERT), `stream_history`, `icy_cache`
+- `--notify`: envía eventos pendientes a Telegram en bloque (max 20 por run)
+- `--icy`: lee StreamTitle vía socket raw para ICY streams activos
+- Registra cada run en `crawler_runs`
+
+**`crawlers/enrich_v2.py`**
+- Descarga Radio Browser API (AR+UY), cruza por URL normalizada
+- Actualiza logo, tags, homepage, codec, bitrate, rb_uuid, rb_votes, rb_clicks en DB
+- `--icy`: para sin-match, verifica ICY headers → detecta icy_gained/icy_lost
+- `--force`: re-enrich aunque ya tengan rb_uuid
+
+**`crawlers/hunt_stations_v2.py`**
+- Descubre emisoras nuevas en AR+UY que no están en la DB
+- Inserta con `approved=0` (requieren aprobación) o `--approve` para directo
+- Verifica URL antes de insertar, slug único generado en Python
+
+**GitHub Actions v2**
+- `check-streams-v2.yml`: cron cada 6hs — download DB → check → upload
+- `enrich-v2.yml`: cron días 1 y 15 — download DB → enrich → upload
+- Ambos pasan TG_TOKEN/TG_CHAT_ID desde secrets
+
+### V2-007: CLI radio2.sh
+
+**`radio2.sh`** — reemplaza radio.sh consumiendo API REST en lugar de emisoras.txt:
+- `radio2.sh` → lista top 20 más escuchadas (API call, tabla con ♪ + provincia + plays)
+- `radio2.sh <búsqueda>` → busca en API, menú numerado si hay múltiples resultados
+- Muestra: estado (●), ICY (♪), provincia, listener count, now-playing actual
+- Monitor ICY en background: cada 30s actualiza `♪ Ahora suena:` mientras reproduce
+- Soporte mplayer/cvlc/mpv (default mplayer)
+- Variable `RADIO_API` para apuntar a otro endpoint
+
+### V2-008: Staging /radio/beta/
+
+- `RADIO_BASE` constant en config.php controla el prefijo de assets y manifest
+- `head.php` y `station.php` usan `RADIO_BASE` (default `/radio`)
+- Deploy a `/radio/beta/` con config específico (`RADIO_BASE=/radio/beta`, `NOTIFY_OYENTES=false`)
+- DB SQLite subida a `/radio/db/radio_v2.sqlite` en servidor
+- `.htaccess` específico para beta con `RewriteBase /radio/beta/`
+
+### Verificación staging
+```
+https://mammoli.ar/radio/beta/                     → listing OK (1257 emisoras)
+https://mammoli.ar/radio/beta/radio-rivadavia-buenos-aires/  → station page OK
+https://mammoli.ar/radio/beta/api/stations?limit=3 → API JSON OK
+```
+
+### Pendiente
+- V2-009: cutover producción — requiere aprobación de Carlos
+
+---
+
+## TKT-0707 — 2026-06-24 — V2: Arquitectura completa — modelo de datos, API, player, pages
+
+### Contexto
+V1 creció hasta un monolito de ~1811 líneas en index.php + JSON planos. Refactoring estructural
+completo a V2 en rama `v2`, sin romper producción en `master`.
+
+### Decisiones de arquitectura
+- **SQLite con WAL** como base de datos (reemplaza emisoras.json, status.json, plays.json, icy_stations.json)
+- **PDO singleton** `radio_db()` — todos los endpoints lo usan, sin conexiones duplicadas
+- **Slugs únicos** generados por `_radio_slug()` / `_radio_full_slug()`, con sufijo `-{n}` anti-colisión
+- **9 tablas** + 2 vistas: stations, stream_status, stream_history, station_events, icy_cache, plays, listeners, surveys, crawler_runs + v_stations + v_active_listeners
+- **API REST** en `/radio/api/` con helpers `api_response` / `api_error` / `api_method`
+- **M3U stable**: `/radio/api/playlist.m3u` con 301 desde `?m3u=1` para backward compat
+- **Factory function** `RadioPlayer(opts)` — sin clases, sin `this` binding — estados: idle/connecting/playing/buffering/error
+- **HLS.js** desde CDN para adaptive streams; fallback a `<audio>` nativo
+- **Page Visibility API** + sendBeacon para heartbeat mobile-safe
+- **Server-side render** del listing: PHP genera todas las cards, JS filtra en cliente (sin SSR/hydration)
+- **CSS namespace `rp-*`** para player, variables CSS para temas dark/light
+
+### Tickets incluidos
+- V2-001: diseño + docs/V2_DESIGN.md + db/schema.sql (9 tablas + 2 vistas)
+- V2-002: migrate_v1.py — lector JSON → SQLite (1257 emisoras migradas, slug gen idéntico a PHP)
+- V2-003: API REST — stations.php, playlist.php, listeners.php, nowplaying.php, survey.php, suggest.php
+- V2-004: player unificado — assets/player.js, assets/player.css, assets/theme.js
+- V2-005: router + pages — index.php (router), pages/listing.php, pages/station.php, components/head.php, assets/style.css
+
+### Archivos creados / modificados (ramas v2)
+```
+db/schema.sql
+db/migrate_v1.py
+web/api/_db.php
+web/api/_helpers.php
+web/api/stations.php
+web/api/playlist.php
+web/api/listeners.php
+web/api/nowplaying.php
+web/api/survey.php
+web/api/suggest.php
+web/api/.htaccess
+web/.htaccess          (rewrites para /api/{endpoint} y /api/stations/{slug})
+web/index.php          (router limpio, 37 líneas)
+web/pages/listing.php
+web/pages/station.php
+web/components/head.php
+web/assets/player.js
+web/assets/player.css
+web/assets/theme.js
+web/assets/style.css
+```
+
+### Pendientes V2
+- V2-006: crawlers → escribir en SQLite + station_events (icy_gained/lost, came_back, went_down)
+- V2-007: radio2.sh — CLI que consume API, muestra ICY + listener count
+- V2-008: staging /radio/beta/ + test migration completa
+- V2-009: cutover producción — FTP deploy v2 → /radio/
 
 ---
 
