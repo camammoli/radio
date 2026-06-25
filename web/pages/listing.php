@@ -151,7 +151,7 @@ if ($filtro_prov_seo !== '') {
   </div>
 
   <?php if ($s['icy_supported']): ?>
-  <span class="icy-badge" title="Esta emisora muestra la canción que está sonando">♪ ahora suena</span>
+  <span class="icy-badge" title="Esta emisora muestra la canción que está sonando">♪</span>
   <?php endif; ?>
 
   <?php if ($codec): ?>
@@ -267,7 +267,21 @@ var player = RadioPlayer({
   },
 
   onNowPlaying: function (title) {
-    playerNp.textContent = title ? '♪ ' + title : '';
+    playerNp.textContent = title ? '♪ en el aire — ' + title : '';
+    if (activeEl) {
+      var icyEl = activeEl.querySelector('.station-icy-passive');
+      if (title) {
+        if (!icyEl) {
+          icyEl = document.createElement('div');
+          icyEl.className = 'station-icy-passive';
+          var info = activeEl.querySelector('.station-info');
+          if (info) info.appendChild(icyEl);
+        }
+        icyEl.textContent = '♪ en el aire — ' + title;
+      } else if (icyEl) {
+        icyEl.textContent = '';
+      }
+    }
   },
 
   onListeners: function (total) {
@@ -522,7 +536,7 @@ fetch('/radio/api/nowplaying?batch=1')
       if (!info) return;
       var el = document.createElement('div');
       el.className = 'station-icy-passive';
-      el.textContent = '♪ ' + titles[slug];
+      el.textContent = '♪ en el aire — ' + titles[slug];
       info.appendChild(el);
     });
   }).catch(function () {});
