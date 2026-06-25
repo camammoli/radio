@@ -44,11 +44,24 @@ if (empty($_SESSION['radio_admin'])) {
 $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(16));
 $db   = radio_db();
 
-// Migración: agregar columna location si no existe (noop si ya existe)
+// Migraciones
 try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Exception $e) {}
+try { $db->exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT (datetime("now")))'); } catch (Exception $e) {}
+try { $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT (datetime("now")))'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
+if ($act === 'toggle_notify' && ($_POST['csrf'] ?? '') === $csrf) {
+    $current = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1")->fetchColumn();
+    if ($current === false) {
+        $current = defined('NOTIFY_OYENTES') && NOTIFY_OYENTES ? '1' : '0';
+    }
+    $new = $current === '1' ? '0' : '1';
+    $db->prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('notify_oyentes', ?, datetime('now'))")
+       ->execute([$new]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#telegram');
+    exit;
+}
 if ($act === 'approve' && ($_POST['csrf'] ?? '') === $csrf) {
     $db->prepare('UPDATE stations SET approved=1, updated_at=datetime("now") WHERE id=? AND source="sugerencia" AND approved=0')
        ->execute([(int)($_POST['id'] ?? 0)]);
@@ -120,6 +133,20 @@ $crawler_runs = $db->query(
             ROUND((julianday(finished_at)-julianday(started_at))*86400) AS secs,
             stations_checked, changes_detected, errors, notes
      FROM crawler_runs ORDER BY started_at DESC LIMIT 30"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Estado Telegram
+$notify_db  = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1")->fetchColumn();
+$notify_val = $notify_db !== false ? $notify_db === '1' : (defined('NOTIFY_OYENTES') && NOTIFY_OYENTES);
+
+// Shares recientes (últimas 100)
+$shares_recientes = $db->query(
+    "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug,
+            s.nombre
+     FROM shares sh
+     LEFT JOIN stations s ON s.id = sh.station_id
+     ORDER BY sh.created_at DESC
+     LIMIT 100"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Detalle de encuestas con ip_hash (últimas 100)
@@ -244,6 +271,25 @@ function toggleTheme() {
 if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscuro';
 </script>
 
+<!-- ── Telegram ────────────────────────────────────────────────────────────── -->
+<h2 id="telegram">Notificaciones Telegram</h2>
+<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+  <span style="font-size:14px">
+    Estado actual:
+    <strong style="color:<?= $notify_val ? 'var(--green)' : 'var(--muted)' ?>">
+      <?= $notify_val ? '● Activas' : '● Inactivas' ?>
+    </strong>
+    <span style="font-size:12px;color:var(--muted)">(oyentes nuevos + compartidos)</span>
+  </span>
+  <form method="post" style="margin:0">
+    <input type="hidden" name="action" value="toggle_notify">
+    <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+    <button class="<?= $notify_val ? 'btn-del' : 'btn-ok' ?>" type="submit">
+      <?= $notify_val ? '⏸ Desactivar' : '▶ Activar' ?>
+    </button>
+  </form>
+</div>
+
 <!-- ── Resumen ─────────────────────────────────────────────────────────────── -->
 <h2 id="resumen">Resumen</h2>
 <div class="cards">
@@ -317,6 +363,30 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
 </table>
 <?php else: ?>
 <p class="empty">Sin encuestas de emisoras todavía.</p>
+<?php endif; ?>
+
+<!-- ── Compartidos ─────────────────────────────────────────────────────────── -->
+<h2 id="shares">Compartidos recientes (últimas 100)</h2>
+<?php
+$ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR'];
+if ($shares_recientes): ?>
+<table>
+  <thead><tr>
+    <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($shares_recientes as $sh): ?>
+  <tr>
+    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
+    <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
+    <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
+    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">Sin compartidos registrados todavía.</p>
 <?php endif; ?>
 
 <!-- ── Detalle encuestas ───────────────────────────────────────────────────── -->

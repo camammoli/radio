@@ -100,7 +100,7 @@ if ($action === 'ping') {
         }
 
         // Notificación Telegram
-        if (NOTIFY_OYENTES && TG_TOKEN && TG_CHAT_ID && $station_name) {
+        if (notify_active($db) && TG_TOKEN && TG_CHAT_ID && $station_name) {
             $count_now = (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn();
             $ip        = client_ip();
             $text      = "🎙 Oyente: $station_name\n🌐 IP: $ip\n👥 Activos: $count_now";

@@ -69,3 +69,14 @@ function client_ip(): string {
 function ip_hash(string $ip): string {
     return substr(hash('sha256', $ip), 0, 16);
 }
+
+// ── Configuración dinámica ────────────────────────────────────────────────────
+
+function notify_active(PDO $db): bool {
+    try {
+        $r = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1");
+        $v = $r ? $r->fetchColumn() : false;
+        if ($v !== false) return $v === '1';
+    } catch (Exception $e) {}
+    return defined('NOTIFY_OYENTES') && NOTIFY_OYENTES;
+}

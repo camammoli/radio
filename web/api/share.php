@@ -22,15 +22,31 @@ if (!$slug) api_error('slug requerido', 400);
 
 $db = radio_db();
 
-$r = $db->prepare('SELECT nombre FROM stations WHERE slug = ? LIMIT 1');
+// Migración: tabla shares
+try { $db->exec('CREATE TABLE IF NOT EXISTS shares (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  station_id INTEGER,
+  slug TEXT,
+  channel TEXT,
+  ip_hash TEXT,
+  created_at TEXT DEFAULT (datetime("now"))
+)'); } catch (Exception $e) {}
+
+$r = $db->prepare('SELECT id, nombre FROM stations WHERE slug = ? LIMIT 1');
 $r->execute([$slug]);
-$nombre = ($r->fetchColumn()) ?: $slug;
+$st     = $r->fetch();
+$nombre = $st ? $st['nombre'] : $slug;
+$st_id  = $st ? (int)$st['id'] : null;
+
+// Registrar el share
+$db->prepare('INSERT INTO shares (station_id, slug, channel, ip_hash) VALUES (?,?,?,?)')
+   ->execute([$st_id, $slug, $channel, ip_hash(client_ip())]);
 
 $icons = ['copy' => '🔗', 'wa' => '💬', 'qr' => '⬛'];
 $icon  = $icons[$channel] ?? '📤';
 $label = ['copy' => 'Copió el link', 'wa' => 'Compartió por WhatsApp', 'qr' => 'Abrió el QR'][$channel] ?? 'Compartió';
 
-if (NOTIFY_OYENTES && TG_TOKEN && TG_CHAT_ID) {
+if (notify_active($db) && TG_TOKEN && TG_CHAT_ID) {
     $text = "$icon $label: $nombre";
     $ch   = curl_init('https://api.telegram.org/bot' . TG_TOKEN . '/sendMessage');
     curl_setopt_array($ch, [
