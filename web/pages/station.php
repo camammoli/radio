@@ -137,6 +137,11 @@ if ($prov) {
     <div class="st-status" id="st-status"></div>
     <div class="st-np"     id="st-np"></div>
     <div class="st-listeners" id="st-listeners"></div>
+    <div id="volume-ctrl" style="display:none;margin-top:14px;align-items:center;gap:8px;justify-content:center">
+      <span style="font-size:13px" id="vol-icon">🔊</span>
+      <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="1"
+             style="width:120px;cursor:pointer;accent-color:var(--accent)">
+    </div>
   </div>
 
   <!-- Info técnica -->
@@ -225,8 +230,9 @@ if ($prov) {
   </div>
 </div>
 
-<script src="/radio/assets/theme.js"></script>
-<script src="/radio/assets/player.js"></script>
+<?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
+<script src="<?= $__base ?>/assets/theme.js"></script>
+<script src="<?= $__base ?>/assets/player.js"></script>
 <script>
 (function () {
   // Tema
@@ -261,6 +267,8 @@ if ($prov) {
         : state === 'error'
           ? 'La señal se cortó. Intentá de nuevo.'
           : '';
+      var showVol = (state === 'playing' || state === 'buffering');
+      document.getElementById('volume-ctrl').style.display = showVol ? 'flex' : 'none';
     },
 
     onNowPlaying: function (title) {
@@ -288,18 +296,41 @@ if ($prov) {
 
   btnPlay.addEventListener('click', function () { p.toggle(); });
 
+  // Volumen
+  var volCtrl   = document.getElementById('volume-ctrl');
+  var volSlider = document.getElementById('volume-slider');
+  var volIcon   = document.getElementById('vol-icon');
+  var audioEl   = p.getAudio();
+
+  volSlider.addEventListener('input', function () {
+    var v = parseFloat(volSlider.value);
+    audioEl.volume = v;
+    volIcon.textContent = v === 0 ? '🔇' : v < 0.5 ? '🔉' : '🔊';
+  });
+
   // Compartir
   var pgUrl  = <?= json_encode($pg_url) ?>;
   var pgNom  = <?= json_encode($s['nombre']) ?>;
+  var stSlug = <?= json_encode($slug) ?>;
+
+  function pingShare(channel) {
+    fetch('/radio/api/share?slug=' + encodeURIComponent(stSlug) + '&channel=' + channel)
+      .catch(function(){});
+  }
 
   document.getElementById('sbtn-copy').addEventListener('click', function () {
     navigator.clipboard.writeText(pgUrl).then(function () {
       var b = document.getElementById('sbtn-copy');
       b.textContent = '✓ Copiado'; b.classList.add('copied');
       setTimeout(function () { b.textContent = '🔗 Copiar link'; b.classList.remove('copied'); }, 2000);
+      pingShare('copy');
     }).catch(function () {
       if (navigator.share) navigator.share({ title: pgNom, url: pgUrl }).catch(function(){});
     });
+  });
+
+  document.getElementById('sbtn-wa').addEventListener('click', function () {
+    pingShare('wa');
   });
 
   var qrModal = document.getElementById('qr-modal-st');
@@ -307,6 +338,7 @@ if ($prov) {
     document.getElementById('qr-img-st').src =
       'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(pgUrl);
     qrModal.classList.add('visible');
+    pingShare('qr');
   });
   document.getElementById('qr-close-st').addEventListener('click', function () { qrModal.classList.remove('visible'); });
   qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrModal.classList.remove('visible'); });

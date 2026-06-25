@@ -26,6 +26,7 @@
   <meta name="twitter:title"       content="<?= htmlspecialchars($page_title) ?>">
   <meta name="twitter:description" content="<?= htmlspecialchars($page_desc) ?>">
   <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
+  <?php if (defined('RADIO_BASE')): ?><meta name="robots" content="noindex, nofollow"><?php endif; ?>
   <link rel="manifest" href="<?= $__base ?>/manifest.json">
   <meta name="theme-color"                       content="#111827">
   <meta name="mobile-web-app-capable"            content="yes">

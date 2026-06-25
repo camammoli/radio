@@ -13,7 +13,7 @@ $db = radio_db();
 
 $stations = $db->query(
     "SELECT id, n, slug, nombre, url, provincia, tags, codec, bitrate,
-            logo, estado, icy_supported, total_plays, rb_votes
+            logo, estado, icy_supported, total_plays, rb_votes, last_checked
      FROM v_stations
      ORDER BY
        CASE estado WHEN 'ok' THEN 0 WHEN 'timeout' THEN 1 ELSE 2 END,
@@ -145,6 +145,9 @@ if ($filtro_prov_seo !== '') {
       <?php endforeach; ?>
     </div>
     <?php endif; ?>
+    <?php if ($s['last_checked']): ?>
+    <div style="font-size:10px;color:var(--muted);margin-top:3px">✓ <?= htmlspecialchars(substr(str_replace('T', ' ', $s['last_checked']), 0, 16)) ?></div>
+    <?php endif; ?>
   </div>
 
   <?php if ($s['icy_supported']): ?>
@@ -174,6 +177,11 @@ if ($filtro_prov_seo !== '') {
     <button class="share-btn" id="btn-qr">⬛ QR</button>
     <a id="btn-vlc" href="#" class="rp-vlc">📡 VLC</a>
   </div>
+  <div id="bar-vol" style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+    <span id="bar-vol-icon" style="font-size:13px">🔊</span>
+    <input type="range" id="bar-vol-slider" min="0" max="1" step="0.05" value="1"
+           style="width:80px;cursor:pointer;accent-color:#3b82f6">
+  </div>
 </div>
 
 <!-- QR modal -->
@@ -198,9 +206,9 @@ if ($filtro_prov_seo !== '') {
   <button onclick="this.closest('#support-toast').classList.add('hide')">✕</button>
 </div>
 
-<script src="/radio/assets/theme.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js"></script>
-<script src="/radio/assets/player.js"></script>
+<?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
+<script src="<?= $__base ?>/assets/theme.js"></script>
+<script src="<?= $__base ?>/assets/player.js"></script>
 <script>
 (function () {
 'use strict';
@@ -279,6 +287,16 @@ var player = RadioPlayer({
   },
 });
 
+// Volumen en la barra del player
+var barVolSlider = document.getElementById('bar-vol-slider');
+var barVolIcon   = document.getElementById('bar-vol-icon');
+var barAudio     = player.getAudio();
+barVolSlider.addEventListener('input', function () {
+  var v = parseFloat(barVolSlider.value);
+  barAudio.volume = v;
+  barVolIcon.textContent = v === 0 ? '🔇' : v < 0.5 ? '🔉' : '🔊';
+});
+
 // ── Click en emisora ──────────────────────────────────────────────────────────
 lista.addEventListener('click', function (e) {
   var el = e.target.closest('.station');
@@ -323,6 +341,11 @@ btnStop.addEventListener('click', function () {
 // ── Compartir ─────────────────────────────────────────────────────────────────
 function stationUrl(slug) { return 'https://mammoli.ar/radio/' + slug + '/'; }
 
+function pingShare(slug, channel) {
+  fetch('/radio/api/share?slug=' + encodeURIComponent(slug) + '&channel=' + channel)
+    .catch(function(){});
+}
+
 function updateShare(slug, nombre) {
   shareRow.classList.add('visible');
   var url = stationUrl(slug);
@@ -332,16 +355,19 @@ function updateShare(slug, nombre) {
       btnCopy.textContent = '✓ Copiado';
       btnCopy.classList.add('copied');
       setTimeout(function () { btnCopy.textContent = '🔗 Link'; btnCopy.classList.remove('copied'); }, 2000);
+      pingShare(slug, 'copy');
     });
   };
 
   btnWa.href = 'https://wa.me/?text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + '\n👉 ' + url);
+  btnWa.onclick = function () { pingShare(slug, 'wa'); };
 
   btnQr.onclick = function () {
     document.getElementById('qr-img').src  = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
     document.getElementById('qr-name').textContent = nombre;
     document.getElementById('qr-url').textContent  = url;
     qrModal.classList.add('visible');
+    pingShare(slug, 'qr');
   };
 }
 
@@ -483,6 +509,24 @@ function applyFilters() {
 buscador.addEventListener('input', applyFilters);
 if (filterGenre || filterProv) applyFilters();
 
+// ── ICY titles pasivos ────────────────────────────────────────────────────────
+fetch('/radio/api/nowplaying?batch=1')
+  .then(function (r) { return r.ok ? r.json() : null; })
+  .then(function (d) {
+    if (!d || !d.ok) return;
+    var titles = d.data;
+    Object.keys(titles).forEach(function (slug) {
+      var card = lista.querySelector('.station[data-slug="' + slug + '"]');
+      if (!card || !titles[slug]) return;
+      var info = card.querySelector('.station-info');
+      if (!info) return;
+      var el = document.createElement('div');
+      el.className = 'station-icy-passive';
+      el.textContent = '♪ ' + titles[slug];
+      info.appendChild(el);
+    });
+  }).catch(function () {});
+
 // ── Destacar emisora compartida (desde ?n=) ───────────────────────────────────
 // El router ya resuelve ?n= → redirect al slug, así que aquí solo manejamos
 // el banner si llegamos desde esa redirección con ?shared=1
@@ -493,7 +537,7 @@ if (filterGenre || filterProv) applyFilters();
 }());
 
 // ── Service Worker ────────────────────────────────────────────────────────────
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('/radio/sw.js').catch(function(){});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register(<?= json_encode($__base . '/sw.js') ?>).catch(function(){});
 
 }());
 </script>

@@ -30,6 +30,20 @@ if ($slug !== '') {
     }
 }
 
+// ── Batch: todos los títulos ICY en caché ─────────────────────────────────────
+
+if (isset($_GET['batch'])) {
+    $rows = $db->query(
+        "SELECT s.slug, ic.stream_title
+         FROM icy_cache ic
+         JOIN stations s ON s.id = ic.station_id
+         WHERE ic.supported = 1
+           AND ic.stream_title IS NOT NULL AND ic.stream_title != ''
+           AND (strftime('%s','now') - strftime('%s', ic.last_checked)) < 25200"
+    )->fetchAll(PDO::FETCH_KEY_PAIR);
+    api_response($rows ?: new stdClass());
+}
+
 if ($url === '') api_error('slug o url requerido', 400);
 
 // ── Leer caché ────────────────────────────────────────────────────────────────
@@ -52,69 +66,76 @@ if ($station_id) {
     }
 }
 
-// ── Fetch ICY en tiempo real ──────────────────────────────────────────────────
+// ── Fetch ICY en tiempo real (cURL — HTTP + HTTPS) ───────────────────────────
 
-function fetch_icy_title(string $url, int $timeout = 5): ?string {
-    // Solo HTTP (sockets directos)
-    if (!str_starts_with($url, 'http://')) return null;
+function fetch_icy_title(string $url, int $timeout = 6): ?string {
+    if (!function_exists('curl_init')) return null;
 
-    $parsed = parse_url($url);
-    $host   = $parsed['host'] ?? '';
-    $port   = $parsed['port'] ?? 80;
-    $path   = ($parsed['path'] ?? '/');
-    if (isset($parsed['query'])) $path .= '?' . $parsed['query'];
-    if (!$path) $path = '/';
+    // Estado de la máquina de parseo ICY
+    $st = ['metaint' => 0, 'phase' => 'audio', 'audio_left' => 0,
+           'meta_len' => 0, 'buf' => '', 'title' => null];
 
-    $sock = @fsockopen($host, $port, $errno, $errstr, $timeout);
-    if (!$sock) return null;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS      => 3,
+        CURLOPT_TIMEOUT        => $timeout,
+        CURLOPT_CONNECTTIMEOUT => 4,
+        CURLOPT_USERAGENT      => 'WinampMPEG/5.0',
+        CURLOPT_HTTPHEADER     => ['Icy-MetaData: 1'],
+        CURLOPT_SSL_VERIFYPEER => false,
+        CURLOPT_SSL_VERIFYHOST => 0,
+        CURLOPT_RETURNTRANSFER => false,
+        CURLOPT_HEADERFUNCTION => function ($ch, $line) use (&$st) {
+            if (stripos($line, 'icy-metaint:') === 0) {
+                $st['metaint']    = (int) trim(substr($line, 12));
+                $st['audio_left'] = $st['metaint'];
+            }
+            return strlen($line);
+        },
+        CURLOPT_WRITEFUNCTION => function ($ch, $chunk) use (&$st) {
+            if ($st['phase'] === 'done') return -1;
+            if (!$st['metaint'])         return -1;
 
-    stream_set_timeout($sock, $timeout);
-    fwrite($sock, "GET $path HTTP/1.0\r\nHost: $host\r\nIcy-MetaData: 1\r\nUser-Agent: WinampMPEG/5.0\r\n\r\n");
+            $pos = 0;
+            $len = strlen($chunk);
 
-    // Leer cabeceras
-    $headers = '';
-    $metaint = 0;
-    while (!feof($sock)) {
-        $line = fgets($sock, 512);
-        if ($line === "\r\n") break;
-        $headers .= $line;
-        if (stripos($line, 'icy-metaint:') === 0) {
-            $metaint = (int)trim(substr($line, 12));
-        }
-    }
+            while ($pos < $len) {
+                if ($st['phase'] === 'audio') {
+                    $take = min($st['audio_left'], $len - $pos);
+                    $pos += $take;
+                    $st['audio_left'] -= $take;
+                    if ($st['audio_left'] === 0) $st['phase'] = 'meta_len';
 
-    if (!$metaint) { fclose($sock); return null; }
+                } elseif ($st['phase'] === 'meta_len') {
+                    $st['meta_len'] = ord($chunk[$pos]) * 16;
+                    $pos++;
+                    if ($st['meta_len'] === 0) { $st['phase'] = 'done'; return -1; }
+                    $st['phase'] = 'meta';
+                    $st['buf']   = '';
 
-    // Leer hasta el primer bloque de metadata
-    $audio = '';
-    $need  = $metaint;
-    while (!feof($sock) && strlen($audio) < $need) {
-        $chunk = fread($sock, $need - strlen($audio));
-        if ($chunk === false || $chunk === '') break;
-        $audio .= $chunk;
-    }
+                } elseif ($st['phase'] === 'meta') {
+                    $need = $st['meta_len'] - strlen($st['buf']);
+                    $take = min($need, $len - $pos);
+                    $st['buf'] .= substr($chunk, $pos, $take);
+                    $pos += $take;
+                    if (strlen($st['buf']) >= $st['meta_len']) {
+                        if (preg_match("/StreamTitle='([^;]*)'/i", $st['buf'], $m)) {
+                            $t = trim($m[1]);
+                            $st['title'] = $t !== '' ? $t : null;
+                        }
+                        $st['phase'] = 'done';
+                        return -1;
+                    }
+                }
+            }
+            return $len;
+        },
+    ]);
 
-    // Leer longitud del bloque de metadata (1 byte × 16)
-    $len_byte = fread($sock, 1);
-    if ($len_byte === false || $len_byte === '') { fclose($sock); return null; }
-    $meta_len = ord($len_byte) * 16;
-
-    $title = null;
-    if ($meta_len > 0) {
-        $meta = '';
-        while (!feof($sock) && strlen($meta) < $meta_len) {
-            $chunk = fread($sock, $meta_len - strlen($meta));
-            if ($chunk === false || $chunk === '') break;
-            $meta .= $chunk;
-        }
-        if (preg_match("/StreamTitle='([^;]*)'/", $meta, $m)) {
-            $title = trim($m[1]);
-            if ($title === '') $title = null;
-        }
-    }
-
-    fclose($sock);
-    return $title;
+    curl_exec($ch);
+    curl_close($ch);
+    return $st['title'];
 }
 
 $title = fetch_icy_title($url);

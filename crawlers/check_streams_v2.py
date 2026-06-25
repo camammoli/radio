@@ -74,7 +74,11 @@ def check_url(url: str, timeout: int) -> dict:
 # ── ICY metadata (StreamTitle) ────────────────────────────────────────────────
 
 def _read_icy_title(url: str, timeout: int) -> str | None:
-    """Lee StreamTitle del stream ICY vía socket raw."""
+    """Lee StreamTitle del stream ICY vía socket raw.
+
+    Intenta hasta 4 bloques de metadata porque algunos servidores envían
+    el primer bloque vacío (meta_len=0) antes de incluir el StreamTitle.
+    """
     try:
         m = re.match(r"https?://([^/:]+)(?::(\d+))?(/.*)$", url)
         if not m:
@@ -82,7 +86,9 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
         host, port_s, path = m.group(1), m.group(2), m.group(3)
         port = int(port_s) if port_s else 80
 
-        s = socket.create_connection((host, port), timeout=timeout)
+        # Timeout mínimo de 15s: a 48 kbps un bloque de 16 KB tarda ~2.7s
+        icy_timeout = max(timeout, 15)
+        s = socket.create_connection((host, port), timeout=icy_timeout)
         req = (
             f"GET {path} HTTP/1.0\r\n"
             f"Host: {host}\r\n"
@@ -113,41 +119,50 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
             s.close()
             return None
 
-        # Leer hasta el primer bloque de metadata
+        # Leer bloques de metadata hasta encontrar StreamTitle (máx 4 intentos)
         audio_buf = buf.split(b"\r\n\r\n", 1)[1]
-        needed = metaint - len(audio_buf)
-        if needed > 0:
-            while needed > 0:
-                chunk = s.recv(min(needed, 4096))
+        for _ in range(4):
+            needed = metaint - len(audio_buf)
+            if needed > 0:
+                while needed > 0:
+                    chunk = s.recv(min(needed, 4096))
+                    if not chunk:
+                        s.close()
+                        return None
+                    audio_buf += chunk
+                    needed -= len(chunk)
+
+            if len(audio_buf) < metaint:
+                s.close()
+                return None
+
+            # Guardar bytes sobrantes para el siguiente ciclo
+            audio_buf = audio_buf[metaint:]
+
+            meta_len_byte = s.recv(1)
+            if not meta_len_byte:
+                s.close()
+                return None
+            meta_len = meta_len_byte[0] * 16
+
+            if meta_len == 0:
+                continue  # bloque vacío — probar el siguiente
+
+            meta_buf = b""
+            while len(meta_buf) < meta_len:
+                chunk = s.recv(meta_len - len(meta_buf))
                 if not chunk:
                     break
-                audio_buf += chunk
-                needed -= len(chunk)
+                meta_buf += chunk
 
-        if len(audio_buf) < metaint:
             s.close()
-            return None
-
-        meta_len_byte = s.recv(1)
-        if not meta_len_byte:
-            s.close()
-            return None
-        meta_len = meta_len_byte[0] * 16
-        if meta_len == 0:
-            s.close()
-            return None
-
-        meta_buf = b""
-        while len(meta_buf) < meta_len:
-            chunk = s.recv(meta_len - len(meta_buf))
-            if not chunk:
-                break
-            meta_buf += chunk
+            meta_str = meta_buf.decode("utf-8", errors="replace").strip("\x00")
+            m2 = re.search(r"StreamTitle='([^']*)'", meta_str)
+            title = m2.group(1).strip() if m2 else None
+            return title if title else None
 
         s.close()
-        meta_str = meta_buf.decode("utf-8", errors="replace").strip("\x00")
-        m2 = re.search(r"StreamTitle='([^']*)'", meta_str)
-        return m2.group(1).strip() if m2 else None
+        return None
 
     except Exception:
         return None

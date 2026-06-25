@@ -115,6 +115,30 @@
       onState(s);
     }
 
+    // ── HLS.js lazy loader ────────────────────────────────────────────────────
+    var hlsJsLoading = false;
+    var hlsJsCallbacks = [];
+
+    function loadHlsJs(cb) {
+      if (typeof Hls !== 'undefined') { cb(); return; }
+      hlsJsCallbacks.push(cb);
+      if (hlsJsLoading) return;
+      hlsJsLoading = true;
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/hls.js@latest/dist/hls.min.js';
+      s.onload = function () {
+        hlsJsLoading = false;
+        hlsJsCallbacks.forEach(function (fn) { fn(); });
+        hlsJsCallbacks = [];
+      };
+      s.onerror = function () {
+        hlsJsLoading = false;
+        hlsJsCallbacks.forEach(function (fn) { fn(); });
+        hlsJsCallbacks = [];
+      };
+      document.head.appendChild(s);
+    }
+
     // ── Play / Stop ───────────────────────────────────────────────────────────
     function resolveUrl(raw) {
       if (/\.pls(\?|$)/i.test(raw)) return PROXY_URL + encodeURIComponent(raw);
@@ -142,23 +166,36 @@
       var resolved = resolveUrl(url);
       var isHls    = /\.m3u8(\?|$)/i.test(url);
 
-      if (isHls && typeof Hls !== 'undefined' && Hls.isSupported()) {
-        if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
-        hlsInst = new Hls({ maxBufferLength: 20 });
-        hlsInst.loadSource(resolved);
-        hlsInst.attachMedia(audio);
-        hlsInst.on(Hls.Events.MANIFEST_PARSED, function () {
-          audio.play().catch(function () {
-            clearTimeout(loadTimer);
-            setState('error');
-            onError(url, nombre, 'no disponible');
-          });
-        });
-        hlsInst.on(Hls.Events.ERROR, function (_, d) {
-          if (d.fatal) {
-            clearTimeout(loadTimer);
-            setState('error');
-            onError(url, nombre, 'no disponible');
+      if (isHls) {
+        loadHlsJs(function () {
+          if (destroyed) return;
+          if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+            if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
+            hlsInst = new Hls({ maxBufferLength: 20 });
+            hlsInst.loadSource(resolved);
+            hlsInst.attachMedia(audio);
+            hlsInst.on(Hls.Events.MANIFEST_PARSED, function () {
+              audio.play().catch(function () {
+                clearTimeout(loadTimer);
+                setState('error');
+                onError(url, nombre, 'no disponible');
+              });
+            });
+            hlsInst.on(Hls.Events.ERROR, function (_, d) {
+              if (d.fatal) {
+                clearTimeout(loadTimer);
+                setState('error');
+                onError(url, nombre, 'no disponible');
+              }
+            });
+          } else {
+            // HLS nativo del navegador (Safari) o fallo de carga — intentar directo
+            audio.src = resolved;
+            audio.play().catch(function () {
+              clearTimeout(loadTimer);
+              setState('error');
+              onError(url, nombre, 'no disponible');
+            });
           }
         });
       } else {
@@ -357,6 +394,7 @@
       setStation: setStation,
       getState:   function () { return state; },
       getSlug:    function () { return slug; },
+      getAudio:   function () { return audio; },
       destroy:    function () {
         destroyed = true;
         clearInterval(passiveTimer);
