@@ -23,18 +23,18 @@ v2 se diseñó top-down con el mismo stack (PHP + vanilla JS, sin frameworks, si
 
 ---
 
-## Estrategia de ramas
+## Estrategia de versiones
 
-```
-camammoli/radio
-├── master      →  v2 en producción
-├── v2          →  desarrollo (mergeada a master en cutover 2026-06-25)
-└── v1-archive  →  snapshot v1 antes del cutover (tag: v1-final)
-```
+Un solo branch (`master` = producción). Versiones marcadas con tags:
 
-Las GitHub Actions corren en `master` (default branch). El checkout es siempre `ref: v2` para los workflows de crawlers, ya que el código de crawlers está en esa rama.
+| Tag | Descripción |
+|---|---|
+| `v1-final` | último estado de v1 antes del cutover (2026-06-25) |
+| HEAD | v2 activa en producción |
 
-Rollback a v1: subir `/v1-archive/index.php` vía FTP a `/radio/index.php`. El resto del sitio no interfiere — v1 era un monolito autocontenido.
+Las GitHub Actions corren en `master` (default branch).
+
+Rollback a v1: `git checkout v1-final -- v1-archive/index.php` y subir ese archivo vía FTP a `/radio/index.php`. El resto del sitio no interfiere — v1 era un monolito autocontenido.
 
 ---
 
