@@ -27,7 +27,12 @@ $sid    = substr(preg_replace('/[^a-z0-9]/i', '', str_param('sid', 40)), 0, 40);
 $slug   = str_param('station', 100);   // ahora recibe slug (no nombre)
 $source = str_param('source', 30, 'web-listing');
 
-// Limpiar expirados
+// Limpiar expirados: primero cerrar plays con el último heartbeat, luego borrar
+$db->exec(
+    "UPDATE plays SET ended_at = (SELECT last_seen FROM listeners WHERE sid = plays.session_id)
+     WHERE session_id IN (SELECT sid FROM listeners WHERE last_seen < datetime('now', '-90 seconds'))
+     AND ended_at IS NULL"
+);
 $db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
 
 // ── Resolver station_id desde slug ────────────────────────────────────────────
@@ -73,6 +78,7 @@ if ($action === 'count' || ($action !== 'ping' && $action !== 'stop')) {
 
 if ($action === 'stop') {
     if (!$sid) api_error('sid requerido', 400);
+    $db->prepare("UPDATE plays SET ended_at = datetime('now') WHERE session_id = ? AND ended_at IS NULL")->execute([$sid]);
     $db->prepare('DELETE FROM listeners WHERE sid = ?')->execute([$sid]);
     $count = (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn();
     api_response(['count' => $count]);

@@ -48,6 +48,7 @@ $db   = radio_db();
 try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Exception $e) {}
 try { $db->exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
 try { $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -161,10 +162,19 @@ $surveys_detalle = $db->query(
 
 // Plays recientes (últimas 200)
 $plays_recientes = $db->query(
-    "SELECT p.played_at, p.ip_hash, p.source, p.session_id,
-            s.nombre, s.slug
+    "SELECT p.played_at, p.ended_at, p.ip_hash, p.source, p.session_id,
+            s.nombre, s.slug,
+            CASE
+              WHEN p.ended_at IS NOT NULL
+                THEN ROUND((julianday(p.ended_at) - julianday(p.played_at)) * 86400)
+              WHEN l.sid IS NOT NULL
+                THEN ROUND((julianday('now')       - julianday(p.played_at)) * 86400)
+              ELSE NULL
+            END AS duration_secs,
+            CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
      FROM plays p
      LEFT JOIN stations s ON s.id = p.station_id
+     LEFT JOIN listeners l ON l.sid = p.session_id
      ORDER BY p.played_at DESC
      LIMIT 200"
 )->fetchAll(PDO::FETCH_ASSOC);
@@ -419,16 +429,31 @@ if ($shares_recientes): ?>
 
 <!-- ── Reproducciones ──────────────────────────────────────────────────────── -->
 <h2 id="plays">Reproducciones recientes (últimas 200)</h2>
+<?php
+function fmt_duration(?int $secs): string {
+    if ($secs === null) return '—';
+    if ($secs < 60)   return $secs . 's';
+    if ($secs < 3600) return floor($secs/60) . 'm ' . ($secs%60) . 's';
+    return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
+}
+?>
 <?php if ($plays_recientes): ?>
 <table>
   <thead><tr>
-    <th>Fecha / Hora</th><th>Emisora</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
+    <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
   </tr></thead>
   <tbody>
   <?php foreach ($plays_recientes as $pl): ?>
   <tr>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
     <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
+    <td style="font-size:12px;white-space:nowrap">
+      <?php if ($pl['is_active']): ?>
+        <span style="color:#22c55e">▶ <?= fmt_duration((int)$pl['duration_secs']) ?></span>
+      <?php else: ?>
+        <?= fmt_duration(isset($pl['duration_secs']) ? (int)$pl['duration_secs'] : null) ?>
+      <?php endif; ?>
+    </td>
     <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
     <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
     <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
