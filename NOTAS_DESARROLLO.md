@@ -564,6 +564,29 @@ data/sugerencias.json, count.json, listeners.json, logs/).
 
 ---
 
+## TKT-0713 — 2026-06-25 — SEO: meta descriptions, títulos y schema
+
+### Problema
+Search Console mostraba páginas de emisoras con 0% CTR a pesar de 90+ impresiones (antena-98-9: 95 imp/0 clics, dorrego: 94/0, rio-fm: 93/0). Causa: sin meta description, Google generaba snippets genéricos poco atractivos.
+
+### Cambios en `web/pages/station.php`
+- **Título**: cambió de `"NOMBRE — Escuchá en vivo | Radio Argentina"` a `"NOMBRE en Vivo Online Gratis | Radio Argentina"` — keywords que la gente busca
+- **Meta description**: texto más rico con provincia, género (primer tag) y variante "Argentina". Ejemplo: "▶ Escuchá Antena 98.9 en vivo online, gratis y sin instalar nada. Emisora de Mendoza, Argentina. Pop, rock."
+- **Párrafo descriptivo**: `<p>` de 13px/color muted justo antes del player, generado dinámicamente desde nombre + provincia + tags + codec. Contenido indexable adicional para Google.
+
+### Cambios en `web/pages/listing.php`
+- **Título**: `"Radio Argentina en Vivo — N Emisoras Online Gratis"` (con variante provincia)
+- **Meta description**: agrega géneros explícitos: "FM, AM, noticias, rock, folklore, cumbia y más"
+- **ItemList JSON-LD**: schema con las 30 emisoras activas más reproducidas. Google puede mostrar el sitio como un rich result de lista.
+
+### Deploy
+`lftp put` → `/radio/pages/station.php` + `/radio/pages/listing.php`
+
+### Siguiente paso
+Solicitar re-rastreo en Search Console (URLs prioritarias: antena-98-9, dorrego, rio-fm-rosario).
+
+---
+
 ## TKT-0709 — 2026-06-24 — V2-009: Cutover a producción
 
 ### Resumen
