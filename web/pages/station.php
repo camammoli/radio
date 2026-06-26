@@ -300,8 +300,11 @@ if ($prov) {
       stNp.appendChild(txt);
     },
 
-    onListeners: function (total) {
-      stList.textContent = total > 1 ? total + ' personas escuchando ahora' : '';
+    onListeners: function (total, stationCount) {
+      var n = stationCount > 0 ? stationCount : total;
+      stList.textContent = n > 0
+        ? (n === 1 ? '1 persona escuchando ahora' : n + ' personas escuchando ahora')
+        : '';
     },
 
     onError: function (rawUrl) {
