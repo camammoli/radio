@@ -38,11 +38,10 @@ $pg_url  = 'https://mammoli.ar/radio/' . $slug . '/';
 // ── SEO ───────────────────────────────────────────────────────────────────────
 
 $tag_s      = $tags ? implode(', ', array_slice($tags, 0, 3)) : '';
-$page_title = htmlspecialchars($s['nombre']) . ' — Escuchá en vivo | Radio Argentina';
-$page_desc  = '▶ Escuchá ' . $s['nombre'] . ' en vivo por internet, gratis y sin instalar nada.'
-            . ($prov    ? ' Emisora de ' . $prov . '.' : '')
-            . ($tag_s   ? ' ' . $tag_s . '.' : '')
-            . ($codec_s ? ' Formato: ' . $codec_s . '.' : '');
+$page_title = $s['nombre'] . ' en Vivo Online Gratis | Radio Argentina';
+$page_desc  = '▶ Escuchá ' . $s['nombre'] . ' en vivo online, gratis y sin instalar nada.'
+            . ($prov  ? ' Emisora de ' . $prov . ', Argentina.' : ' Emisora argentina.')
+            . ($tag_s ? ' ' . ucfirst($tag_s) . '.' : '');
 $page_canon    = $pg_url;
 $page_og_image = $s['logo'] ?: '';
 $page_og_audio = $s['url'];
@@ -130,6 +129,16 @@ if ($prov) {
     <?php foreach ($tags as $t): ?><span class="tag"><?= htmlspecialchars($t) ?></span><?php endforeach; ?>
   </div>
   <?php endif; ?>
+
+  <?php
+  $desc_parraf = $s['nombre'] . ' es una emisora de radio';
+  if ($prov)   $desc_parraf .= ' de ' . $prov;
+  $desc_parraf .= ', Argentina.';
+  if ($tags)   $desc_parraf .= ' Transmite ' . strtolower($tags[0]) . (count($tags) > 1 ? ' y más géneros' : '') . '.';
+  if ($codec_s) $desc_parraf .= ' Disponible en ' . $codec_s . '.';
+  $desc_parraf .= ' Escuchala gratis desde tu navegador, sin descargar ninguna app.';
+  ?>
+  <p style="color:var(--muted);font-size:13px;line-height:1.6;margin:0 0 18px;text-align:left"><?= htmlspecialchars($desc_parraf) ?></p>
 
   <!-- Player -->
   <div class="player-wrap">

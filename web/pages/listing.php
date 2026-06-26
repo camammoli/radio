@@ -48,15 +48,37 @@ $province_list = array_keys(array_filter($prov_counts, fn($c) => $c >= 4));
 
 $filtro_prov_seo = trim($_GET['provincia'] ?? '');
 if ($filtro_prov_seo !== '') {
-    $page_title = 'Radios de ' . ucwords($filtro_prov_seo) . ' | Radio Argentina';
-    $page_desc  = 'Escuchá emisoras de ' . ucwords($filtro_prov_seo) . ' en vivo por internet, gratis.';
+    $page_title = 'Radios de ' . ucwords($filtro_prov_seo) . ' en Vivo Online Gratis | Radio Argentina';
+    $page_desc  = 'Escuchá radios de ' . ucwords($filtro_prov_seo) . ' en vivo, gratis y sin instalar nada. '
+                . 'Todas las emisoras de ' . ucwords($filtro_prov_seo) . ', Argentina.';
     $page_canon = 'https://mammoli.ar/radio/?provincia=' . urlencode($filtro_prov_seo);
 } else {
-    $page_title = 'Radio Argentina — ' . $total . ' emisoras en vivo';
-    $page_desc  = 'Escuchá radios argentinas en vivo desde el navegador. '
-                . $total . ' emisoras de todo el país, sin instalar nada.';
+    $page_title = 'Radio Argentina en Vivo — ' . $total . ' Emisoras Online Gratis';
+    $page_desc  = 'Escuchá radio argentina en vivo, gratis y sin instalar nada. '
+                . $total . ' emisoras de todo el país: FM, AM, noticias, rock, folklore, cumbia y más.';
     $page_canon = 'https://mammoli.ar/radio/';
 }
+
+// ItemList JSON-LD para Google
+$ld_stations_top = array_filter($stations, fn($s) => $s['estado'] === 'ok');
+$ld_list_items   = [];
+$pos = 1;
+foreach (array_slice(array_values($ld_stations_top), 0, 30) as $s) {
+    $ld_list_items[] = [
+        '@type'    => 'ListItem',
+        'position' => $pos++,
+        'url'      => 'https://mammoli.ar/radio/' . $s['slug'] . '/',
+        'name'     => $s['nombre'],
+    ];
+}
+$ld_itemlist = [
+    '@context'       => 'https://schema.org',
+    '@type'          => 'ItemList',
+    'name'           => 'Radios Argentinas en Vivo',
+    'description'    => 'Directorio de emisoras de radio de Argentina para escuchar en vivo por internet, gratis.',
+    'numberOfItems'  => $total,
+    'itemListElement' => $ld_list_items,
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -65,6 +87,7 @@ if ($filtro_prov_seo !== '') {
 <script>
   if (localStorage.getItem('radio_theme') === 'light') document.body.classList.add('light');
 </script>
+<script type="application/ld+json"><?= json_encode($ld_itemlist, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES) ?></script>
 
 <!-- Header -->
 <header class="site-header">
