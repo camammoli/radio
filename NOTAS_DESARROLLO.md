@@ -4,6 +4,26 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0719 — 2026-06-26 — Fix: sugerir.php desconectado del admin v2
+
+### Causa raíz
+`sugerir.php` era código v1: guardaba sugerencias en `data/sugerencias.json`. El admin v2 lee de `stations WHERE source='sugerencia'`. Formulario público y panel completamente desconectados — sugerencias nunca aparecían en el admin.
+
+### Fix
+Reescritura del handler PHP de `sugerir.php`:
+- Elimina toda la lógica de JSON file (`DATA_FILE`, `url_en_emisoras()`, caché de `emisoras.json`)
+- Agrega `require_once __DIR__ . '/api/_db.php'` para usar `radio_db()`
+- Verifica duplicados directamente en `stations` (por URL)
+- Genera slug con `_sugerir_slug()` (accent norm + anti-colisión)
+- Inserta con `source='sugerencia', approved=0` en tabla `stations`
+- Notificación Telegram apunta a `admin.php` (no al viejo `admin_sugerencias.php`)
+- Formulario HTML sin cambios
+
+### Deploy
+`lftp put` → `/radio/sugerir.php`
+
+---
+
 ## TKT-0718 — 2026-06-26 — Admin panel: auto-refresh sin F5
 
 ### Cambios

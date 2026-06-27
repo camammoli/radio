@@ -3,49 +3,35 @@
  * sugerir.php — formulario público para sugerir una emisora nueva
  */
 
-define('DATA_FILE',   __DIR__ . '/data/sugerencias.json');
-define('EMISORAS_JSON_URL', 'https://raw.githubusercontent.com/camammoli/radio/master/emisoras.json');
-define('CACHE_JSON',  sys_get_temp_dir() . '/radio_emisoras_cache.json');
-define('CACHE_TTL',   3600);
-
-function url_en_emisoras(string $url): ?string {
-    $data = null;
-    if (file_exists(CACHE_JSON) && (time() - filemtime(CACHE_JSON)) < CACHE_TTL) {
-        $data = json_decode(file_get_contents(CACHE_JSON), true);
-    }
-    if (!is_array($data)) {
-        $ctx = stream_context_create(['http' => ['timeout' => 5]]);
-        $raw = @file_get_contents(EMISORAS_JSON_URL, false, $ctx);
-        if ($raw !== false) {
-            $data = json_decode($raw, true);
-            if (is_array($data)) @file_put_contents(CACHE_JSON, $raw);
-        }
-    }
-    if (!is_array($data)) return null;
-    $url_norm = rtrim(strtolower($url), '/');
-    foreach ($data as $s) {
-        if (rtrim(strtolower($s['url'] ?? ''), '/') === $url_norm) {
-            return $s['nombre'] ?? 'una emisora existente';
-        }
-    }
-    return null;
-}
-
 if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
-if (!defined('TG_TOKEN'))  define('TG_TOKEN', '');
-if (!defined('TG_CHAT_ID') ) define('TG_CHAT_ID', '');
+require_once __DIR__ . '/api/_db.php';
+
+if (!defined('TG_TOKEN'))   define('TG_TOKEN', '');
+if (!defined('TG_CHAT_ID')) define('TG_CHAT_ID', '');
 
 function tg_send(string $text): void {
     if (!TG_TOKEN || !TG_CHAT_ID) return;
     $ch = curl_init('https://api.telegram.org/bot' . TG_TOKEN . '/sendMessage');
     curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => ['chat_id' => TG_CHAT_ID, 'text' => $text],
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => ['chat_id' => TG_CHAT_ID, 'text' => $text],
         CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 6,
+        CURLOPT_TIMEOUT        => 6,
     ]);
     curl_exec($ch);
     curl_close($ch);
+}
+
+function _sugerir_slug(string $nombre, string $provincia, PDO $db): string {
+    $accent = ['á'=>'a','à'=>'a','é'=>'e','è'=>'e','í'=>'i','ì'=>'i',
+               'ó'=>'o','ò'=>'o','ú'=>'u','ù'=>'u','ü'=>'u','ñ'=>'n','ç'=>'c'];
+    $text = strtolower($nombre . ($provincia ? ' ' . explode(',', $provincia)[0] : ''));
+    $text = strtr($text, $accent);
+    $text = trim(preg_replace('/[^a-z0-9]+/', '-', $text), '-');
+    $st = $db->prepare('SELECT COUNT(*) FROM stations WHERE slug = ?');
+    $st->execute([$text]);
+    if ((int)$st->fetchColumn() === 0) return $text;
+    return $text . '-' . substr(md5(microtime(true)), 0, 4);
 }
 
 function check_stream(string $url): array {
@@ -115,12 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'La URL debe empezar con http:// o https://';
     } elseif (strlen($url) > 500) {
         $error = 'URL demasiado larga.';
-    } else {
-        // Chequear duplicado en emisoras existentes
-        $existente = url_en_emisoras($url);
-        if ($existente !== null) {
-            $error = "Esta URL ya está en el directorio como \"" . htmlspecialchars($existente) . "\". ¡Gracias de todas formas!";
-        }
     }
 
     if (!$error) {
@@ -129,37 +109,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$check['ok']) {
             $error = "No se pudo conectar al stream: {$check['msg']}. Verificá que la URL sea correcta y el stream esté activo.";
         } else {
-            // Guardar sugerencia
-            $sugerencias = [];
-            if (file_exists(DATA_FILE)) {
-                $raw = file_get_contents(DATA_FILE);
-                $sugerencias = json_decode($raw, true) ?? [];
+            try {
+                $db = radio_db();
+
+                // Verificar duplicado en DB
+                $dup = $db->prepare('SELECT nombre FROM stations WHERE url = ?');
+                $dup->execute([$url]);
+                $dup_row = $dup->fetch();
+                if ($dup_row) {
+                    $error = 'Esta URL ya está en el directorio como "' . htmlspecialchars($dup_row['nombre']) . '". ¡Gracias de todas formas!';
+                } else {
+                    $slug = _sugerir_slug($nombre, $provincia, $db);
+                    $db->prepare(
+                        'INSERT INTO stations (slug, nombre, url, provincia, source, approved)
+                         VALUES (?,?,?,?,?,0)'
+                    )->execute([$slug, $nombre, $url, $provincia ?: null, 'sugerencia']);
+
+                    $prov_str = $provincia ? " · $provincia" : '';
+                    $msg = "📻 Nueva sugerencia\n{$nombre}{$prov_str}\n{$url}"
+                         . "\nStream: HTTP {$check['code']}" . ($check['audio'] ? ' (audio)' : '')
+                         . ($contacto ? "\nContacto: {$contacto}" : '')
+                         . "\n\nRevisala en https://mammoli.ar/radio/admin.php";
+                    tg_send($msg);
+
+                    $result = ['nombre' => $nombre, 'url' => $url];
+                }
+            } catch (Exception $e) {
+                $error = 'Error al guardar la sugerencia. Intentá de nuevo más tarde.';
             }
-            $nueva = [
-                'id'       => uniqid('sug_', true),
-                'ts'       => gmdate('Y-m-d H:i:s'),
-                'nombre'   => $nombre,
-                'url'      => $url,
-                'provincia'=> $provincia,
-                'contacto' => $contacto,
-                'estado'   => 'pendiente',
-                'http_code'=> $check['code'],
-                'is_audio' => $check['audio'],
-            ];
-            $sugerencias[] = $nueva;
-            @file_put_contents(DATA_FILE, json_encode($sugerencias, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE), LOCK_EX);
-
-            // Notificar por Telegram
-            $prov_str = $provincia ? " * $provincia" : '';
-            $msg = "Nueva sugerencia de emisora para Radio Argentina\n\n"
-                 . "Nombre: {$nombre}{$prov_str}\n"
-                 . "URL: {$url}\n"
-                 . "Stream: HTTP {$check['code']}" . ($check['audio'] ? ' (audio)' : '') . "\n"
-                 . ($contacto ? "Contacto: {$contacto}\n" : '')
-                 . "\nRevisala en https://mammoli.ar/radio/admin_sugerencias.php?key=" . RADIO_ADMIN_KEY;
-            tg_send($msg);
-
-            $result = ['nombre' => $nombre, 'url' => $url];
         }
     }
 }
