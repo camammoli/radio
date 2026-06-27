@@ -4,6 +4,76 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0718 — 2026-06-26 — Admin panel: auto-refresh sin F5
+
+### Cambios
+- `admin.php`: endpoint `?ajax=1` (GET, solo lectura, requiere sesión) devuelve JSON con stats + plays (200) + shares (100)
+- `session_write_close()` antes de queries para liberar el lock de sesión PHP
+- try/catch en el handler: errores de DB devuelven JSON válido en vez de romper silenciosamente
+- JS en el panel: polling cada 10s, actualiza 6 stat cards (total, ok, icy, plays_hoy, plays_total, listeners), tbody de plays con duración en tiempo real y tbody de shares
+- Indicador `↻ HH:MM:SS` en top-bar muestra la última actualización
+
+### Fix incluido: congelamiento con 2+ oyentes
+El handler original hacía un DELETE (escritura) que competía con los pings de los oyentes en SQLite WAL → lock contention → el ajax fallaba silenciosamente y la UI se congelaba. Fix: sin DELETE en el handler (listeners.php ya hace el cleanup en cada ping).
+
+### Deploy
+`lftp put` → `/radio/admin.php`
+
+---
+
+## TKT-0717 — 2026-06-26 — Fix: Service Worker cacheaba los pings de oyentes
+
+### Causa raíz
+`sw.js` tenía lista de exclusiones: `['listeners.php', 'nowplaying.php', ...]`. La URL real del ping es `/radio/api/listeners` (sin `.php`). El SW cacheaba la respuesta del primer ping y devolvía la misma copia a todos los heartbeats siguientes → el servidor nunca recibía los pings posteriores → `last_seen` nunca se actualizaba → oyente expiraba a los 90s → se ponía gris en el admin.
+
+### Fix
+Reemplazada la lista de exclusiones por una sola condición:
+```javascript
+if (url.pathname.startsWith('/radio/api/')) return;
+```
+`CACHE_NAME` bumpeado de `radio-ar-v2` a `radio-ar-v3` para forzar que todos los browsers descarten el SW viejo.
+
+### Deploy
+`lftp put` → `/radio/sw.js`
+
+---
+
+## TKT-0716 — 2026-06-26 — Fix: listeners.php roto por migración ended_at sin try/catch
+
+### Causa raíz
+La feature de duración (TKT-0715) agregó la migración `ALTER TABLE plays ADD COLUMN ended_at` solo en `admin.php`. `listeners.php` usaba esa columna en un UPDATE sin try/catch. Al llegar cualquier ping, PDO tiraba excepción → HTTP 500 → el cliente recibía respuesta no-JSON → `r.ok = false` → ping descartado silenciosamente. Resultado: cero registros nuevos, listener count congelado en el último valor pre-deploy.
+
+### Fix
+- Migración `ended_at` movida a `listeners.php` con try/catch (idempotente)
+- UPDATE de `ended_at` también protegido con try/catch
+- `station.php`: `onListeners` usa `stationCount` (emisora específica) en vez de count global
+- Conteo visible desde 1 persona (antes requería > 1)
+
+### Deploy
+`lftp put` → `/radio/api/listeners.php` + `/radio/pages/station.php`
+
+---
+
+## TKT-0715 — 2026-06-26 — Duración de reproducción en panel admin
+
+### Cambios
+- `plays`: nueva columna `ended_at TEXT` (migración automática con try/catch en listeners.php y admin.php)
+- `listeners.php` action=stop: `UPDATE plays SET ended_at = datetime('now')` antes de borrar el listener
+- `listeners.php` cleanup TTL: `UPDATE plays SET ended_at = last_seen` para sesiones expiradas, luego DELETE
+- `admin.php` query plays: LEFT JOIN con listeners para calcular `duration_secs` y `is_active`
+- Display: sesiones activas en verde con `▶ Xm Ys`; sesiones cerradas con duración fija; plays anteriores al deploy muestran `—`
+- `fmt_duration()`: helper PHP para formatear segundos → `Xs / Xm Ys / Xh Ym`
+
+### Lógica de duración
+- Stop explícito (botón o tab cerrada): duración exacta
+- Expiración TTL (red caída, tab cerrada de golpe): duración = último heartbeat recibido (±90s)
+- Plays anteriores al deploy: `—` (sin ended_at)
+
+### Deploy
+`lftp put` → `/radio/api/listeners.php` + `/radio/admin.php`
+
+---
+
 ## TKT-0712 — 2026-06-25 — Cutover v1→v2 a producción + panel admin
 
 ### Contexto
