@@ -39,6 +39,6 @@ jobs:
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
           set ssl:verify-certificate no
           put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
-          ren /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
+          mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
           bye
           LFTP
