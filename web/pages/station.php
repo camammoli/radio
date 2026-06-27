@@ -268,6 +268,7 @@ if ($prov) {
     slug:   <?= json_encode($slug) ?>,
     url:    <?= json_encode($s['url']) ?>,
     nombre: <?= json_encode($s['nombre']) ?>,
+    logo:   <?= json_encode($s['logo'] ?? '') ?>,
     source: 'web-station',
 
     onState: function (state) {

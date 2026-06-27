@@ -43,12 +43,15 @@
     var slug   = opts.slug   || '';
     var url    = opts.url    || '';
     var nombre = opts.nombre || '';
+    var logo   = opts.logo   || '';
     var source = opts.source || 'web-listing';
 
     var onState      = opts.onState      || function () {};
     var onNowPlaying = opts.onNowPlaying || function () {};
     var onListeners  = opts.onListeners  || function () {};
     var onError      = opts.onError      || function () {};
+    var onNextTrack  = opts.onNextTrack  || null;
+    var onPrevTrack  = opts.onPrevTrack  || null;
 
     // ── Estado ───────────────────────────────────────────────────────────────
     var state      = 'idle';
@@ -78,6 +81,7 @@
       npStart();
       survStart();
       welcomeStart();
+      setupMediaSession();
     });
 
     audio.addEventListener('waiting', function () {
@@ -118,6 +122,33 @@
     function setState(s) {
       state = s;
       onState(s);
+    }
+
+    // ── Media Session API (hotkeys Bluetooth / teclado) ───────────────────────
+    function updateMediaMeta() {
+      if (!('mediaSession' in navigator)) return;
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title:   nombre,
+          artist:  'Radio Argentina',
+          artwork: logo ? [{ src: logo, sizes: '128x128', type: 'image/jpeg' }] : [],
+        });
+      } catch (e) {}
+    }
+
+    function setupMediaSession() {
+      if (!('mediaSession' in navigator)) return;
+      updateMediaMeta();
+      var actions = {
+        'play':          function () { if (state !== 'playing') play(); },
+        'pause':         function () { stop(); },
+        'stop':          function () { stop(); },
+        'nexttrack':     onNextTrack,
+        'previoustrack': onPrevTrack,
+      };
+      Object.keys(actions).forEach(function (action) {
+        try { navigator.mediaSession.setActionHandler(action, actions[action]); } catch (e) {}
+      });
     }
 
     // ── HLS.js lazy loader ────────────────────────────────────────────────────
@@ -235,7 +266,7 @@
     }
 
     // Cambiar emisora sin recargar la página (para el listado) y arrancar reproducción
-    function setStation(newSlug, newUrl, newNombre) {
+    function setStation(newSlug, newUrl, newNombre, newLogo) {
       clearTimeout(loadTimer);
       if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
       audio.pause();
@@ -248,9 +279,11 @@
       slug      = newSlug;
       url       = newUrl;
       nombre    = newNombre;
+      logo      = newLogo || '';
       survSecs  = 0;
       survShown = false;
 
+      updateMediaMeta();
       // No pasar por 'idle' — ir directo a play() para no resetear activeEl en los callbacks
       play();
     }

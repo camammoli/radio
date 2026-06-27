@@ -139,6 +139,7 @@ $ld_itemlist = [
      data-nombre="<?= htmlspecialchars($s['nombre']) ?>"
      data-n="<?= (int)$s['n'] ?>"
      data-prov="<?= htmlspecialchars($prov1) ?>"
+     data-logo="<?= htmlspecialchars($s['logo'] ?? '') ?>"
      data-estado="<?= htmlspecialchars($s['estado']) ?>"
      data-tags="<?= htmlspecialchars(implode(' ', $tags)) ?>"
      data-plays="<?= (int)$s['total_plays'] ?>"
@@ -274,6 +275,24 @@ function markEl(el, css) {
   activeEl = css ? el : null;
 }
 
+// ── Iniciar emisora (compartido por click y hotkeys) ──────────────────────────
+function playStation(el) {
+  if (!el) return;
+  var slug   = el.dataset.slug;
+  var url    = el.dataset.url;
+  var nombre = el.dataset.nombre;
+  var prov   = el.dataset.prov;
+  var logo   = el.dataset.logo || '';
+  markEl(el, 'rp-loading');
+  playerTitle.textContent = nombre;
+  playerProv.textContent  = prov || '';
+  playerNp.textContent    = '';
+  playerBar.classList.add('visible');
+  btnVlc.style.display = 'none';
+  updateShare(slug, nombre);
+  player.setStation(slug, url, nombre, logo);
+}
+
 // ── Player ────────────────────────────────────────────────────────────────────
 var player = RadioPlayer({
   slug:   '',
@@ -322,6 +341,18 @@ var player = RadioPlayer({
     btnVlc.href = 'vlc://' + rawUrl;
     btnVlc.style.display = 'inline';
   },
+
+  onNextTrack: function () {
+    var visible = Array.from(lista.querySelectorAll('.station:not(.hidden)'));
+    var idx = visible.indexOf(activeEl);
+    if (idx >= 0 && idx < visible.length - 1) playStation(visible[idx + 1]);
+  },
+
+  onPrevTrack: function () {
+    var visible = Array.from(lista.querySelectorAll('.station:not(.hidden)'));
+    var idx = visible.indexOf(activeEl);
+    if (idx > 0) playStation(visible[idx - 1]);
+  },
 });
 
 // Volumen en la barra del player
@@ -340,11 +371,6 @@ lista.addEventListener('click', function (e) {
   if (!el) return;
   if (e.target.closest('.station-pg-link')) return; // link ⎋ → no reproducir
 
-  var slug   = el.dataset.slug;
-  var url    = el.dataset.url;
-  var nombre = el.dataset.nombre;
-  var prov   = el.dataset.prov;
-
   // Toggle pausa si es la misma emisora
   if (activeEl === el && player.getState() === 'playing') {
     player.stop();
@@ -354,16 +380,7 @@ lista.addEventListener('click', function (e) {
     return;
   }
 
-  // Cambiar o iniciar emisora
-  markEl(el, 'rp-loading');
-  playerTitle.textContent = nombre;
-  playerProv.textContent  = prov || '';
-  playerNp.textContent    = '';
-  playerBar.classList.add('visible');
-  btnVlc.style.display = 'none';
-
-  updateShare(slug, nombre);
-  player.setStation(slug, url, nombre);
+  playStation(el);
 });
 
 // ── Detener ───────────────────────────────────────────────────────────────────

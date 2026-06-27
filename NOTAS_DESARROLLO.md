@@ -4,6 +4,47 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0721 — 2026-06-27 — Recuperación DB corrupta
+
+### Causa
+La DB `radio_v2.sqlite` en el servidor quedó corrupta (`database disk image is malformed`). Todo el sitio retornaba HTTP 500. Probablemente causada por un write parcial durante un cron o un GitHub Actions run fallido.
+
+### Fix
+Restaurada desde la copia local (`db/radio_v2.sqlite`, Jun 24). Migraciones aplicadas antes de subir:
+- `surveys.location`
+- `settings` (tabla)
+- `shares` (tabla)
+- `plays.ended_at`
+- `stations.contacto`
+
+Se pierden plays/surveys/shares desde Jun 24. Emisoras (1257), stream_status e icy_cache conservadas.
+
+### Prevención futura
+Considerar backup automático de la DB antes de cada cron de GitHub Actions (descargar con timestamp).
+
+### Deploy
+`lftp put` → `/radio/db/radio_v2.sqlite`
+
+---
+
+## TKT-0720 — 2026-06-27 — Media Session API: hotkeys Bluetooth / teclado
+
+### Cambios
+- `player.js`: agrega `logo` y `onNextTrack`/`onPrevTrack` como opts. Nuevo `setupMediaSession()` registra `navigator.mediaSession` al iniciar reproducción: metadata (nombre + artwork), handlers play/pause/stop/nexttrack/previoustrack. `setStation()` acepta `newLogo` y llama `updateMediaMeta()` para actualizar el nombre en el auto sin esperar el próximo `playing`.
+- `listing.php`: agrega `data-logo` a las cards. Refactoriza la lógica de inicio en `playStation(el)` (compartida por click y hotkeys). Pasa `onNextTrack`/`onPrevTrack` al player: navegan por las emisoras visibles (`.station:not(.hidden)`), respetando el filtro activo.
+- `station.php`: pasa `logo` al RadioPlayer para que la pantalla del auto muestre el artwork.
+
+### Funcionamiento
+- Teléfono conectado por BT a la camioneta/auto
+- Se abre mammoli.ar/radio en el navegador y se inicia una emisora
+- Los botones ⏮⏭ del equipo de audio cambian la emisora en el listado filtrado visible
+- La pantalla del auto muestra el nombre de la emisora (y logo si existe)
+
+### Deploy
+`lftp put` → `/radio/assets/player.js`, `/radio/pages/listing.php`, `/radio/pages/station.php`
+
+---
+
 ## TKT-0719 — 2026-06-26 — Fix: sugerir.php desconectado del admin v2
 
 ### Causa raíz
