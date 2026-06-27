@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
 """
-gist_sync.py — Sincroniza el directorio de radios con el gist de pisculichi.
+gist_sync.py — Exporta el directorio de radios al gist público.
 
-Hace dos cosas:
-  1. Actualiza el fork (camammoli) del gist con el contenido completo de la DB
-  2. Si hubo emisoras nuevas en los últimos N días, postea un comentario en el
-     gist original de pisculichi invitando a verlas en mammoli.ar/radio
+Actualiza el fork (camammoli) del gist original de pisculichi con el contenido
+completo de la DB en formato TSV (URL, nombre, provincia).
 
 Requiere: GITHUB_TOKEN en el entorno (con scope gist).
 Uso:
-    python3 gist_sync.py [--dry-run] [--days 7] [--db /path/to/radio_v2.sqlite]
+    python3 gist_sync.py [--dry-run] [--db /path/to/radio_v2.sqlite]
 """
 
 import argparse
@@ -27,7 +25,6 @@ sys.path.insert(0, str(Path(__file__).parent))
 from db.radio_db import get_db
 
 FORK_GIST_ID   = '21ce6e3ba07486bcd16a28cda967f0d9'   # camammoli fork
-ORIG_GIST_ID   = 'fae88a2f5570ab22da53'               # pisculichi original
 FORK_FILENAME  = 'radios_argentinas_mammoli.txt'
 
 MAMMOLI_RADIO  = 'https://mammoli.ar/radio'
@@ -42,16 +39,6 @@ def load_stations(db) -> list[dict]:
     """).fetchall()
     return [dict(r) for r in rows]
 
-
-def get_new_stations(db, days: int) -> list[dict]:
-    rows = db.execute("""
-        SELECT nombre, url, COALESCE(provincia, 'Argentina') AS provincia
-        FROM stations
-        WHERE approved = 1
-          AND datetime(created_at) >= datetime('now', ?)
-        ORDER BY created_at DESC
-    """, (f'-{days} days',)).fetchall()
-    return [dict(r) for r in rows]
 
 
 def build_fork_content(stations: list[dict]) -> str:
@@ -110,8 +97,6 @@ def gh_api(method: str, path: str, body: dict = None, token: str = '') -> dict |
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--days', type=int, default=7,
-                        help='Ventana de días para detectar emisoras nuevas (default: 7)')
     parser.add_argument('--db', default=None, help='Ruta a radio_v2.sqlite')
     args = parser.parse_args()
 
@@ -150,38 +135,7 @@ def main():
     else:
         print('  (sin token, saltando)')
 
-    # ── 3. Detectar emisoras nuevas ───────────────────────────────────────────
-    new_stations = get_new_stations(db, args.days)
-    print(f'\nEmisoras nuevas (últimos {args.days} días): {len(new_stations)}')
-
     db.close()
-
-    if not new_stations:
-        print('Sin novedades para postear en el gist original.')
-        return
-
-    # ── 4. Postear comentario en gist original ────────────────────────────────
-    CAP = 10
-    muestra = new_stations[:5] if len(new_stations) > CAP else new_stations
-    extra   = '\n\n... y varias más.' if len(new_stations) > CAP else ''
-
-    lineas = [f'{s["nombre"]} ({s["provincia"]})\n{s["url"]}' for s in muestra]
-    comentario = '\n\n'.join(lineas) + extra
-
-    print(f'\nPostear en gist original ({ORIG_GIST_ID}):')
-    print(comentario)
-
-    if args.dry_run:
-        print('\n[dry-run] Comentario no enviado.')
-    elif token:
-        result = gh_api('POST', f'/gists/{ORIG_GIST_ID}/comments',
-                        {'body': comentario}, token)
-        if result:
-            print(f'  ✓ Comentario publicado (id {result.get("id")})')
-        else:
-            print('  ✗ Error publicando comentario')
-    else:
-        print('  (sin token, saltando)')
 
 
 if __name__ == '__main__':

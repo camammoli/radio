@@ -16,6 +16,9 @@ RewriteRule ^api/stations/([a-z0-9][a-z0-9-]{0,80})/?$ api/stations.php?slug=$1 
 # /api/playlist.m3u → playlist.php
 RewriteRule ^api/playlist\.m3u$ api/playlist.php [L,QSA]
 
+# /api/stations.json → export.php (bulk export sin paginación)
+RewriteRule ^api/stations\.json$ api/export.php [L,QSA]
+
 # /api/{endpoint} → api/{endpoint}.php
 RewriteRule ^api/([a-z][a-z0-9_-]{1,30})/?$ api/$1.php [L,QSA]
 
