@@ -4,6 +4,37 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0724 — 2026-06-27 — API endpoint /radio/api/stations.json
+
+### Cambios
+- `web/api/export.php`: exporta todas las emisoras aprobadas como JSON array plano (sin wrapper `{ok, data}`). Campos: `slug, nombre, url, provincia, logo, tags, codec, bitrate, estado`. CORS abierto (`Access-Control-Allow-Origin: *`), cache pública 1h. Tags se deserializan de JSON string a array. Bitrate como entero o null.
+- `web/.htaccess`: nueva regla antes del catch-all `api/{endpoint}` → `RewriteRule ^api/stations\.json$ api/export.php [L,QSA]` (necesaria porque `.` no matchea el patrón genérico `[a-z0-9_-]`).
+
+### Por qué no reusar stations.php
+`stations.php` tiene paginación (limit/offset) y devuelve wrapper con metadata. El endpoint de export es distinto en semántica: sin paginación, formato plano, pensado para consumo externo.
+
+### Deploy
+`lftp put` → `/radio/api/export.php`, `/radio/.htaccess`
+
+---
+
+## TKT-0723 — 2026-06-27 — Gist V2: sync desde DB, workflow semanal, README y presentación a pisculichi
+
+### Contexto
+El gist `camammoli/21ce6e3ba07486bcd16a28cda967f0d9` es un fork del [gist original de pisculichi](https://gist.github.com/pisculichi/fae88a2f5570ab22da53). En V1 se sincronizaba via `hunt-stations.yml` que corría `gist_sync.py` leyendo `emisoras.txt`. Con la migración a V2 (SQLite) y la eliminación de los workflows V1 zombie, el gist dejó de actualizarse.
+
+### Fix
+- `gist_sync.py` reescrito: lee emisoras desde `stations WHERE approved=1` via `get_db()`. Elimina toda la lógica de comentar en el gist original (era ruido, pisculichi no puede hacer merge). Queda solo la actualización del fork.
+- Nuevo workflow `gist-sync.yml`: cada lunes a las 12 UTC, descarga DB por FTP, corre `gist_sync.py`. Usa secret `GITHUB_PAT` (scope gist).
+- `README.md` del repo: nueva sección "Directorio como gist" con URL del fork, del original y del endpoint JSON. Tabla de workflows actualizada.
+- README.md agregado al gist via GitHub API: explica qué es el fork, links al player, API y repo. GitHub lo renderiza automáticamente.
+- Comentario enviado al gist de pisculichi (id 6220172) presentando el fork, el player y el endpoint JSON.
+
+### Corrección a TKT-0722
+Los workflows V1 `check-streams.yml`, `hunt-stations.yml` y `add-station.yml` fueron **eliminados** (`git rm`), no convertidos a `workflow_dispatch`. La nota anterior era inexacta.
+
+---
+
 ## TKT-0722 — 2026-06-27 — Fix: race condition DB + desactivación workflows V1
 
 ### Causa raíz de la corrupción
