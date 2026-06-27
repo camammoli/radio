@@ -208,6 +208,7 @@ Script PHP para cPanel cron. Barre todas las emisoras con `icy_supported=1` usan
 |---|---|---|
 | `check-streams-v2.yml` | cada 6hs | verifica streams, notifica cambios por Telegram |
 | `enrich-v2.yml` | días 1 y 15 | enriquece metadatos desde Radio Browser |
+| `gist-sync.yml` | cada lunes | exporta el directorio completo al [gist público](#directorio-como-gist) |
 
 Los workflows se activan desde `master` (default branch). Descargan la DB por FTP, corren el crawler, y suben la DB actualizada.
 
@@ -248,6 +249,21 @@ Un solo branch (`master` = producción). Las versiones se marcan con tags:
 |---|---|
 | `v1-final` | último estado de v1 antes del cutover a v2 (2026-06-25) |
 | HEAD | v2 activa en mammoli.ar/radio/ |
+
+---
+
+## Directorio como gist
+
+El listado completo de emisoras está disponible públicamente en formato TSV (URL, nombre, provincia):
+
+**[gist.github.com/camammoli/21ce6e3ba07486bcd16a28cda967f0d9](https://gist.github.com/camammoli/21ce6e3ba07486bcd16a28cda967f0d9)**
+
+Es un fork del [gist original de pisculichi](https://gist.github.com/pisculichi/fae88a2f5570ab22da53). Se actualiza automáticamente cada lunes via `gist-sync.yml` exportando directamente desde la base de datos V2. Para actualizar manualmente:
+
+```bash
+python3 gist_sync.py --dry-run   # previsualizar sin enviar
+python3 gist_sync.py             # actualizar (requiere GITHUB_TOKEN con scope gist)
+```
 
 ---
 
