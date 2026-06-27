@@ -79,36 +79,41 @@ if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
 // ── Ajax: auto-refresh ───────────────────────────────────────────────────────
 
 if (isset($_GET['ajax'])) {
-    $db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
-    $out = [
-        'stats' => [
-            'total'       => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1')->fetchColumn(),
-            'ok'          => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
-            'icy'         => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
-            'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
-            'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
-            'listeners'   => (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn(),
-        ],
-        'plays' => $db->query(
-            "SELECT p.played_at, p.ip_hash, p.source, p.session_id, s.nombre, s.slug,
-                    CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
-                         WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
-                         ELSE NULL END AS duration_secs,
-                    CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
-             FROM plays p
-             LEFT JOIN stations s ON s.id=p.station_id
-             LEFT JOIN listeners l ON l.sid=p.session_id
-             ORDER BY p.played_at DESC LIMIT 200"
-        )->fetchAll(),
-        'shares' => $db->query(
-            "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre
-             FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
-             ORDER BY sh.created_at DESC LIMIT 100"
-        )->fetchAll(),
-    ];
+    session_write_close(); // liberar lock de sesión antes de las queries
     header('Content-Type: application/json; charset=utf-8');
     header('Cache-Control: no-store');
-    echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    try {
+        // Sin DELETE: listeners.php ya hace el cleanup en cada ping
+        $out = [
+            'stats' => [
+                'total'       => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1')->fetchColumn(),
+                'ok'          => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
+                'icy'         => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
+                'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
+                'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
+                'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
+            ],
+            'plays' => $db->query(
+                "SELECT p.played_at, p.ip_hash, p.source, p.session_id, s.nombre, s.slug,
+                        CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
+                             WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
+                             ELSE NULL END AS duration_secs,
+                        CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
+                 FROM plays p
+                 LEFT JOIN stations s ON s.id=p.station_id
+                 LEFT JOIN listeners l ON l.sid=p.session_id
+                 ORDER BY p.played_at DESC LIMIT 200"
+            )->fetchAll(),
+            'shares' => $db->query(
+                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre
+                 FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
+                 ORDER BY sh.created_at DESC LIMIT 100"
+            )->fetchAll(),
+        ];
+        echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    } catch (Exception $e) {
+        echo json_encode(['error' => $e->getMessage()]);
+    }
     exit;
 }
 
