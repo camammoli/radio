@@ -4,6 +4,33 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0722 — 2026-06-27 — Fix: race condition DB + desactivación workflows V1
+
+### Causa raíz de la corrupción
+`check-streams-v2.yml` descarga la DB, la procesa y la sube con `lftp put` (no atómico). Si `icy_refresh.php` (cron cPanel cada 10 min) abre la DB DURANTE el upload, el servidor recibe bytes mezclados → **corrupción irrecuperable**. Probabilidad por run ~1%, con 4 runs/día es cuestión de semanas hasta que ocurra.
+
+### Fix 1: checkpoint WAL antes de cerrar (`check_streams_v2.py`, `enrich_v2.py`)
+`PRAGMA wal_checkpoint(TRUNCATE)` antes de `db.close()` garantiza que el archivo `.sqlite` tenga todos los cambios integrados, sin depender del WAL, antes de ser subido. SQLite ignora automáticamente el WAL viejo del servidor (salt mismatch).
+
+### Fix 2: upload atómico en `check-streams-v2.yml` y `enrich-v2.yml`
+```
+put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
+ren /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
+```
+`ren` es `rename()` de POSIX (atómico): el archivo en el servidor pasa de viejo a nuevo en una sola operación, sin ventana de archivo parcial.
+
+### Fix 3: desactivar crons V1 obsoletos
+| Workflow | Estado | Motivo |
+|---|---|---|
+| `check-streams.yml` | cron → solo workflow_dispatch | Verificaba `emisoras.json` V1, subía `status.json` que el player V2 no usa |
+| `hunt-stations.yml` | cron → solo workflow_dispatch | Cazaba a `sugerencias.json` V1 (ya no se usa); TG apuntaba a `admin_sugerencias.php` inexistente |
+| `add-station.yml` | solo manual (sin cambios) | Agrega a `emisoras.txt` V1; inofensivo al no tener cron |
+
+### Archivos root V1 (sin cron automático ahora)
+`hunt_stations.py`, `recuperar_caidas.py`, `verificar_urls.sh`, `gist_sync.py`, `track_since.py`, `enrich.py`, `emisoras.json`, `emisoras.txt` — conservados por historial, ninguno corre automáticamente.
+
+---
+
 ## TKT-0721 — 2026-06-27 — Recuperación DB corrupta
 
 ### Causa

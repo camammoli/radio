@@ -34,12 +34,13 @@ jobs:
         run: |
           python3 crawlers/check_streams_v2.py --notify --icy --workers 40
 
-      - name: Subir DB actualizada al servidor
+      - name: Subir DB actualizada al servidor (upload atómico)
         env:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
           set ssl:verify-certificate no
-          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite
+          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
+          ren /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
           bye
           LFTP

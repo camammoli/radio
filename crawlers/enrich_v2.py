@@ -276,6 +276,7 @@ def main():
         WHERE id = ?
     """, (len(rows), events_detected, f"Match RB: {matched}, sin match: {unmatched}", run_id))
     db.commit()
+    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     db.close()
 
     log()

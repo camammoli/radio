@@ -32,12 +32,13 @@ jobs:
         run: |
           python3 crawlers/enrich_v2.py --icy --workers 15 --force
 
-      - name: Subir DB actualizada
+      - name: Subir DB actualizada (upload atómico)
         env:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
           set ssl:verify-certificate no
-          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite
+          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
+          ren /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
           bye
           LFTP

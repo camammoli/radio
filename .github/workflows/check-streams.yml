@@ -1,9 +1,10 @@
 name: Verificar streams
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'   # cada 6 horas: 00:00, 06:00, 12:00, 18:00 UTC
-  workflow_dispatch:          # permite correrlo a mano desde GitHub
+  # OBSOLETO v1 — desactivado 2026-06-27. Verificaba emisoras.json (V1) y
+  # subía status.json que el player V2 ya no usa. Conservado solo como
+  # workflow_dispatch por si se necesita para referencia.
+  workflow_dispatch:
 
 jobs:
   check:

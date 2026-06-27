@@ -1,9 +1,10 @@
 name: Cazar emisoras nuevas
 
 on:
-  schedule:
-    - cron: '0 9 * * 1'   # Lunes 9:00 UTC (6am ARG)
-  workflow_dispatch:        # Disparo manual desde GitHub
+  # OBSOLETO v1 — desactivado 2026-06-27. Cazaba estaciones a sugerencias.json
+  # (V1) que ya no se usa; el TG apuntaba a admin_sugerencias.php que no existe.
+  # Las sugerencias ahora van directo a la DB via sugerir.php → stations table.
+  workflow_dispatch:
 
 jobs:
   hunt:

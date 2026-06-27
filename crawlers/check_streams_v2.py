@@ -414,6 +414,10 @@ def main():
             db.commit()
             log(f"✓ Telegram: {len(pending)} eventos notificados")
 
+    # Forzar checkpoint WAL antes de cerrar: garantiza que el archivo .sqlite
+    # tenga todos los cambios integrados (sin depender del WAL) para poder
+    # subirlo al servidor de forma segura.
+    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
     db.close()
 
 
