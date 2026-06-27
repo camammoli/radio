@@ -119,11 +119,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($dup_row) {
                     $error = 'Esta URL ya está en el directorio como "' . htmlspecialchars($dup_row['nombre']) . '". ¡Gracias de todas formas!';
                 } else {
+                    try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
+
                     $slug = _sugerir_slug($nombre, $provincia, $db);
                     $db->prepare(
-                        'INSERT INTO stations (slug, nombre, url, provincia, source, approved)
-                         VALUES (?,?,?,?,?,0)'
-                    )->execute([$slug, $nombre, $url, $provincia ?: null, 'sugerencia']);
+                        'INSERT INTO stations (slug, nombre, url, provincia, source, approved, contacto)
+                         VALUES (?,?,?,?,?,0,?)'
+                    )->execute([$slug, $nombre, $url, $provincia ?: null, 'sugerencia', $contacto ?: null]);
 
                     $prov_str = $provincia ? " · $provincia" : '';
                     $msg = "📻 Nueva sugerencia\n{$nombre}{$prov_str}\n{$url}"

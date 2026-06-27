@@ -163,8 +163,9 @@ $station_surveys = $db->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Sugerencias pendientes
+try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
 $sugerencias = $db->query(
-    "SELECT id, nombre, url, provincia, homepage, created_at
+    "SELECT id, nombre, url, provincia, homepage, contacto, created_at
      FROM stations WHERE source='sugerencia' AND approved=0
      ORDER BY created_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
@@ -513,7 +514,7 @@ function fmt_duration(?int $secs): string {
 <?php if ($sugerencias): ?>
 <table>
   <thead><tr>
-    <th>Nombre</th><th>URL</th><th>Provincia</th><th>Recibida</th><th>Acción</th>
+    <th>Nombre</th><th>URL</th><th>Provincia</th><th>Contacto</th><th>Recibida</th><th>Acción</th>
   </tr></thead>
   <tbody>
   <?php foreach ($sugerencias as $sg): ?>
@@ -526,6 +527,7 @@ function fmt_duration(?int $secs): string {
     </td>
     <td class="url"><a href="<?= h($sg['url']) ?>" target="_blank" rel="noopener"><?= h($sg['url']) ?></a></td>
     <td><?= h($sg['provincia'] ?? '—') ?></td>
+    <td style="font-size:12px"><?= $sg['contacto'] ? h($sg['contacto']) : '<span style="color:var(--muted)">—</span>' ?></td>
     <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($sg['created_at']) ?></td>
     <td style="white-space:nowrap">
       <form class="inline" method="post">
