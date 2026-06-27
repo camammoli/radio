@@ -76,6 +76,42 @@ if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
     exit;
 }
 
+// ── Ajax: auto-refresh ───────────────────────────────────────────────────────
+
+if (isset($_GET['ajax'])) {
+    $db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
+    $out = [
+        'stats' => [
+            'total'       => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1')->fetchColumn(),
+            'ok'          => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
+            'icy'         => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
+            'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
+            'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
+            'listeners'   => (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn(),
+        ],
+        'plays' => $db->query(
+            "SELECT p.played_at, p.ip_hash, p.source, p.session_id, s.nombre, s.slug,
+                    CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
+                         WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
+                         ELSE NULL END AS duration_secs,
+                    CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
+             FROM plays p
+             LEFT JOIN stations s ON s.id=p.station_id
+             LEFT JOIN listeners l ON l.sid=p.session_id
+             ORDER BY p.played_at DESC LIMIT 200"
+        )->fetchAll(),
+        'shares' => $db->query(
+            "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre
+             FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
+             ORDER BY sh.created_at DESC LIMIT 100"
+        )->fetchAll(),
+    ];
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+}
+
 // ── Consultas ─────────────────────────────────────────────────────────────────
 
 $stats = [
@@ -263,6 +299,7 @@ if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('li
 <div class="top-bar">
   <h1>📻 Radio Argentina — Admin v2</h1>
   <div class="top-actions">
+    <span id="refresh-ind" style="font-size:11px;color:var(--muted)"></span>
     <button class="btn-out" id="theme-btn" onclick="toggleTheme()">☀️ Claro</button>
     <form method="post" style="margin:0">
       <input type="hidden" name="action" value="logout">
@@ -303,13 +340,13 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <!-- ── Resumen ─────────────────────────────────────────────────────────────── -->
 <h2 id="resumen">Resumen</h2>
 <div class="cards">
-  <div class="card"><div class="v"><?= $stats['total'] ?></div><div class="l">Emisoras activas</div></div>
-  <div class="card"><div class="v badge-ok"><?= $stats['ok'] ?></div><div class="l">Streams OK</div></div>
-  <div class="card"><div class="v"><?= $stats['icy'] ?></div><div class="l">Con ICY</div></div>
-  <div class="card"><div class="v pos"><?= $stats['icy_activo'] ?></div><div class="l">ICY con título ahora</div></div>
-  <div class="card"><div class="v"><?= $stats['plays_hoy'] ?></div><div class="l">Plays hoy</div></div>
-  <div class="card"><div class="v"><?= $stats['plays_total'] ?></div><div class="l">Plays totales</div></div>
-  <div class="card"><div class="v pos"><?= $stats['listeners'] ?></div><div class="l">Oyentes ahora</div></div>
+  <div class="card"><div class="v" id="stat-total"><?= $stats['total'] ?></div><div class="l">Emisoras activas</div></div>
+  <div class="card"><div class="v badge-ok" id="stat-ok"><?= $stats['ok'] ?></div><div class="l">Streams OK</div></div>
+  <div class="card"><div class="v" id="stat-icy"><?= $stats['icy'] ?></div><div class="l">Con ICY</div></div>
+  <div class="card"><div class="v pos" id="stat-icy-activo"><?= $stats['icy_activo'] ?></div><div class="l">ICY con título ahora</div></div>
+  <div class="card"><div class="v" id="stat-plays-hoy"><?= $stats['plays_hoy'] ?></div><div class="l">Plays hoy</div></div>
+  <div class="card"><div class="v" id="stat-plays-total"><?= $stats['plays_total'] ?></div><div class="l">Plays totales</div></div>
+  <div class="card"><div class="v pos" id="stat-listeners"><?= $stats['listeners'] ?></div><div class="l">Oyentes ahora</div></div>
   <div class="card"><div class="v"><?= $stats['surveys'] ?></div><div class="l">Encuestas recibidas</div></div>
   <div class="card"><div class="v <?= $stats['suger_pend'] > 0 ? 'neg' : '' ?>"><?= $stats['suger_pend'] ?></div><div class="l">Sugerencias pendientes</div></div>
 </div>
@@ -384,7 +421,7 @@ if ($shares_recientes): ?>
   <thead><tr>
     <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
   </tr></thead>
-  <tbody>
+  <tbody id="shares-body">
   <?php foreach ($shares_recientes as $sh): ?>
   <tr>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
@@ -442,7 +479,7 @@ function fmt_duration(?int $secs): string {
   <thead><tr>
     <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
   </tr></thead>
-  <tbody>
+  <tbody id="plays-body">
   <?php foreach ($plays_recientes as $pl): ?>
   <tr>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
@@ -576,6 +613,90 @@ function fmt_duration(?int $secs): string {
   Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
 </p>
 
+<script>
+(function () {
+  function esc(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function fmtDur(s) {
+    if (s == null) return '—';
+    s = parseInt(s, 10);
+    if (s < 60)   return s + 's';
+    if (s < 3600) return Math.floor(s/60) + 'm ' + (s%60) + 's';
+    return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
+  }
+
+  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR'};
+
+  function upd(id, val) {
+    var el = document.getElementById(id);
+    if (el && val !== undefined) el.textContent = val;
+  }
+
+  function refreshAdmin() {
+    fetch(location.pathname + '?ajax=1')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return;
+
+        // Stats
+        var s = d.stats || {};
+        upd('stat-total',      s.total);
+        upd('stat-ok',         s.ok);
+        upd('stat-icy',        s.icy);
+        upd('stat-plays-hoy',  s.plays_hoy);
+        upd('stat-plays-total',s.plays_total);
+        upd('stat-listeners',  s.listeners);
+
+        // Plays
+        var pb = document.getElementById('plays-body');
+        if (pb && d.plays) {
+          pb.innerHTML = d.plays.map(function (p) {
+            var dur = p.is_active
+              ? '<span style="color:#22c55e">▶ ' + esc(fmtDur(p.duration_secs)) + '</span>'
+              : esc(fmtDur(p.duration_secs != null ? p.duration_secs : null));
+            var nom = p.slug
+              ? '<a href="/radio/' + esc(p.slug) + '/" target="_blank">' + esc(p.nombre || '—') + '</a>'
+              : '<span style="color:var(--muted)">—</span>';
+            var dt = (p.played_at || '').replace('T', ' ').substring(0, 19);
+            return '<tr>'
+              + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
+              + '<td>' + nom + '</td>'
+              + '<td style="font-size:12px;white-space:nowrap">' + dur + '</td>'
+              + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
+              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
+              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
+              + '</tr>';
+          }).join('');
+        }
+
+        // Shares
+        var sb = document.getElementById('shares-body');
+        if (sb && d.shares) {
+          sb.innerHTML = d.shares.map(function (sh) {
+            var nom = sh.slug
+              ? '<a href="/radio/' + esc(sh.slug) + '/" target="_blank">' + esc(sh.nombre || sh.slug) + '</a>'
+              : '—';
+            var dt = (sh.created_at || '').replace('T', ' ').substring(0, 19);
+            return '<tr>'
+              + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
+              + '<td>' + nom + '</td>'
+              + '<td>' + esc(CH[sh.channel] || sh.channel) + '</td>'
+              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((sh.ip_hash || '').substring(0,16)) + '…</td>'
+              + '</tr>';
+          }).join('');
+        }
+
+        // Indicador
+        var ind = document.getElementById('refresh-ind');
+        if (ind) ind.textContent = '↻ ' + new Date().toLocaleTimeString('es-AR');
+      })
+      .catch(function () {});
+  }
+
+  setInterval(refreshAdmin, 10000);
+}());
+</script>
 </body>
 </html>
 <?php
