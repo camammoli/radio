@@ -5,6 +5,11 @@ on:
     - cron: '0 */6 * * *'   # cada 6 horas
   workflow_dispatch:
 
+# Un solo job a la vez escribe la DB — evita corrupción por uploads simultáneos
+concurrency:
+  group: radio-db-write
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -16,7 +21,7 @@ jobs:
       - name: Instalar lftp
         run: sudo apt-get install -y lftp
 
-      - name: Descargar DB del servidor
+      - name: Descargar DB del servidor (con WAL si existe)
         env:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
@@ -24,8 +29,19 @@ jobs:
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
           set ssl:verify-certificate no
           get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
+          get /radio/db/radio_v2.sqlite-wal -o db/radio_v2.sqlite-wal || true
+          get /radio/db/radio_v2.sqlite-shm -o db/radio_v2.sqlite-shm || true
           bye
           LFTP
+          # Checkpoint WAL antes de trabajar con la DB
+          python3 -c "
+          import sqlite3, os
+          db = 'db/radio_v2.sqlite'
+          if os.path.exists(db):
+              c = sqlite3.connect(db)
+              c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+              c.close()
+          "
 
       - name: Verificar streams y detectar cambios
         env:
@@ -34,10 +50,18 @@ jobs:
         run: |
           python3 crawlers/check_streams_v2.py --notify --icy --workers 40
 
-      - name: Subir DB actualizada al servidor (upload atómico)
+      - name: Checkpoint WAL y subir DB al servidor (upload atómico)
         env:
           FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
+          # Forzar checkpoint para que todo quede en el archivo principal
+          python3 -c "
+          import sqlite3
+          c = sqlite3.connect('db/radio_v2.sqlite')
+          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+          c.execute('PRAGMA journal_mode = DELETE')
+          c.close()
+          "
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
           set ssl:verify-certificate no
           put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
