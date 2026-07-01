@@ -444,7 +444,7 @@ qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrMod
 var genreTags    = <?= json_encode(array_values($genre_tags)) ?>;
 var provinceList = <?= json_encode(array_values($province_list)) ?>;
 var urlParams    = new URLSearchParams(location.search);
-var filterStatus = 'all';
+var filterStatus = 'ok';
 var filterGenre  = urlParams.get('genero')   ? urlParams.get('genero').toLowerCase()   : null;
 var filterProv   = urlParams.get('provincia') ? urlParams.get('provincia').toLowerCase() : null;
 var filterTop    = false;
@@ -462,7 +462,7 @@ filtrosEl.className = 'filtros visible';
 ].forEach(function (f) {
   var btn = document.createElement('button');
   btn.id        = f.id;
-  btn.className = 'filter-btn ' + f.cls + (f.val === 'all' ? ' active' : '');
+  btn.className = 'filter-btn ' + f.cls + (f.val === 'ok' ? ' active' : '');
   btn.textContent = f.label;
   btn.addEventListener('click', function () {
     filterTop    = (f.val === 'top');
@@ -561,7 +561,7 @@ function applyFilters() {
 }
 
 buscador.addEventListener('input', applyFilters);
-if (filterGenre || filterProv) applyFilters();
+applyFilters();
 
 // ── ICY titles pasivos ────────────────────────────────────────────────────────
 fetch('/radio/api/nowplaying?batch=1')
