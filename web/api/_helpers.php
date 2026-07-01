@@ -74,6 +74,7 @@ function ip_hash(string $ip): string {
 
 function notify_active(PDO $db): bool {
     try {
+        $db->exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
         $r = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1");
         $v = $r ? $r->fetchColumn() : false;
         if ($v !== false) return $v === '1';
