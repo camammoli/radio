@@ -69,6 +69,19 @@ $ld_breadcrumb = ['@context'=>'https://schema.org','@type'=>'BreadcrumbList','it
     ['@type'=>'ListItem','position'=>2,'name'=>$s['nombre'],'item'=>$pg_url],
 ]];
 
+// ── Historial ICY ─────────────────────────────────────────────────────────────
+
+$icy_history = [];
+if ($s['icy_supported']) {
+    try {
+        $hq = $db->prepare(
+            'SELECT title, seen_at FROM icy_history WHERE station_id = ? ORDER BY seen_at DESC LIMIT 15'
+        );
+        $hq->execute([$s['id']]);
+        $icy_history = $hq->fetchAll();
+    } catch (Exception $e) {}
+}
+
 // ── Relacionadas ──────────────────────────────────────────────────────────────
 
 $related = [];
@@ -209,6 +222,38 @@ if ($prov) {
   ?>
   <?php else: ?>
   <div style="margin-top:8px;font-size:12px;color:var(--green)">✓ Reporte enviado, gracias.</div>
+  <?php endif; ?>
+
+  <!-- Historial ICY -->
+  <?php if ($icy_history): ?>
+  <div class="icy-hist-section">
+    <h2>♪ Últimas canciones</h2>
+    <ul class="icy-hist-list">
+      <?php foreach ($icy_history as $h):
+        $dt   = new DateTime($h['seen_at']);
+        $now  = new DateTime('now', new DateTimeZone('America/Argentina/Buenos_Aires'));
+        $dt->setTimezone(new DateTimeZone('America/Argentina/Buenos_Aires'));
+        $diff = $now->diff($dt);
+        if ($diff->days === 0)      $when = $dt->format('H:i');
+        elseif ($diff->days === 1)  $when = 'ayer ' . $dt->format('H:i');
+        else                        $when = $dt->format('d M') . ' ' . $dt->format('H:i');
+      ?>
+      <li class="icy-hist-item">
+        <span class="icy-hist-time"><?= htmlspecialchars($when) ?></span>
+        <span class="icy-hist-title"><?= htmlspecialchars($h['title']) ?></span>
+      </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+  <style>
+  .icy-hist-section { margin:28px 0 8px; text-align:left }
+  .icy-hist-section h2 { font-size:14px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin:0 0 10px }
+  .icy-hist-list { list-style:none;padding:0;margin:0;border-radius:10px;overflow:hidden;border:1px solid var(--border) }
+  .icy-hist-item { display:flex;align-items:baseline;gap:10px;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px }
+  .icy-hist-item:last-child { border-bottom:none }
+  .icy-hist-time  { color:var(--muted);font-size:11px;min-width:46px;flex-shrink:0;font-variant-numeric:tabular-nums }
+  .icy-hist-title { color:var(--fg);line-height:1.4 }
+  </style>
   <?php endif; ?>
 
   <!-- Otras radios de la provincia -->

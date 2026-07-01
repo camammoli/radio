@@ -17,6 +17,14 @@ require_once $_base . '/api/_db.php';
 
 $db = radio_db();
 
+$db->exec('CREATE TABLE IF NOT EXISTS icy_history (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER NOT NULL REFERENCES stations(id),
+    title      TEXT    NOT NULL,
+    seen_at    TEXT    NOT NULL
+)');
+$db->exec('CREATE INDEX IF NOT EXISTS idx_icy_hist_station ON icy_history(station_id, seen_at DESC)');
+
 $rows = $db->query(
     "SELECT s.id, s.slug, s.url
      FROM stations s
@@ -125,7 +133,12 @@ $stmtUpdate = $db->prepare(
                               THEN excluded.last_title_change
                               ELSE last_title_change END'
 );
-$stmtPrev = $db->prepare('SELECT stream_title FROM icy_cache WHERE station_id = ?');
+$stmtPrev    = $db->prepare('SELECT stream_title FROM icy_cache WHERE station_id = ?');
+$stmtHistory = $db->prepare('INSERT INTO icy_history (station_id, title, seen_at) VALUES (?,?,?)');
+$stmtClean   = $db->prepare(
+    'DELETE FROM icy_history WHERE station_id = ? AND id NOT IN
+     (SELECT id FROM icy_history WHERE station_id = ? ORDER BY id DESC LIMIT 50)'
+);
 
 // ── Procesar en batches ───────────────────────────────────────────────────────
 
@@ -163,6 +176,10 @@ foreach (array_chunk($rows, $BATCH_SIZE) as $batch) {
             $prev    = $stmtPrev->fetchColumn();
             $changed = ($prev !== $title);
             $stmtUpdate->execute([$info['id'], $title, $now, $changed ? $now : null]);
+            if ($changed) {
+                $stmtHistory->execute([$info['id'], $title, $now]);
+                $stmtClean->execute([$info['id'], $info['id']]);
+            }
             $updated++;
             echo "  + {$info['slug']}: {$title}\n";
         } else {
