@@ -41,8 +41,8 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "9630581e-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 168,
-    "rb_clicks": 0
+    "rb_votes": 169,
+    "rb_clicks": 1
   },
   {
     "n": 4,
@@ -230,8 +230,8 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "f80be5c6-55c1-4bdc-9e00-44cf32696b51",
-    "rb_votes": 48,
-    "rb_clicks": 1
+    "rb_votes": 49,
+    "rb_clicks": 6
   },
   {
     "n": 17,
@@ -248,7 +248,7 @@
     "bitrate": 24,
     "rb_uuid": "52c5ad77-c162-4890-b8ef-3190e52548b8",
     "rb_votes": 18,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 18,
@@ -283,16 +283,16 @@
     "nombre": "LU6",
     "provincia": "",
     "url": "http://173.255.205.241:9090/;",
-    "logo": "http://lu6.com.ar/favicon.ico",
+    "logo": "https://static-media.streema.com/media/cache/26/ad/26ad816a0daf81487869c88e85cd5412.jpg",
     "tags": [
-      "news talk music"
+      "mar del plata"
     ],
-    "homepage": "http://lu6.com.ar/",
+    "homepage": "http://www.lu6.com.ar/",
     "codec": "MP3",
     "bitrate": 64,
-    "rb_uuid": "58a07867-20a8-4100-a263-da42008e3c3d",
-    "rb_votes": 41,
-    "rb_clicks": 2
+    "rb_uuid": "1964f23f-b686-11e8-aaf2-52543be04c81",
+    "rb_votes": 194,
+    "rb_clicks": 0
   },
   {
     "n": 21,
@@ -756,7 +756,7 @@
     "bitrate": 48,
     "rb_uuid": "406d4c06-2cd3-47ee-a737-a305a0834085",
     "rb_votes": 19,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 54,
@@ -844,7 +844,7 @@
     "bitrate": 64,
     "rb_uuid": "96309666-0601-11e8-ae97-52543be04c81",
     "rb_votes": 295,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 60,
@@ -878,7 +878,7 @@
     "bitrate": 64,
     "rb_uuid": "17520f6a-159f-11e8-ae97-52543be04c81",
     "rb_votes": 609,
-    "rb_clicks": 0
+    "rb_clicks": 3
   },
   {
     "n": 62,
@@ -1006,8 +1006,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "cb95b539-fa13-47a0-b440-f14ed86ef204",
-    "rb_votes": 161,
-    "rb_clicks": 10
+    "rb_votes": 162,
+    "rb_clicks": 13
   },
   {
     "n": 73,
@@ -1024,8 +1024,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "47d1e0f9-ce15-4557-a73c-a703b3762d06",
-    "rb_votes": 944,
-    "rb_clicks": 12
+    "rb_votes": 951,
+    "rb_clicks": 5
   },
   {
     "n": 74,
@@ -1055,8 +1055,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "6432472d-15a0-11e8-ae97-52543be04c81",
-    "rb_votes": 760,
-    "rb_clicks": 0
+    "rb_votes": 761,
+    "rb_clicks": 1
   },
   {
     "n": 76,
@@ -1083,8 +1083,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "962310ce-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 5150,
-    "rb_clicks": 9
+    "rb_votes": 5155,
+    "rb_clicks": 5
   },
   {
     "n": 78,
@@ -1113,8 +1113,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "3e656ae3-b36e-4ba4-89bc-99f306df1de5",
-    "rb_votes": 984,
-    "rb_clicks": 5
+    "rb_votes": 993,
+    "rb_clicks": 4
   },
   {
     "n": 80,
@@ -1441,8 +1441,8 @@
     "codec": "AAC",
     "bitrate": 48,
     "rb_uuid": "d76b99ea-c4bf-47e5-8a42-e336ee48c031",
-    "rb_votes": 3148,
-    "rb_clicks": 10
+    "rb_votes": 3153,
+    "rb_clicks": 16
   },
   {
     "n": 106,
@@ -1509,7 +1509,7 @@
     "bitrate": 96,
     "rb_uuid": "9f3522e8-0d21-4cbc-b24a-f3fab7ae9920",
     "rb_votes": 43,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 110,
@@ -1842,13 +1842,17 @@
     "nombre": "Futurock",
     "provincia": "",
     "url": "https://mdstrm.com/audio/5d9d019112cbbb45d6a50960/live.m3u8",
-    "logo": "http://platform-static.cdn.mdstrm.com/player/thumbnail/5dc3199fa7078529e9eef67a.png",
-    "tags": [],
+    "logo": null,
+    "tags": [
+      "feminist",
+      "local news",
+      "philosophy"
+    ],
     "homepage": "https://futurock.live/",
     "codec": "AAC",
     "bitrate": 149,
-    "rb_uuid": "f1b958c4-d1d8-4cc0-b4c3-cc9a3c2e129d",
-    "rb_votes": 391,
+    "rb_uuid": "f24927f3-da9c-49eb-a8af-f1d20f07ac82",
+    "rb_votes": 1173,
     "rb_clicks": 5
   },
   {
@@ -1865,7 +1869,7 @@
     "codec": "AAC",
     "bitrate": 98,
     "rb_uuid": "55b910e3-ab26-4f13-8aae-6409bbdfe15d",
-    "rb_votes": 519,
+    "rb_votes": 522,
     "rb_clicks": 8
   },
   {
@@ -1921,8 +1925,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "3c6c111c-6bbc-44ae-8ad8-46b502b3002a",
-    "rb_votes": 4304,
-    "rb_clicks": 10
+    "rb_votes": 4316,
+    "rb_clicks": 21
   },
   {
     "n": 139,
@@ -2019,8 +2023,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "4a4c75d9-1824-445d-ac9a-be822de46934",
-    "rb_votes": 63,
-    "rb_clicks": 5
+    "rb_votes": 66,
+    "rb_clicks": 4
   },
   {
     "n": 146,
@@ -2093,8 +2097,8 @@
     "codec": "AAC",
     "bitrate": 49,
     "rb_uuid": "ae7694a3-d499-11e9-a861-52543be04c81",
-    "rb_votes": 2959,
-    "rb_clicks": 13
+    "rb_votes": 2962,
+    "rb_clicks": 20
   },
   {
     "n": 151,
@@ -2166,8 +2170,8 @@
     "codec": "AAC",
     "bitrate": 64,
     "rb_uuid": "3ea493af-47f5-11e9-aa55-52543be04c81",
-    "rb_votes": 957,
-    "rb_clicks": 5
+    "rb_votes": 958,
+    "rb_clicks": 3
   },
   {
     "n": 156,
@@ -2183,7 +2187,7 @@
     "bitrate": 160,
     "rb_uuid": "55a155a6-a8d7-4a4f-9148-7c0bd70116f3",
     "rb_votes": 29,
-    "rb_clicks": 2
+    "rb_clicks": 3
   },
   {
     "n": 157,
@@ -2199,7 +2203,7 @@
     "bitrate": 64,
     "rb_uuid": "ad563392-497b-4fe0-a3e6-4a6b30d57bbe",
     "rb_votes": 299,
-    "rb_clicks": 4
+    "rb_clicks": 1
   },
   {
     "n": 158,
@@ -3429,19 +3433,20 @@
     "nombre": "Radio UTN FM 94.5",
     "provincia": "Mendoza, Argentina",
     "url": "http://streaming.fmutn.com.ar:8000/FMUTN",
-    "logo": null,
+    "logo": "https://www.fmutn.com.ar/wp-content/uploads/2023/03/LOGO-_FM-UTN_WEB-cuadrado.png",
     "tags": [
-      "heavy",
-      "indie",
+      "alternative rock",
+      "classic rock",
+      "indie rock",
       "punk",
       "reggae",
-      "rock"
+      "rock latino"
     ],
-    "homepage": "http://www.fmutn.com.ar/",
+    "homepage": "https://www.fmutn.com.ar/",
     "codec": "MP3",
     "bitrate": 128,
-    "rb_uuid": "af54732d-4afa-418f-a2cd-6240235edb4e",
-    "rb_votes": 32,
+    "rb_uuid": "eccafccb-21f5-4a04-8417-ef3a61d42c34",
+    "rb_votes": 4,
     "rb_clicks": 1
   },
   {
@@ -3485,8 +3490,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "06565900-e315-4b2b-a5a9-6faf9ab8ca81",
-    "rb_votes": 51,
-    "rb_clicks": 0
+    "rb_votes": 52,
+    "rb_clicks": 1
   },
   {
     "n": 254,
@@ -3956,7 +3961,7 @@
     "bitrate": 128,
     "rb_uuid": "81c46d57-82c6-4802-874c-1bd7b7b10ac9",
     "rb_votes": 122,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 287,
@@ -4451,7 +4456,7 @@
     "bitrate": 96,
     "rb_uuid": "1ad6a94f-ab95-42aa-aee6-4e1c61f055b7",
     "rb_votes": 99,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 322,
@@ -5376,7 +5381,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "067dd9ca-4343-11e9-aa55-52543be04c81",
-    "rb_votes": 108,
+    "rb_votes": 109,
     "rb_clicks": 0
   },
   {
@@ -7204,7 +7209,7 @@
     "codec": "MP3",
     "bitrate": 160,
     "rb_uuid": "f16e0797-3a46-42d1-8849-87adb2535769",
-    "rb_votes": 57,
+    "rb_votes": 58,
     "rb_clicks": 0
   },
   {
@@ -7519,8 +7524,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "2e03a6b4-5e98-4acb-bbbb-4ec53945007a",
-    "rb_votes": 737,
-    "rb_clicks": 1
+    "rb_votes": 742,
+    "rb_clicks": 2
   },
   {
     "n": 544,
@@ -7535,8 +7540,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "500fd84a-2611-4950-9745-93897c86b7dc",
-    "rb_votes": 785,
-    "rb_clicks": 1
+    "rb_votes": 788,
+    "rb_clicks": 0
   },
   {
     "n": 545,
@@ -7930,7 +7935,7 @@
     "bitrate": null,
     "rb_uuid": "84348e51-d1d1-4382-8620-5de13b66c48a",
     "rb_votes": 3,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 577,
@@ -7943,8 +7948,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "5440e89d-708d-4336-9b42-fa274ed093b1",
-    "rb_votes": 2726,
-    "rb_clicks": 32
+    "rb_votes": 2749,
+    "rb_clicks": 31
   },
   {
     "n": 578,
@@ -8846,8 +8851,8 @@
     "codec": "AAC+",
     "bitrate": 80,
     "rb_uuid": "4b71738a-9eaf-11e8-a767-52543be04c81",
-    "rb_votes": 1869,
-    "rb_clicks": 1
+    "rb_votes": 1872,
+    "rb_clicks": 2
   },
   {
     "n": 644,
@@ -8866,8 +8871,8 @@
     "codec": "AAC+",
     "bitrate": 48,
     "rb_uuid": "7862e621-9da2-11e9-a787-52543be04c81",
-    "rb_votes": 383,
-    "rb_clicks": 0
+    "rb_votes": 384,
+    "rb_clicks": 1
   },
   {
     "n": 645,
@@ -9034,8 +9039,8 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "4285a122-9c78-417e-879e-5440c0482c56",
-    "rb_votes": 928,
-    "rb_clicks": 57
+    "rb_votes": 940,
+    "rb_clicks": 65
   },
   {
     "n": 658,
@@ -9049,7 +9054,7 @@
     "bitrate": 64,
     "rb_uuid": "d03caa95-b5b5-46aa-a757-694b5b6e683e",
     "rb_votes": 1,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 659,
@@ -9083,7 +9088,7 @@
     "bitrate": 64,
     "rb_uuid": "0df8c8e2-3534-450e-b49f-57b0df4da67f",
     "rb_votes": 7,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 661,
@@ -9099,7 +9104,7 @@
     "bitrate": 64,
     "rb_uuid": "41084b4e-ec96-4a68-bc4f-4e1214deabed",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 662,
@@ -9175,7 +9180,7 @@
     "bitrate": 128,
     "rb_uuid": "33999e0a-018c-49c5-8fc9-fcdfe7e0f81c",
     "rb_votes": 19,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 667,
@@ -9209,8 +9214,8 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "7b03996e-6ea0-4db5-8168-ddd1463faec2",
-    "rb_votes": 3902,
-    "rb_clicks": 47
+    "rb_votes": 3931,
+    "rb_clicks": 49
   },
   {
     "n": 669,
@@ -9230,8 +9235,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "9257ed3b-c422-43cf-a8dd-8165861b3187",
-    "rb_votes": 542,
-    "rb_clicks": 19
+    "rb_votes": 543,
+    "rb_clicks": 28
   },
   {
     "n": 670,
@@ -9246,8 +9251,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "c0cf2d87-993c-4cb6-97ad-f508a3fc5495",
-    "rb_votes": 2371,
-    "rb_clicks": 24
+    "rb_votes": 2387,
+    "rb_clicks": 25
   },
   {
     "n": 671,
@@ -9265,7 +9270,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "4520c04e-0514-43f9-9fe6-89d2f6d746f5",
-    "rb_votes": 400,
+    "rb_votes": 429,
     "rb_clicks": 20
   },
   {
@@ -9279,7 +9284,7 @@
     "codec": "AAC",
     "bitrate": 65,
     "rb_uuid": "7bc38611-e8d6-494d-9f71-2c1be5341f12",
-    "rb_votes": 3314,
+    "rb_votes": 3334,
     "rb_clicks": 22
   },
   {
@@ -9293,7 +9298,7 @@
     "codec": "AAC",
     "bitrate": 48,
     "rb_uuid": "cfeebcdf-7b9f-4561-86b4-abf24a185bcf",
-    "rb_votes": 1634,
+    "rb_votes": 1635,
     "rb_clicks": 7
   },
   {
@@ -9307,8 +9312,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "f006d4dc-9771-4109-bf35-eb09291320da",
-    "rb_votes": 4721,
-    "rb_clicks": 18
+    "rb_votes": 4751,
+    "rb_clicks": 27
   },
   {
     "n": 675,
@@ -9323,8 +9328,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "df4fc0be-f064-41fc-9b3e-d729f0a8fa1c",
-    "rb_votes": 1691,
-    "rb_clicks": 6
+    "rb_votes": 1697,
+    "rb_clicks": 13
   },
   {
     "n": 676,
@@ -9340,7 +9345,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "2fe423fd-39cd-49ff-a07c-6f757c89c3c4",
-    "rb_votes": 391,
+    "rb_votes": 396,
     "rb_clicks": 7
   },
   {
@@ -9354,8 +9359,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "78ae7b0c-cd9f-42d5-847d-6a41b578bb97",
-    "rb_votes": 461,
-    "rb_clicks": 6
+    "rb_votes": 468,
+    "rb_clicks": 11
   },
   {
     "n": 678,
@@ -9368,8 +9373,8 @@
     "codec": "AAC",
     "bitrate": 98,
     "rb_uuid": "3bd666a2-4c5d-4aa8-ace9-74465eebe578",
-    "rb_votes": 1375,
-    "rb_clicks": 4
+    "rb_votes": 1385,
+    "rb_clicks": 11
   },
   {
     "n": 679,
@@ -9382,8 +9387,8 @@
     "codec": "UNKNOWN",
     "bitrate": null,
     "rb_uuid": "b17c5f06-8ad2-4641-95d0-e532040d7e3a",
-    "rb_votes": 801,
-    "rb_clicks": 3
+    "rb_votes": 808,
+    "rb_clicks": 1
   },
   {
     "n": 680,
@@ -9403,8 +9408,8 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "4ff249e9-131b-4fae-88f0-d93c744240ee",
-    "rb_votes": 1055,
-    "rb_clicks": 6
+    "rb_votes": 1057,
+    "rb_clicks": 5
   },
   {
     "n": 681,
@@ -9419,8 +9424,8 @@
     "codec": "AAC",
     "bitrate": 98,
     "rb_uuid": "934227d3-8f39-42c7-843b-8b923f2f9f9c",
-    "rb_votes": 1533,
-    "rb_clicks": 3
+    "rb_votes": 1534,
+    "rb_clicks": 10
   },
   {
     "n": 682,
@@ -9433,7 +9438,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "bcb3b03a-f0ec-4ceb-b22f-922138858800",
-    "rb_votes": 5900,
+    "rb_votes": 5925,
     "rb_clicks": 24
   },
   {
@@ -9454,8 +9459,8 @@
     "codec": "MP3",
     "bitrate": 64,
     "rb_uuid": "e5cfff76-a420-4c6d-8260-cdd9ce340243",
-    "rb_votes": 127,
-    "rb_clicks": 2
+    "rb_votes": 132,
+    "rb_clicks": 1
   },
   {
     "n": 684,
@@ -9472,7 +9477,7 @@
     "bitrate": 64,
     "rb_uuid": "b8058f33-ea9a-426e-ac86-be2ef987c131",
     "rb_votes": 42,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 685,
@@ -9491,7 +9496,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "94d3aa00-b246-48d9-9089-7c9b762f3156",
-    "rb_votes": 192,
+    "rb_votes": 193,
     "rb_clicks": 1
   },
   {
@@ -9510,7 +9515,7 @@
     "bitrate": 112,
     "rb_uuid": "c19cd533-e996-4f4d-8f34-88bcee525388",
     "rb_votes": 6,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 687,
@@ -9526,7 +9531,7 @@
     "bitrate": 48,
     "rb_uuid": "ec81125d-379e-413f-9883-bd5628a8c72d",
     "rb_votes": 29,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 688,
@@ -9540,7 +9545,7 @@
     "bitrate": 48,
     "rb_uuid": "765d5d9a-cf89-484a-b420-fdc68195230b",
     "rb_votes": 30,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 689,
@@ -9553,8 +9558,8 @@
     "codec": "MP3",
     "bitrate": 192,
     "rb_uuid": "aab01e08-94ed-4515-ba9d-e17def0ad57e",
-    "rb_votes": 78,
-    "rb_clicks": 3
+    "rb_votes": 82,
+    "rb_clicks": 9
   },
   {
     "n": 690,
@@ -9572,7 +9577,7 @@
     "bitrate": 64,
     "rb_uuid": "caf266c5-948a-4bfd-bc1d-8352703a6019",
     "rb_votes": 480,
-    "rb_clicks": 7
+    "rb_clicks": 19
   },
   {
     "n": 691,
@@ -9603,8 +9608,8 @@
     "codec": "MP3",
     "bitrate": 160,
     "rb_uuid": "961a458f-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 2471,
-    "rb_clicks": 3
+    "rb_votes": 2482,
+    "rb_clicks": 4
   },
   {
     "n": 693,
@@ -9620,22 +9625,28 @@
     "codec": "MP3",
     "bitrate": 192,
     "rb_uuid": "ced4eb46-0a32-4ea7-bf28-e26c94d989f8",
-    "rb_votes": 117,
-    "rb_clicks": 7
+    "rb_votes": 119,
+    "rb_clicks": 10
   },
   {
     "n": 694,
     "nombre": "Rock & Pop 95.9 FM",
     "provincia": "Argentina",
     "url": "https://playerservices.streamtheworld.com/api/livestream-redirect/ROCKANDPOP.mp3",
-    "logo": null,
-    "tags": [],
+    "logo": "https://fmrockandpop.com/images/ryp/logo_2022.webp",
+    "tags": [
+      "classic hits",
+      "hits",
+      "música",
+      "pop",
+      "rock"
+    ],
     "homepage": "https://fmrockandpop.com/",
     "codec": "MP3",
     "bitrate": 96,
-    "rb_uuid": "c8d58585-109d-4486-ab89-9e7fe5a41968",
-    "rb_votes": 1,
-    "rb_clicks": 2
+    "rb_uuid": "902e817e-36d0-490e-a61a-09fb1ba9c3a8",
+    "rb_votes": 114,
+    "rb_clicks": 1
   },
   {
     "n": 695,
@@ -9648,7 +9659,7 @@
     "codec": "AAC",
     "bitrate": 98,
     "rb_uuid": "a1bcbc89-fc40-4503-910d-0d538175857c",
-    "rb_votes": 204,
+    "rb_votes": 207,
     "rb_clicks": 0
   },
   {
@@ -9667,7 +9678,7 @@
     "bitrate": 128,
     "rb_uuid": "c86d38ab-3668-4495-a5c3-2c9a691493ae",
     "rb_votes": 9,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 697,
@@ -9685,7 +9696,7 @@
     "bitrate": 128,
     "rb_uuid": "b51ad016-f7a3-45ab-84dc-792a2701666b",
     "rb_votes": 34,
-    "rb_clicks": 1
+    "rb_clicks": 3
   },
   {
     "n": 698,
@@ -9700,8 +9711,8 @@
     "codec": "AAC",
     "bitrate": 128,
     "rb_uuid": "a9cb9c06-6b6b-499a-8b04-545c34eda12e",
-    "rb_votes": 89,
-    "rb_clicks": 2
+    "rb_votes": 90,
+    "rb_clicks": 1
   },
   {
     "n": 699,
@@ -9715,7 +9726,7 @@
     "bitrate": 96,
     "rb_uuid": "c932e517-0a08-4db1-80a3-fd74127f9d55",
     "rb_votes": 94,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 700,
@@ -9731,7 +9742,7 @@
     "bitrate": 96,
     "rb_uuid": "f7077337-59d4-4b30-b95e-77d2b1295ba3",
     "rb_votes": 47,
-    "rb_clicks": 4
+    "rb_clicks": 1
   },
   {
     "n": 701,
@@ -9740,15 +9751,13 @@
     "url": "http://streaming.radiosenlinea.com.ar:9640/",
     "logo": null,
     "tags": [
-      "cumbia",
-      "salta",
-      "variado"
+      "pop"
     ],
-    "homepage": "https://www.fmlatina925.com.ar/",
+    "homepage": null,
     "codec": "MP3",
     "bitrate": 96,
-    "rb_uuid": "8718ec4d-8cba-4b81-92ed-1fa69d7e8611",
-    "rb_votes": 265,
+    "rb_uuid": "36975c77-df4a-4083-bb83-031454627468",
+    "rb_votes": 759,
     "rb_clicks": 1
   },
   {
@@ -9762,27 +9771,21 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "e085b71b-aa0f-43f1-b24a-2bead9a8238c",
-    "rb_votes": 6530,
-    "rb_clicks": 2
+    "rb_votes": 6553,
+    "rb_clicks": 4
   },
   {
     "n": 703,
     "nombre": "96.1 Shopping Classics",
     "provincia": "Argentina",
     "url": "https://stream4.suenas.net/shoppingclassics",
-    "logo": "https://static.wixstatic.com/media/ec27f9_ea87259ccf5b5bb366eb07444d11ad6a.png/v1/fill/w_167,h_160,al_c,q_85,usm_0.66_1.00_0.01/ec27f9_ea87259ccf5b5bb366eb07444d11ad6a.webp",
-    "tags": [
-      "classic hits",
-      "classic rock",
-      "eighties",
-      "nineties",
-      "oldies"
-    ],
+    "logo": "https://static.wixstatic.com/media/ec27f9_ea87259ccf5b5bb366eb07444d11ad6a.png/v1/fill/w_224,h_226,al_c,q_85,usm_0.66_1.00_0.01,enc_auto/ec27f9_ea87259ccf5b5bb366eb07444d11ad6a.png",
+    "tags": [],
     "homepage": "https://www.radioshopping.com.ar/",
     "codec": "AAC",
     "bitrate": 64,
-    "rb_uuid": "70f45026-a937-4084-95fb-95ddb581ca7c",
-    "rb_votes": 493,
+    "rb_uuid": "9cfbad0e-eb3f-4b4d-9f34-effe0c8c27a2",
+    "rb_votes": 36,
     "rb_clicks": 2
   },
   {
@@ -9797,7 +9800,7 @@
     "bitrate": 320,
     "rb_uuid": "3c3e5b2b-a189-4d93-a1e5-9d41b3943a87",
     "rb_votes": 15,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 705,
@@ -9815,8 +9818,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "2df8d43a-3950-4596-b854-cd8aa1c2c236",
-    "rb_votes": 23,
-    "rb_clicks": 1
+    "rb_votes": 24,
+    "rb_clicks": 4
   },
   {
     "n": 706,
@@ -9830,7 +9833,7 @@
     "bitrate": 64,
     "rb_uuid": "cc5aae14-31ef-469d-aabe-288d1ab6160c",
     "rb_votes": 2,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 707,
@@ -9871,7 +9874,7 @@
     "bitrate": 32,
     "rb_uuid": "881918cf-16e7-4db6-9eb6-1e84f42ceac6",
     "rb_votes": 45,
-    "rb_clicks": 4
+    "rb_clicks": 2
   },
   {
     "n": 709,
@@ -9888,8 +9891,8 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "78b8f13c-623f-48d0-b7df-9c8e7ecacca1",
-    "rb_votes": 112,
-    "rb_clicks": 0
+    "rb_votes": 115,
+    "rb_clicks": 4
   },
   {
     "n": 710,
@@ -9927,7 +9930,7 @@
     "bitrate": 96,
     "rb_uuid": "2e1eeef8-ce25-41b5-8d6b-6171bf15ee6a",
     "rb_votes": 17,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 712,
@@ -9947,8 +9950,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "b16e131d-2459-4a61-bf06-83e26382f6bc",
-    "rb_votes": 53,
-    "rb_clicks": 1
+    "rb_votes": 60,
+    "rb_clicks": 2
   },
   {
     "n": 713,
@@ -9967,8 +9970,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "22967a95-dff4-4797-8122-401d5d1f8a2f",
-    "rb_votes": 33,
-    "rb_clicks": 1
+    "rb_votes": 34,
+    "rb_clicks": 2
   },
   {
     "n": 714,
@@ -9982,7 +9985,7 @@
     "bitrate": 48,
     "rb_uuid": "0d24740e-2f73-4f4e-8b89-674d9e1e4ec5",
     "rb_votes": 45,
-    "rb_clicks": 4
+    "rb_clicks": 3
   },
   {
     "n": 715,
@@ -9998,8 +10001,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "b16ac96d-15ed-4b2b-b761-ea8fe31d586d",
-    "rb_votes": 58,
-    "rb_clicks": 4
+    "rb_votes": 59,
+    "rb_clicks": 3
   },
   {
     "n": 716,
@@ -10019,7 +10022,7 @@
     "bitrate": 32,
     "rb_uuid": "4f205475-dd4d-4650-85cd-564c5bf46d60",
     "rb_votes": 60,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 717,
@@ -10033,7 +10036,7 @@
     "bitrate": 192,
     "rb_uuid": "c9782691-c50c-4c85-916e-1f64c055fec5",
     "rb_votes": 1,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 718,
@@ -10050,8 +10053,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "689cd1ba-deb6-455e-866f-1948992519ed",
-    "rb_votes": 21,
-    "rb_clicks": 1
+    "rb_votes": 22,
+    "rb_clicks": 2
   },
   {
     "n": 719,
@@ -10069,7 +10072,7 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "ed1d2dae-a530-46d5-83b4-1002795bb54c",
-    "rb_votes": 71,
+    "rb_votes": 73,
     "rb_clicks": 2
   },
   {
@@ -10086,7 +10089,7 @@
     "bitrate": 128,
     "rb_uuid": "7dac6761-3afa-426a-a055-4590b6d5ba81",
     "rb_votes": 13,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 721,
@@ -10102,7 +10105,7 @@
     "bitrate": 64,
     "rb_uuid": "6cee259f-5aa9-42eb-92f0-fc61bdf4e0ec",
     "rb_votes": 498,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 722,
@@ -10136,7 +10139,7 @@
     "bitrate": 32,
     "rb_uuid": "0c626033-2473-4aa2-96fe-14b0ea8aa8dd",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 724,
@@ -10187,7 +10190,7 @@
     "bitrate": null,
     "rb_uuid": "b4fbe924-a756-4e58-80fc-e40c7606afe1",
     "rb_votes": 17,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 727,
@@ -10206,7 +10209,7 @@
     "bitrate": 32,
     "rb_uuid": "06831c5a-aaf8-429f-b71b-28ad9158120f",
     "rb_votes": 2,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 728,
@@ -10243,7 +10246,7 @@
     "bitrate": 128,
     "rb_uuid": "b6260dd3-337b-45dd-bdc4-e1bcd9dd953c",
     "rb_votes": 16,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 730,
@@ -10281,7 +10284,7 @@
     "bitrate": 64,
     "rb_uuid": "654a44a7-bd61-45a0-a415-3f8aae0b749f",
     "rb_votes": 394,
-    "rb_clicks": 2
+    "rb_clicks": 3
   },
   {
     "n": 732,
@@ -10299,8 +10302,8 @@
     "codec": "AAC+",
     "bitrate": 48,
     "rb_uuid": "774da6ef-9d08-4ab6-9afc-f7a8d2a82a03",
-    "rb_votes": 58,
-    "rb_clicks": 3
+    "rb_votes": 59,
+    "rb_clicks": 1
   },
   {
     "n": 733,
@@ -10312,8 +10315,8 @@
     "homepage": "https://radio.unr.edu.ar/",
     "codec": "AAC",
     "bitrate": 192,
-    "rb_uuid": "07499cb0-b91e-4150-a085-26e5039c3033",
-    "rb_votes": 55,
+    "rb_uuid": "bb1b8dab-23ec-47b9-bc5e-1b8055ef64f7",
+    "rb_votes": 42,
     "rb_clicks": 1
   },
   {
@@ -10332,8 +10335,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "0d7a9a6b-6cdc-4fde-a5e6-ef23be6e3a13",
-    "rb_votes": 56,
-    "rb_clicks": 2
+    "rb_votes": 57,
+    "rb_clicks": 3
   },
   {
     "n": 735,
@@ -10354,7 +10357,7 @@
     "bitrate": 32,
     "rb_uuid": "f81ff03b-12a8-4a93-8ebe-53f123204f01",
     "rb_votes": 10,
-    "rb_clicks": 3
+    "rb_clicks": 0
   },
   {
     "n": 736,
@@ -10385,7 +10388,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "9640349e-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 1497,
+    "rb_votes": 1499,
     "rb_clicks": 0
   },
   {
@@ -10415,8 +10418,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "208977ef-5c3e-4797-928e-43a2847fc210",
-    "rb_votes": 633,
-    "rb_clicks": 0
+    "rb_votes": 636,
+    "rb_clicks": 6
   },
   {
     "n": 740,
@@ -10432,7 +10435,7 @@
     "bitrate": 64,
     "rb_uuid": "aa604225-92c3-4390-bdc2-1c11c3afd13f",
     "rb_votes": 3,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 741,
@@ -10450,7 +10453,7 @@
     "bitrate": 32,
     "rb_uuid": "e3fd8ca6-a69d-42a2-8277-c6664a2ebcae",
     "rb_votes": 12,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 742,
@@ -10464,7 +10467,7 @@
     "bitrate": 128,
     "rb_uuid": "8c675a91-e659-4da4-97eb-9414980d5ac9",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 743,
@@ -10492,7 +10495,7 @@
     "bitrate": 128,
     "rb_uuid": "9b930f3d-5703-43ef-97b1-c2bbd1a96708",
     "rb_votes": 13,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 745,
@@ -10510,7 +10513,7 @@
     "bitrate": 64,
     "rb_uuid": "61af0dc5-231f-4a47-8046-1c5d3d7581b8",
     "rb_votes": 133,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 746,
@@ -10523,7 +10526,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "3eee24a1-ce56-45a2-9043-b598d929309e",
-    "rb_votes": 199,
+    "rb_votes": 200,
     "rb_clicks": 0
   },
   {
@@ -10545,7 +10548,7 @@
     "bitrate": 128,
     "rb_uuid": "c606eb70-801c-420a-aa4e-ccaccd2505a1",
     "rb_votes": 30,
-    "rb_clicks": 4
+    "rb_clicks": 0
   },
   {
     "n": 748,
@@ -10561,7 +10564,7 @@
     "bitrate": 32,
     "rb_uuid": "93a6169c-8fd4-42fa-b1f4-9a958c13a9a2",
     "rb_votes": 23,
-    "rb_clicks": 13
+    "rb_clicks": 14
   },
   {
     "n": 749,
@@ -10598,8 +10601,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "5e56863d-b865-4803-a957-761877f686e2",
-    "rb_votes": 292,
-    "rb_clicks": 6
+    "rb_votes": 293,
+    "rb_clicks": 1
   },
   {
     "n": 751,
@@ -10619,7 +10622,7 @@
     "codec": "AAC",
     "bitrate": null,
     "rb_uuid": "847b4f9a-5b66-4dec-a0aa-d2e3131ab8a8",
-    "rb_votes": 54,
+    "rb_votes": 55,
     "rb_clicks": 0
   },
   {
@@ -10655,8 +10658,8 @@
     "codec": "AAC",
     "bitrate": 32,
     "rb_uuid": "43aca737-a8bf-43a8-8db6-ab4dd0c77c15",
-    "rb_votes": 147,
-    "rb_clicks": 3
+    "rb_votes": 151,
+    "rb_clicks": 2
   },
   {
     "n": 754,
@@ -10677,7 +10680,7 @@
     "bitrate": 64,
     "rb_uuid": "2475bc9b-62b8-41dd-b5b7-f73d8e620a3d",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 755,
@@ -10695,7 +10698,7 @@
     "bitrate": 128,
     "rb_uuid": "fef6298e-7d1f-473f-9146-25d34936f2ff",
     "rb_votes": 183,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 756,
@@ -10712,8 +10715,8 @@
     "codec": "MP3",
     "bitrate": 160,
     "rb_uuid": "96108969-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 1902,
-    "rb_clicks": 0
+    "rb_votes": 1903,
+    "rb_clicks": 1
   },
   {
     "n": 757,
@@ -10732,7 +10735,7 @@
     "bitrate": 32,
     "rb_uuid": "48bd943a-f4be-45d4-aade-d1fe9f38bf1e",
     "rb_votes": 7,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 758,
@@ -10748,7 +10751,7 @@
     "bitrate": 32,
     "rb_uuid": "ace0894b-f833-4ac1-adaf-3773583d9a87",
     "rb_votes": 44,
-    "rb_clicks": 2
+    "rb_clicks": 3
   },
   {
     "n": 759,
@@ -10762,7 +10765,7 @@
     "bitrate": 250,
     "rb_uuid": "d2f327b0-471d-4465-95ba-6ebc372a3beb",
     "rb_votes": 1198,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 760,
@@ -10775,8 +10778,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "a6a965ab-d9ab-4e56-8aef-99b52829743f",
-    "rb_votes": 1447,
-    "rb_clicks": 0
+    "rb_votes": 1449,
+    "rb_clicks": 1
   },
   {
     "n": 761,
@@ -10791,8 +10794,8 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "9a12e2fe-ba2b-42ae-946e-fa657fb779a4",
-    "rb_votes": 1721,
-    "rb_clicks": 5
+    "rb_votes": 1724,
+    "rb_clicks": 3
   },
   {
     "n": 762,
@@ -10805,8 +10808,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "45349ce4-308d-4869-a133-99683beb1e64",
-    "rb_votes": 233,
-    "rb_clicks": 1
+    "rb_votes": 234,
+    "rb_clicks": 3
   },
   {
     "n": 763,
@@ -10822,8 +10825,8 @@
     "codec": "MP3",
     "bitrate": 75,
     "rb_uuid": "a226ec5a-830a-11e9-aa30-52543be04c81",
-    "rb_votes": 1795,
-    "rb_clicks": 1
+    "rb_votes": 1803,
+    "rb_clicks": 3
   },
   {
     "n": 764,
@@ -10837,7 +10840,7 @@
     "bitrate": 128,
     "rb_uuid": "273d7554-a9b2-48be-887c-8089cca7cdcc",
     "rb_votes": 3,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 765,
@@ -10856,7 +10859,7 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "0f5450f3-c703-4eb6-8133-4fa484bdd183",
-    "rb_votes": 26,
+    "rb_votes": 27,
     "rb_clicks": 0
   },
   {
@@ -10873,7 +10876,7 @@
     "bitrate": 48,
     "rb_uuid": "417c7548-273c-4d6f-bbe6-5c1b2fdc4d61",
     "rb_votes": 28,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 767,
@@ -10904,8 +10907,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "bb1a32e0-fa3f-4247-8c35-8c8d6b21981b",
-    "rb_votes": 52,
-    "rb_clicks": 1
+    "rb_votes": 53,
+    "rb_clicks": 0
   },
   {
     "n": 769,
@@ -10922,7 +10925,7 @@
     "bitrate": 80,
     "rb_uuid": "b70cc5b8-1868-40fe-b4b9-28857b8c7450",
     "rb_votes": 6,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 770,
@@ -10935,8 +10938,8 @@
     "codec": "AAC",
     "bitrate": 167,
     "rb_uuid": "fe5342d3-f5fa-4444-803a-ddb3e11328c0",
-    "rb_votes": 263,
-    "rb_clicks": 3
+    "rb_votes": 265,
+    "rb_clicks": 5
   },
   {
     "n": 771,
@@ -10951,8 +10954,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "9cc01fff-5c3a-401e-8609-cbf795516514",
-    "rb_votes": 87,
-    "rb_clicks": 0
+    "rb_votes": 91,
+    "rb_clicks": 1
   },
   {
     "n": 772,
@@ -10966,7 +10969,7 @@
     "bitrate": 128,
     "rb_uuid": "9ac1e6e5-eb06-4177-9b1c-72a396a1b714",
     "rb_votes": 0,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 773,
@@ -10979,8 +10982,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "762a67f4-1654-4d7c-ba89-4552ae6531d8",
-    "rb_votes": 675,
-    "rb_clicks": 0
+    "rb_votes": 676,
+    "rb_clicks": 1
   },
   {
     "n": 774,
@@ -10997,7 +11000,7 @@
     "bitrate": 48,
     "rb_uuid": "fa79df9d-9b70-4162-a34c-0d0cc3884187",
     "rb_votes": 24,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 775,
@@ -11016,7 +11019,7 @@
     "bitrate": 128,
     "rb_uuid": "c09fabdc-0f38-45a2-a50c-07187343dd07",
     "rb_votes": 24,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 776,
@@ -11048,8 +11051,8 @@
     "codec": "MP3",
     "bitrate": 64,
     "rb_uuid": "3596c360-d1a7-4e87-9b41-6f53de0e0990",
-    "rb_votes": 51,
-    "rb_clicks": 3
+    "rb_votes": 52,
+    "rb_clicks": 1
   },
   {
     "n": 778,
@@ -11065,7 +11068,7 @@
     "bitrate": 32,
     "rb_uuid": "478d47a9-c4d7-420b-af85-0cf7b739b2a4",
     "rb_votes": 16,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 779,
@@ -11078,7 +11081,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "9beaac5a-2196-4952-b94d-7ebb6c37225b",
-    "rb_votes": 152,
+    "rb_votes": 153,
     "rb_clicks": 0
   },
   {
@@ -11120,7 +11123,7 @@
     "bitrate": 32,
     "rb_uuid": "e60ba99d-0d2c-4c11-9f49-6eac40490016",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 782,
@@ -11137,7 +11140,7 @@
     "bitrate": 128,
     "rb_uuid": "f1e4634a-fed5-482f-9916-c6c8e3eacac8",
     "rb_votes": 25,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 783,
@@ -11156,7 +11159,7 @@
     "bitrate": 64,
     "rb_uuid": "aa65f6f6-f27e-4f58-9628-3c577fabc511",
     "rb_votes": 12,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 784,
@@ -11222,8 +11225,8 @@
     "codec": "AAC",
     "bitrate": 96,
     "rb_uuid": "fa281876-6f6f-49fa-bf8e-fcd132508fa4",
-    "rb_votes": 748,
-    "rb_clicks": 0
+    "rb_votes": 749,
+    "rb_clicks": 1
   },
   {
     "n": 788,
@@ -11232,19 +11235,15 @@
     "url": "http://streaming.fmutn.com.ar:8000/FMUTN#;.mp3",
     "logo": null,
     "tags": [
-      "diversión",
-      "entretenimiento",
-      "internacional",
-      "local",
-      "música",
-      "nacional"
+      "radio universitaria",
+      "utn"
     ],
     "homepage": "http://www.fmutn.com.ar/",
     "codec": "MP3",
     "bitrate": 128,
-    "rb_uuid": "962ca311-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 249,
-    "rb_clicks": 1
+    "rb_uuid": "9f097bc3-0e35-4971-a2cb-a7f35e391464",
+    "rb_votes": 31,
+    "rb_clicks": 5
   },
   {
     "n": 789,
@@ -11257,8 +11256,8 @@
     "codec": "MP3",
     "bitrate": 96,
     "rb_uuid": "cb98e9c7-ddd3-4559-9dcf-f3e64ba73a41",
-    "rb_votes": 74,
-    "rb_clicks": 2
+    "rb_votes": 75,
+    "rb_clicks": 0
   },
   {
     "n": 790,
@@ -11288,7 +11287,7 @@
     "bitrate": 48,
     "rb_uuid": "6526de6f-5062-453f-a0de-97e07aebd659",
     "rb_votes": 294,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 792,
@@ -11301,7 +11300,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "af9246d1-84fc-4f27-bf65-d805bd1d6a70",
-    "rb_votes": 153,
+    "rb_votes": 154,
     "rb_clicks": 2
   },
   {
@@ -11320,7 +11319,7 @@
     "bitrate": 64,
     "rb_uuid": "93911c9a-5a85-11e9-a622-52543be04c81",
     "rb_votes": 871,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 794,
@@ -11359,7 +11358,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "242061a4-1fdd-430f-8ee8-9be3bbc62f69",
-    "rb_votes": 5,
+    "rb_votes": 6,
     "rb_clicks": 0
   },
   {
@@ -11373,8 +11372,8 @@
     "codec": "MP3",
     "bitrate": 109,
     "rb_uuid": "cd7ab04a-64eb-42b8-b5fb-f3e23e0de103",
-    "rb_votes": 81,
-    "rb_clicks": 2
+    "rb_votes": 82,
+    "rb_clicks": 4
   },
   {
     "n": 797,
@@ -11394,7 +11393,7 @@
     "codec": "MP3",
     "bitrate": 24,
     "rb_uuid": "9618fe72-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 286,
+    "rb_votes": 287,
     "rb_clicks": 0
   },
   {
@@ -11414,8 +11413,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "e6500945-1763-11ea-a620-52543be04c81",
-    "rb_votes": 105,
-    "rb_clicks": 0
+    "rb_votes": 106,
+    "rb_clicks": 1
   },
   {
     "n": 799,
@@ -11431,7 +11430,7 @@
     "codec": "AAC",
     "bitrate": 64,
     "rb_uuid": "e54cdb58-24c6-43b2-bd7c-37624fe2b3f3",
-    "rb_votes": 1,
+    "rb_votes": 2,
     "rb_clicks": 0
   },
   {
@@ -11450,7 +11449,7 @@
     "bitrate": 16,
     "rb_uuid": "727dd2b1-53a5-4d30-b3fe-c6aeb783b2ec",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 3
   },
   {
     "n": 801,
@@ -11467,7 +11466,7 @@
     "bitrate": 64,
     "rb_uuid": "b2e74077-0a76-4a60-99d3-b7e11c38de62",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 802,
@@ -11481,7 +11480,7 @@
     "bitrate": 32,
     "rb_uuid": "a507305f-b604-40eb-b457-5c1bffc44056",
     "rb_votes": 18,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 803,
@@ -11501,7 +11500,7 @@
     "bitrate": 64,
     "rb_uuid": "ac5dc2f4-3467-4207-813e-0b896fc5bd1e",
     "rb_votes": 1,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 804,
@@ -11518,8 +11517,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "0d9197d8-fad8-4616-b193-d4e0d28bc1f2",
-    "rb_votes": 1,
-    "rb_clicks": 3
+    "rb_votes": 2,
+    "rb_clicks": 0
   },
   {
     "n": 805,
@@ -11536,8 +11535,8 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "e989125f-6d6e-46eb-8d8d-66449124189a",
-    "rb_votes": 16,
-    "rb_clicks": 1
+    "rb_votes": 17,
+    "rb_clicks": 0
   },
   {
     "n": 806,
@@ -11629,7 +11628,7 @@
     "bitrate": 128,
     "rb_uuid": "c2d8f1ef-cc68-429a-9abc-b71e714f9362",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 811,
@@ -11643,7 +11642,7 @@
     "bitrate": 64,
     "rb_uuid": "014fe78a-cb16-4c47-97e7-d69c4e6162c5",
     "rb_votes": 30,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 812,
@@ -11661,7 +11660,7 @@
     "codec": "AAC+",
     "bitrate": 96,
     "rb_uuid": "1f94692d-46f3-4505-a03b-c3f4af71f602",
-    "rb_votes": 13,
+    "rb_votes": 14,
     "rb_clicks": 0
   },
   {
@@ -11678,7 +11677,7 @@
     "bitrate": 128,
     "rb_uuid": "f1f11a51-89b4-49e9-94a2-6ef4cefe71fc",
     "rb_votes": 19,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 814,
@@ -11693,7 +11692,7 @@
     "codec": "AAC+",
     "bitrate": 48,
     "rb_uuid": "25015c0e-2a00-4050-b0d8-9e64426c7142",
-    "rb_votes": 102,
+    "rb_votes": 103,
     "rb_clicks": 0
   },
   {
@@ -11712,7 +11711,7 @@
     "bitrate": 140,
     "rb_uuid": "a7c8c27a-e1a2-485f-a723-2f1161359dcd",
     "rb_votes": 62,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 816,
@@ -11731,7 +11730,7 @@
     "bitrate": 32,
     "rb_uuid": "0b880733-546f-4a73-8e4a-3e8775572297",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 817,
@@ -11745,7 +11744,7 @@
     "bitrate": null,
     "rb_uuid": "3b70d8be-5b9f-4c08-90a3-cb9b812c7dc7",
     "rb_votes": 34,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 818,
@@ -11784,7 +11783,7 @@
     "bitrate": 32,
     "rb_uuid": "092418a9-c01d-472d-ad62-344d83f79afb",
     "rb_votes": 28,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 820,
@@ -11798,7 +11797,7 @@
     "bitrate": 32,
     "rb_uuid": "6ad02747-a9c1-4a25-80e0-6ff400fb7afe",
     "rb_votes": 25,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 821,
@@ -11815,7 +11814,7 @@
     "bitrate": 96,
     "rb_uuid": "a3451f14-05e8-45b2-a7f6-b3c20c2c90cb",
     "rb_votes": 91,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 822,
@@ -11887,7 +11886,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "be096cf2-43c2-44c4-8619-0e19e31ad147",
-    "rb_votes": 74,
+    "rb_votes": 75,
     "rb_clicks": 1
   },
   {
@@ -11909,7 +11908,7 @@
     "bitrate": 64,
     "rb_uuid": "df219979-09e1-441b-80dd-a00b3c6dfb68",
     "rb_votes": 5,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 827,
@@ -11985,7 +11984,7 @@
     "codec": "AAC",
     "bitrate": 32,
     "rb_uuid": "8c8e803d-8ba4-40b3-a638-cd8fc89b731e",
-    "rb_votes": 150,
+    "rb_votes": 152,
     "rb_clicks": 0
   },
   {
@@ -12086,7 +12085,7 @@
     "bitrate": 128,
     "rb_uuid": "10841d53-7141-4740-8497-07e679579dc6",
     "rb_votes": 42,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 837,
@@ -12188,7 +12187,7 @@
     "bitrate": 128,
     "rb_uuid": "dff8fded-2f28-4db1-9626-8ac9803faf7f",
     "rb_votes": 22,
-    "rb_clicks": 0
+    "rb_clicks": 3
   },
   {
     "n": 843,
@@ -12208,8 +12207,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "6db9f2b2-e091-4b91-b354-77cef266784c",
-    "rb_votes": 613,
-    "rb_clicks": 2
+    "rb_votes": 615,
+    "rb_clicks": 1
   },
   {
     "n": 844,
@@ -12222,8 +12221,8 @@
     "codec": "AAC+",
     "bitrate": 48,
     "rb_uuid": "6910b5f0-2033-4f0c-b646-3211b0f03188",
-    "rb_votes": 435,
-    "rb_clicks": 1
+    "rb_votes": 450,
+    "rb_clicks": 0
   },
   {
     "n": 845,
@@ -12240,7 +12239,7 @@
     "bitrate": 128,
     "rb_uuid": "f931d316-f814-4257-9b39-bdd7cd1036af",
     "rb_votes": 14,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 846,
@@ -12275,7 +12274,7 @@
     "bitrate": null,
     "rb_uuid": "ef31f3ef-4e8c-4aee-9feb-8f55919640ab",
     "rb_votes": 31,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 848,
@@ -12289,7 +12288,7 @@
     "bitrate": 32,
     "rb_uuid": "ee8db61a-1cc3-409f-bb4f-69b17b7861d6",
     "rb_votes": 5,
-    "rb_clicks": 26
+    "rb_clicks": 17
   },
   {
     "n": 849,
@@ -12308,8 +12307,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "af0345ca-6565-483c-9ccc-7129b7e78ecd",
-    "rb_votes": 79,
-    "rb_clicks": 16
+    "rb_votes": 85,
+    "rb_clicks": 28
   },
   {
     "n": 850,
@@ -12325,7 +12324,7 @@
     "bitrate": 128,
     "rb_uuid": "af383965-125b-4b1e-b5d1-078498347b09",
     "rb_votes": 33,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 851,
@@ -12358,7 +12357,7 @@
     "bitrate": 48,
     "rb_uuid": "3c74fde5-708f-4105-ad60-428545f81fbc",
     "rb_votes": 9,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 853,
@@ -12401,8 +12400,8 @@
     "codec": "MP3",
     "bitrate": 28,
     "rb_uuid": "dd6682d6-a261-11e9-a787-52543be04c81",
-    "rb_votes": 68,
-    "rb_clicks": 1
+    "rb_votes": 69,
+    "rb_clicks": 0
   },
   {
     "n": 856,
@@ -12438,7 +12437,7 @@
     "bitrate": 128,
     "rb_uuid": "ad752b05-eff5-4121-93c0-875e84a1cb90",
     "rb_votes": 16,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 858,
@@ -12491,7 +12490,7 @@
     "bitrate": null,
     "rb_uuid": "06b4c489-311b-48f8-a2e3-549fc6336228",
     "rb_votes": 7,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 861,
@@ -12528,7 +12527,7 @@
     "bitrate": 32,
     "rb_uuid": "ca5d6ea6-9458-11e9-a605-52543be04c81",
     "rb_votes": 211,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 863,
@@ -12544,7 +12543,7 @@
     "bitrate": 128,
     "rb_uuid": "d0f51c0e-6b95-4c68-831d-490d4390a4b4",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 864,
@@ -12557,7 +12556,7 @@
     "codec": "MP3",
     "bitrate": 160,
     "rb_uuid": "db900073-0783-11e8-ae97-52543be04c81",
-    "rb_votes": 891,
+    "rb_votes": 892,
     "rb_clicks": 0
   },
   {
@@ -12623,7 +12622,7 @@
     "bitrate": 96,
     "rb_uuid": "8fd81612-93df-45cb-ae6d-f2ccdbe05c8a",
     "rb_votes": 15,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 869,
@@ -12650,14 +12649,16 @@
     "nombre": "LU14 Radio Provincia de Santa Cruz AM 830 khz",
     "provincia": "Provincia de Santa Cruz",
     "url": "https://transmision-lu14.santacruz.gob.ar/lu14.mp3",
-    "logo": "https://lu14.santacruz.gob.ar/wp-content/uploads/2024/02/cropped-logo-horizontal-1-2048x515.png",
-    "tags": [],
+    "logo": null,
+    "tags": [
+      "news talk music"
+    ],
     "homepage": "https://lu14.santacruz.gob.ar/",
     "codec": "OGG",
     "bitrate": null,
-    "rb_uuid": "d1b0080c-506b-49bc-bb25-9a302cbb3eb7",
-    "rb_votes": 6,
-    "rb_clicks": 1
+    "rb_uuid": "21084ef3-0958-4591-9196-5868de99d406",
+    "rb_votes": 13,
+    "rb_clicks": 0
   },
   {
     "n": 871,
@@ -12699,7 +12700,7 @@
     "bitrate": 32,
     "rb_uuid": "a8856cb0-5803-49be-ba24-e2e6e77e6687",
     "rb_votes": 10,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 873,
@@ -12737,7 +12738,7 @@
     "bitrate": 128,
     "rb_uuid": "9cfbf6af-9902-47f1-a799-1fd4b142a1cf",
     "rb_votes": 8,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 875,
@@ -12866,8 +12867,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "be496ecd-5370-46f3-8957-ed488ecee564",
-    "rb_votes": 71,
-    "rb_clicks": 1
+    "rb_votes": 72,
+    "rb_clicks": 0
   },
   {
     "n": 883,
@@ -12883,7 +12884,7 @@
     "bitrate": null,
     "rb_uuid": "ce412dc9-8f5f-4458-a688-a2a78031e4b2",
     "rb_votes": 29,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 884,
@@ -12917,7 +12918,7 @@
     "bitrate": 128,
     "rb_uuid": "aff135a4-159a-11e8-ae97-52543be04c81",
     "rb_votes": 99,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 886,
@@ -12938,7 +12939,7 @@
     "bitrate": 48,
     "rb_uuid": "e2fe4cfd-f5c0-40d3-870f-55372b7167c2",
     "rb_votes": 50,
-    "rb_clicks": 1
+    "rb_clicks": 5
   },
   {
     "n": 887,
@@ -12959,7 +12960,7 @@
     "bitrate": 64,
     "rb_uuid": "85a55d6c-c2c1-4928-a539-c723023b98ac",
     "rb_votes": 5,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 888,
@@ -12976,7 +12977,7 @@
     "bitrate": 128,
     "rb_uuid": "c3484fcd-50fd-47a0-8bf6-406ac4c2f669",
     "rb_votes": 27,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 889,
@@ -12990,7 +12991,7 @@
     "bitrate": 96,
     "rb_uuid": "d1bbb83b-e702-4fc5-9386-75214b8b5d14",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 890,
@@ -13042,7 +13043,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "05435fe0-f3dd-4ffe-9e30-50897d0fd214",
-    "rb_votes": 261,
+    "rb_votes": 262,
     "rb_clicks": 0
   },
   {
@@ -13081,7 +13082,7 @@
     "bitrate": 128,
     "rb_uuid": "4735378e-6d68-464c-aae2-db6a4c80ab0b",
     "rb_votes": 7,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 895,
@@ -13095,7 +13096,7 @@
     "bitrate": 32,
     "rb_uuid": "b2804605-c482-4c92-ae2e-968eaf689e56",
     "rb_votes": 22,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 896,
@@ -13228,7 +13229,7 @@
     "bitrate": 192,
     "rb_uuid": "0af40098-7284-4f7f-a571-9e11ee910eca",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 904,
@@ -13285,7 +13286,7 @@
     "bitrate": 64,
     "rb_uuid": "c3ae433f-265b-493b-93a6-bad73b8d839a",
     "rb_votes": 32,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 907,
@@ -13337,7 +13338,7 @@
     "bitrate": 128,
     "rb_uuid": "b57b6fa9-b658-44a4-8848-b7cc09bc7332",
     "rb_votes": 14,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 910,
@@ -13400,7 +13401,7 @@
     "bitrate": 64,
     "rb_uuid": "a689223d-dcf3-4c24-8be7-44f1cae368dd",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 914,
@@ -13415,8 +13416,8 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "98cc536b-bb5f-4af9-8e10-dc06d9b90200",
-    "rb_votes": 45,
-    "rb_clicks": 0
+    "rb_votes": 46,
+    "rb_clicks": 1
   },
   {
     "n": 915,
@@ -13430,7 +13431,7 @@
     "bitrate": 192,
     "rb_uuid": "30cd056d-8823-4861-808c-be1261b6c362",
     "rb_votes": 7,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 916,
@@ -13459,7 +13460,7 @@
     "codec": "MP3",
     "bitrate": 64,
     "rb_uuid": "1f3e2906-f57c-4dd9-89a0-f6edce6fe719",
-    "rb_votes": 57,
+    "rb_votes": 58,
     "rb_clicks": 0
   },
   {
@@ -13498,7 +13499,7 @@
     "bitrate": 128,
     "rb_uuid": "7305646d-4cdf-47f1-87d4-3b995249c72c",
     "rb_votes": 61,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 920,
@@ -13650,7 +13651,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "23484e43-ba70-4346-a7a4-353faecd99c6",
-    "rb_votes": 55,
+    "rb_votes": 57,
     "rb_clicks": 0
   },
   {
@@ -13664,7 +13665,7 @@
     "codec": "AAC",
     "bitrate": 192,
     "rb_uuid": "42e9e309-0d05-4afe-8272-5dd44a295043",
-    "rb_votes": 1,
+    "rb_votes": 2,
     "rb_clicks": 0
   },
   {
@@ -13678,7 +13679,7 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "c47acb9d-196b-11ea-a620-52543be04c81",
-    "rb_votes": 168,
+    "rb_votes": 169,
     "rb_clicks": 0
   },
   {
@@ -13716,7 +13717,7 @@
     "bitrate": 32,
     "rb_uuid": "77c743f5-b50e-4a77-8e9f-287b36aaf900",
     "rb_votes": 32,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 933,
@@ -13734,7 +13735,7 @@
     "bitrate": 32,
     "rb_uuid": "97eeca12-0c69-41f5-b98f-c9b581124201",
     "rb_votes": 85,
-    "rb_clicks": 2
+    "rb_clicks": 0
   },
   {
     "n": 934,
@@ -13748,7 +13749,7 @@
     "bitrate": 82,
     "rb_uuid": "e615c2c8-606e-403c-abca-b8fa7d3df76f",
     "rb_votes": 34,
-    "rb_clicks": 0
+    "rb_clicks": 5
   },
   {
     "n": 935,
@@ -13766,8 +13767,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "e3f8724e-8ca9-4b2e-bc34-11da681e6f0b",
-    "rb_votes": 54,
-    "rb_clicks": 0
+    "rb_votes": 55,
+    "rb_clicks": 1
   },
   {
     "n": 936,
@@ -13783,7 +13784,7 @@
     "bitrate": 320,
     "rb_uuid": "9a0ea296-ccd8-41fc-87da-a208623811fa",
     "rb_votes": 37,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 937,
@@ -13817,7 +13818,7 @@
     "bitrate": 128,
     "rb_uuid": "1b90cb71-201d-4fff-81a3-ae76d9c65362",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 939,
@@ -13872,7 +13873,7 @@
     "bitrate": 16,
     "rb_uuid": "189f14d9-a22d-417e-bc61-e4a5a31014b9",
     "rb_votes": 6,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 942,
@@ -13947,7 +13948,7 @@
     "bitrate": null,
     "rb_uuid": "2dc60d7f-d937-4672-9aa1-957b58cd95c6",
     "rb_votes": 19,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 947,
@@ -13966,7 +13967,7 @@
     "bitrate": null,
     "rb_uuid": "86cdc0fb-c014-4100-93df-de76e4b83eb7",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 948,
@@ -13997,7 +13998,7 @@
     "bitrate": null,
     "rb_uuid": "9619ac3d-0601-11e8-ae97-52543be04c81",
     "rb_votes": 5026,
-    "rb_clicks": 6
+    "rb_clicks": 8
   },
   {
     "n": 950,
@@ -14082,23 +14083,21 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "c7ce8af3-777f-4a50-ae1e-e5904ad73ae9",
-    "rb_votes": 372,
-    "rb_clicks": 0
+    "rb_votes": 373,
+    "rb_clicks": 3
   },
   {
     "n": 955,
     "nombre": "Radio chascomús La voz Regional AM 1520 khz",
     "provincia": "Buenos Aires, Argentina",
     "url": "https://streaming1.locucionar.com/proxy/radiochascomus?mp=/stream",
-    "logo": "https://www.facebook.com/favicon.ico",
-    "tags": [
-      "news talk music"
-    ],
-    "homepage": "https://www.facebook.com/radiochascomusam1520/posts/2691213151201264",
+    "logo": null,
+    "tags": [],
+    "homepage": "http://www.lavozregional.com.ar/",
     "codec": "AAC+",
     "bitrate": 32,
-    "rb_uuid": "ba4d41c6-1dc4-4100-8079-c1c91363fbcb",
-    "rb_votes": 41,
+    "rb_uuid": "864f4354-0584-441d-ba4d-bbca0255bb7f",
+    "rb_votes": 48,
     "rb_clicks": 1
   },
   {
@@ -14170,7 +14169,7 @@
     "bitrate": 56,
     "rb_uuid": "95bab007-d3b6-4d1f-9b25-61e18c47d1e7",
     "rb_votes": 25,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 960,
@@ -14195,21 +14194,14 @@
     "nombre": "Radio Universidad Nacional de Cuyo FM 96.5",
     "provincia": "Mendoza, Argentina",
     "url": "https://fm.uncu.edu.ar/",
-    "logo": "https://pbs.twimg.com/profile_images/1653404338235011073/uN_KRUuq_400x400.jpg",
-    "tags": [
-      "cultural",
-      "cultural news",
-      "local news",
-      "political talk",
-      "radio universitaria",
-      "rock latino"
-    ],
-    "homepage": "https://www.unidiversidad.com.ar/radio-universidad",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.unidiversidad.com.ar/",
     "codec": "MP3",
     "bitrate": 128,
-    "rb_uuid": "bd4ca994-5d84-41e6-a671-50f3ff9e28c8",
-    "rb_votes": 6,
-    "rb_clicks": 0
+    "rb_uuid": "6d4cc42b-f6c4-4e75-9ede-0ccad6b908a9",
+    "rb_votes": 129,
+    "rb_clicks": 5
   },
   {
     "n": 962,
@@ -14223,7 +14215,7 @@
     "bitrate": 32,
     "rb_uuid": "767bc22f-6aa4-47dc-b453-d38a306c7946",
     "rb_votes": 28,
-    "rb_clicks": 3
+    "rb_clicks": 1
   },
   {
     "n": 963,
@@ -14238,8 +14230,8 @@
     "codec": "AAC",
     "bitrate": 32,
     "rb_uuid": "6e5631b6-f519-48fd-8004-bbf016e3c1b7",
-    "rb_votes": 1983,
-    "rb_clicks": 1
+    "rb_votes": 1984,
+    "rb_clicks": 0
   },
   {
     "n": 964,
@@ -14255,7 +14247,7 @@
     "bitrate": 64,
     "rb_uuid": "ca21a936-6ca7-11ea-b1cf-52543be04c81",
     "rb_votes": 225,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 965,
@@ -14300,7 +14292,7 @@
     "bitrate": 32,
     "rb_uuid": "fd4266fe-371c-41eb-8f55-bfcda3ba5096",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 968,
@@ -14320,7 +14312,7 @@
     "bitrate": 64,
     "rb_uuid": "e1d4b2f3-7c8c-4ceb-9d5b-3057e9a9b0fe",
     "rb_votes": 59,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 969,
@@ -14339,7 +14331,7 @@
     "bitrate": null,
     "rb_uuid": "57eee04a-aec3-43e6-8486-8a8e00bbf50a",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 970,
@@ -14397,9 +14389,9 @@
     "homepage": "https://www.radiosudaca.org/",
     "codec": "MP3",
     "bitrate": 128,
-    "rb_uuid": "f692ceef-0df3-416f-b988-bfbc08f9ab47",
-    "rb_votes": 12,
-    "rb_clicks": 1
+    "rb_uuid": "c51a08bb-f6ee-4905-ab25-bfc12972c2f7",
+    "rb_votes": 9,
+    "rb_clicks": 0
   },
   {
     "n": 975,
@@ -14484,7 +14476,7 @@
     "codec": "AAC+",
     "bitrate": 127,
     "rb_uuid": "7534f5b2-3d66-4849-bd22-197af557e821",
-    "rb_votes": 264,
+    "rb_votes": 265,
     "rb_clicks": 0
   },
   {
@@ -14536,7 +14528,7 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "8c260b20-4ba2-4429-b7f9-489a5ab0a9f6",
-    "rb_votes": 4,
+    "rb_votes": 5,
     "rb_clicks": 0
   },
   {
@@ -14550,8 +14542,8 @@
     "codec": "AAC+",
     "bitrate": 56,
     "rb_uuid": "a7675c0e-e477-473a-a6c5-d1447dac982e",
-    "rb_votes": 12,
-    "rb_clicks": 0
+    "rb_votes": 13,
+    "rb_clicks": 1
   },
   {
     "n": 984,
@@ -14660,7 +14652,7 @@
     "bitrate": 128,
     "rb_uuid": "ee676179-5dbf-47be-bdef-37690ddd0822",
     "rb_votes": 35,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 990,
@@ -14843,7 +14835,7 @@
     "codec": "MP3",
     "bitrate": 320,
     "rb_uuid": "629321b6-4bce-480f-9069-670392b32443",
-    "rb_votes": 53,
+    "rb_votes": 54,
     "rb_clicks": 0
   },
   {
@@ -14862,7 +14854,7 @@
     "codec": "MP3",
     "bitrate": 48,
     "rb_uuid": "8065a6c2-523b-4a45-bc85-f5eeeb4d8097",
-    "rb_votes": 69,
+    "rb_votes": 71,
     "rb_clicks": 1
   },
   {
@@ -14961,7 +14953,7 @@
     "bitrate": 128,
     "rb_uuid": "e461d43f-4bf7-48b6-ad47-4f02d33252d8",
     "rb_votes": 11,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1008,
@@ -14975,7 +14967,7 @@
     "bitrate": 128,
     "rb_uuid": "5a67362c-f53e-404e-8f11-d18b0729cd39",
     "rb_votes": 1,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 1009,
@@ -15007,8 +14999,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "184ce867-2a57-4b31-ae67-10d65327bcaa",
-    "rb_votes": 16,
-    "rb_clicks": 1
+    "rb_votes": 17,
+    "rb_clicks": 0
   },
   {
     "n": 1011,
@@ -15026,7 +15018,7 @@
     "codec": "AAC",
     "bitrate": 128,
     "rb_uuid": "d5bba736-3d53-49bb-b901-872b2b6c0138",
-    "rb_votes": 47,
+    "rb_votes": 51,
     "rb_clicks": 1
   },
   {
@@ -15065,7 +15057,7 @@
     "bitrate": 128,
     "rb_uuid": "0b92a118-b6fa-49e2-a4cf-8d7c1fe8cee6",
     "rb_votes": 8,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1014,
@@ -15170,7 +15162,7 @@
     "bitrate": 320,
     "rb_uuid": "e31c500d-d22e-437f-982f-0a47b7903c3c",
     "rb_votes": 13,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1020,
@@ -15225,7 +15217,7 @@
     "bitrate": 32,
     "rb_uuid": "ea260697-61b6-429b-931b-29d145cd9362",
     "rb_votes": 2,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1023,
@@ -15240,8 +15232,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "7bc8469b-bd15-42f4-9622-9bec3445cde1",
-    "rb_votes": 22,
-    "rb_clicks": 0
+    "rb_votes": 23,
+    "rb_clicks": 3
   },
   {
     "n": 1024,
@@ -15255,7 +15247,7 @@
     "bitrate": 48,
     "rb_uuid": "66030d99-b9a0-433e-9d2a-f49d8180728f",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1025,
@@ -15269,7 +15261,7 @@
     "bitrate": 64,
     "rb_uuid": "35bf7427-9008-43ad-8870-3ab3c2f40820",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1026,
@@ -15281,9 +15273,9 @@
     "homepage": null,
     "codec": "MP3",
     "bitrate": 128,
-    "rb_uuid": "ee5e3a50-80bb-440e-97ac-2d82145574bf",
-    "rb_votes": 7,
-    "rb_clicks": 0
+    "rb_uuid": "26f358d9-7127-400b-ba11-e4a1956ecabb",
+    "rb_votes": 8,
+    "rb_clicks": 1
   },
   {
     "n": 1027,
@@ -15313,7 +15305,7 @@
     "bitrate": 48,
     "rb_uuid": "4e568787-9dd9-4dfb-be01-2e2d80e2b318",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1029,
@@ -15358,7 +15350,7 @@
     "bitrate": 32,
     "rb_uuid": "219ceb49-2860-442b-9ec1-6faa41f41678",
     "rb_votes": 20,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1032,
@@ -15372,7 +15364,7 @@
     "bitrate": 32,
     "rb_uuid": "db23011d-b4df-482f-8110-f976a0ac75ed",
     "rb_votes": 24,
-    "rb_clicks": 2
+    "rb_clicks": 4
   },
   {
     "n": 1033,
@@ -15388,8 +15380,8 @@
     "codec": "AAC+",
     "bitrate": 64,
     "rb_uuid": "299a8625-4a9d-4325-bd09-48e4491af35f",
-    "rb_votes": 20,
-    "rb_clicks": 1
+    "rb_votes": 21,
+    "rb_clicks": 4
   },
   {
     "n": 1034,
@@ -15406,7 +15398,7 @@
     "bitrate": 128,
     "rb_uuid": "c39f2286-7dc7-4814-b82f-e66685718904",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1035,
@@ -15426,7 +15418,7 @@
     "bitrate": 32,
     "rb_uuid": "0ccd0bd7-64a2-40f6-90b1-96f098ce2d46",
     "rb_votes": 20,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1036,
@@ -15445,7 +15437,7 @@
     "bitrate": 128,
     "rb_uuid": "de56bb69-e912-4edd-a4a6-e73ed48d2095",
     "rb_votes": 9,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1037,
@@ -15479,8 +15471,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "ffd131d8-acf9-4190-b6f4-b377624878e1",
-    "rb_votes": 109,
-    "rb_clicks": 0
+    "rb_votes": 113,
+    "rb_clicks": 4
   },
   {
     "n": 1039,
@@ -15517,7 +15509,7 @@
     "bitrate": 128,
     "rb_uuid": "2e96a168-956e-416c-946e-3240897ef6de",
     "rb_votes": 68,
-    "rb_clicks": 2
+    "rb_clicks": 1
   },
   {
     "n": 1041,
@@ -15547,7 +15539,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "df2aa14f-592f-45ed-b368-46f4e610cd97",
-    "rb_votes": 202,
+    "rb_votes": 203,
     "rb_clicks": 0
   },
   {
@@ -15569,7 +15561,7 @@
     "bitrate": 48,
     "rb_uuid": "33efd213-28e6-40d0-9e0a-dacf1f855c80",
     "rb_votes": 14,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1044,
@@ -15586,7 +15578,7 @@
     "bitrate": 128,
     "rb_uuid": "e0d34831-6f01-471d-99bb-f45bfb210de3",
     "rb_votes": 8,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1045,
@@ -15669,7 +15661,7 @@
     "bitrate": 64,
     "rb_uuid": "f48851e8-743a-481d-8a55-61e7cb7f4b60",
     "rb_votes": 5,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1050,
@@ -15683,7 +15675,7 @@
     "bitrate": 96,
     "rb_uuid": "0865980c-a23e-49b9-a0fa-db82f895fba5",
     "rb_votes": 351,
-    "rb_clicks": 1
+    "rb_clicks": 4
   },
   {
     "n": 1051,
@@ -15700,7 +15692,7 @@
     "codec": "AAC",
     "bitrate": 32,
     "rb_uuid": "d95d15fb-2789-487a-89e4-e30c554b5f69",
-    "rb_votes": 27,
+    "rb_votes": 28,
     "rb_clicks": 0
   },
   {
@@ -15715,7 +15707,7 @@
     "bitrate": 64,
     "rb_uuid": "62ea1c7c-9462-4e69-bccb-b8a5abbd5184",
     "rb_votes": 29,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1053,
@@ -15729,7 +15721,7 @@
     "bitrate": 96,
     "rb_uuid": "a04591d4-9594-47bb-9f87-2a5afbf963f4",
     "rb_votes": 14,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1054,
@@ -15783,7 +15775,7 @@
     "bitrate": 128,
     "rb_uuid": "62ad7794-845c-42d8-b4a8-2907b752ed7e",
     "rb_votes": 5,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1057,
@@ -15925,9 +15917,9 @@
     "homepage": "https://radio.eduneu.eu/public/colegioamen",
     "codec": "MP3",
     "bitrate": 192,
-    "rb_uuid": "fc6421f2-e490-4d01-be12-626b074f0d14",
-    "rb_votes": 12,
-    "rb_clicks": 1
+    "rb_uuid": "9f93d2f9-d044-4a17-b6cd-7d9ea7306a19",
+    "rb_votes": 5,
+    "rb_clicks": 2
   },
   {
     "n": 1066,
@@ -15943,7 +15935,7 @@
     "bitrate": 80,
     "rb_uuid": "c5730ce3-f190-467d-ab05-bf8785e71379",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1067,
@@ -16012,7 +16004,7 @@
     "bitrate": 128,
     "rb_uuid": "586235b9-5524-4f42-829a-75f008533137",
     "rb_votes": 9,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1071,
@@ -16030,7 +16022,7 @@
     "bitrate": 192,
     "rb_uuid": "ebf06794-3e49-449f-b402-011900fe1572",
     "rb_votes": 1,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1072,
@@ -16226,7 +16218,7 @@
     "bitrate": 128,
     "rb_uuid": "b5bf65ee-0937-49c3-854f-52ba08b7184f",
     "rb_votes": 6,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1084,
@@ -16261,7 +16253,7 @@
     "bitrate": null,
     "rb_uuid": "acc54afe-d99e-4af4-a771-e42eb8c3f98b",
     "rb_votes": 6,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1086,
@@ -16276,8 +16268,8 @@
     "codec": "AAC+",
     "bitrate": 24,
     "rb_uuid": "7f9513b2-9db7-44ab-99a4-5b25959fd7c4",
-    "rb_votes": 25,
-    "rb_clicks": 0
+    "rb_votes": 26,
+    "rb_clicks": 1
   },
   {
     "n": 1087,
@@ -16293,8 +16285,8 @@
     "codec": "AAC+",
     "bitrate": 192,
     "rb_uuid": "4f263020-1bb4-413a-a67f-ab79e4fc904c",
-    "rb_votes": 8,
-    "rb_clicks": 1
+    "rb_votes": 9,
+    "rb_clicks": 2
   },
   {
     "n": 1088,
@@ -16375,7 +16367,7 @@
     "bitrate": 64,
     "rb_uuid": "733fc8f3-0533-4ae9-8f6e-6008442ec776",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1093,
@@ -16394,7 +16386,7 @@
     "bitrate": 96,
     "rb_uuid": "6d325b5f-595f-4e2b-9e11-3d7b38235eb3",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1094,
@@ -16521,7 +16513,7 @@
     "bitrate": 128,
     "rb_uuid": "10de7195-d447-4a44-8b76-d64cfffb7914",
     "rb_votes": 8,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1102,
@@ -16555,7 +16547,7 @@
     "bitrate": 36,
     "rb_uuid": "2a2bbaec-9c58-47d0-b1cb-d392090e7370",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1104,
@@ -16585,8 +16577,8 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "22c21477-5a0c-4d78-b953-87364991b11d",
-    "rb_votes": 123,
-    "rb_clicks": 0
+    "rb_votes": 125,
+    "rb_clicks": 3
   },
   {
     "n": 1106,
@@ -16603,8 +16595,8 @@
     "codec": "AAC+",
     "bitrate": 96,
     "rb_uuid": "74fa6998-8a0a-4350-b048-477ebc92cb98",
-    "rb_votes": 31,
-    "rb_clicks": 0
+    "rb_votes": 32,
+    "rb_clicks": 3
   },
   {
     "n": 1107,
@@ -16618,7 +16610,7 @@
     "bitrate": 48,
     "rb_uuid": "ae3e16d6-21f0-4aac-80d3-3c3f646d220d",
     "rb_votes": 89,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1108,
@@ -16647,8 +16639,8 @@
     "codec": "AAC+",
     "bitrate": 128,
     "rb_uuid": "76502fbf-fecc-48d5-9b57-4b44ff84353a",
-    "rb_votes": 19,
-    "rb_clicks": 0
+    "rb_votes": 20,
+    "rb_clicks": 3
   },
   {
     "n": 1110,
@@ -16691,8 +16683,8 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "698dfebc-b99b-4f34-b5aa-2fb27979b2f1",
-    "rb_votes": 8,
-    "rb_clicks": 0
+    "rb_votes": 10,
+    "rb_clicks": 1
   },
   {
     "n": 1113,
@@ -16708,7 +16700,7 @@
     "bitrate": 128,
     "rb_uuid": "c884f987-6269-11ea-be63-52543be04c81",
     "rb_votes": 676,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1114,
@@ -16803,7 +16795,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "a8cefe0a-0dfa-11e9-a80b-52543be04c81",
-    "rb_votes": 162,
+    "rb_votes": 163,
     "rb_clicks": 0
   },
   {
@@ -16822,7 +16814,7 @@
     "bitrate": 32,
     "rb_uuid": "e2aebae9-b0c9-4899-ac47-bc8fca8f4922",
     "rb_votes": 5,
-    "rb_clicks": 0
+    "rb_clicks": 3
   },
   {
     "n": 1121,
@@ -16900,7 +16892,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "067dd9ca-4343-11e9-aa55-52543be04c81",
-    "rb_votes": 108,
+    "rb_votes": 109,
     "rb_clicks": 0
   },
   {
@@ -16920,7 +16912,7 @@
     "bitrate": null,
     "rb_uuid": "0a02ca9f-1f68-41e8-92c2-f83de19b0ced",
     "rb_votes": 3,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1127,
@@ -16954,7 +16946,7 @@
     "codec": "MP3",
     "bitrate": null,
     "rb_uuid": "88799739-7e0e-45d8-baf8-5538afd5eada",
-    "rb_votes": 90,
+    "rb_votes": 94,
     "rb_clicks": 0
   },
   {
@@ -16973,7 +16965,7 @@
     "bitrate": 32,
     "rb_uuid": "27dac464-b206-4472-a4a5-f66a2819a383",
     "rb_votes": 18,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1130,
@@ -17042,7 +17034,7 @@
     "bitrate": 128,
     "rb_uuid": "1c7950c9-e8e9-4aa4-88c0-2cfc71fcd7c1",
     "rb_votes": 3,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1134,
@@ -17131,7 +17123,7 @@
     "bitrate": null,
     "rb_uuid": "11c4ef02-8f14-42eb-8802-ef06490266de",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1139,
@@ -17148,8 +17140,8 @@
     "codec": "AAC",
     "bitrate": null,
     "rb_uuid": "82b1fe45-50cb-4cd7-92db-02f42ac5d52e",
-    "rb_votes": 28,
-    "rb_clicks": 1
+    "rb_votes": 29,
+    "rb_clicks": 0
   },
   {
     "n": 1140,
@@ -17169,7 +17161,7 @@
     "bitrate": 32,
     "rb_uuid": "d5d435af-f324-449c-86d5-cea88f7e16d2",
     "rb_votes": 9,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1141,
@@ -17231,7 +17223,7 @@
     "bitrate": 128,
     "rb_uuid": "f3101ad4-a811-4e15-a511-01ce74f35eaf",
     "rb_votes": 10,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1145,
@@ -17295,7 +17287,7 @@
     "bitrate": 64,
     "rb_uuid": "fdd73599-e2a1-40b0-96bc-874663ce7215",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1149,
@@ -17309,7 +17301,7 @@
     "bitrate": 64,
     "rb_uuid": "84d2a89e-66e8-4382-b281-f1523c541795",
     "rb_votes": 4,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1150,
@@ -17339,7 +17331,7 @@
     "bitrate": 32,
     "rb_uuid": "dde1ded2-892b-4a05-bec5-03216835a5b2",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1152,
@@ -17378,7 +17370,7 @@
     "bitrate": 128,
     "rb_uuid": "5b2ff02c-b33d-43a6-b407-c6e6ccd95e7b",
     "rb_votes": 1,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1154,
@@ -17392,7 +17384,7 @@
     "bitrate": 40,
     "rb_uuid": "bd0bce32-df79-419a-87d0-9dc340d7fc30",
     "rb_votes": 0,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1155,
@@ -17406,7 +17398,7 @@
     "bitrate": 96,
     "rb_uuid": "c3efcd60-1a73-418b-b006-93e26e460d90",
     "rb_votes": 6,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 1156,
@@ -17473,7 +17465,7 @@
     "bitrate": 128,
     "rb_uuid": "99cda625-f091-43e0-bcda-ce91b6bb0642",
     "rb_votes": 8,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1160,
@@ -17622,7 +17614,7 @@
     "bitrate": 320,
     "rb_uuid": "417a0590-e087-4b3b-9ed1-c76523a00f8a",
     "rb_votes": 15,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1169,
@@ -17650,7 +17642,7 @@
     "bitrate": 128,
     "rb_uuid": "bbb93064-e6de-44aa-b5a5-a16f6fb196cf",
     "rb_votes": 9,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1171,
@@ -17743,7 +17735,7 @@
     "bitrate": 32,
     "rb_uuid": "51ef5e59-d2f0-40c1-ba36-031fca691a83",
     "rb_votes": 10,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1176,
@@ -17757,7 +17749,7 @@
     "bitrate": 64,
     "rb_uuid": "03576e6b-39ab-4217-96af-40c757096197",
     "rb_votes": 4,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1177,
@@ -17887,7 +17879,7 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "963c9a3d-0601-11e8-ae97-52543be04c81",
-    "rb_votes": 73,
+    "rb_votes": 74,
     "rb_clicks": 0
   },
   {
@@ -17926,7 +17918,7 @@
     "bitrate": 64,
     "rb_uuid": "ac8c7455-dd8d-4e9a-a3b9-e1d73fc7a141",
     "rb_votes": 40,
-    "rb_clicks": 0
+    "rb_clicks": 3
   },
   {
     "n": 1187,
@@ -17970,7 +17962,7 @@
     "bitrate": 32,
     "rb_uuid": "97e16e49-cef8-4746-b3b4-7f74dbc60d07",
     "rb_votes": 10,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1190,
@@ -17986,7 +17978,7 @@
     "bitrate": 128,
     "rb_uuid": "2ab7744b-4ba2-4d3d-a72d-5feaf58a4175",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1191,
@@ -18007,7 +17999,7 @@
     "bitrate": 80,
     "rb_uuid": "5585f8e1-b731-46c5-a717-0a1b9979c2fe",
     "rb_votes": 11,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1192,
@@ -18035,7 +18027,7 @@
     "bitrate": 96,
     "rb_uuid": "de61cb7e-41ae-45d0-b436-6c54899c2749",
     "rb_votes": 218,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1194,
@@ -18100,7 +18092,7 @@
     "bitrate": 100,
     "rb_uuid": "622049a8-cf0e-42ad-9f5b-0fd92914246a",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1198,
@@ -18149,7 +18141,7 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "83d74a89-0d69-48b6-a1ef-cbf2e4c968e9",
-    "rb_votes": 52,
+    "rb_votes": 54,
     "rb_clicks": 0
   },
   {
@@ -18178,7 +18170,7 @@
     "bitrate": 192,
     "rb_uuid": "64ccbf69-48b9-4f14-bc37-61c41b52035f",
     "rb_votes": 29,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1203,
@@ -18218,7 +18210,7 @@
     "codec": "AAC+",
     "bitrate": 96,
     "rb_uuid": "54d52880-d472-470b-8b15-d635ba13a8d8",
-    "rb_votes": 70,
+    "rb_votes": 71,
     "rb_clicks": 0
   },
   {
@@ -18304,7 +18296,7 @@
     "bitrate": 64,
     "rb_uuid": "9e998f60-c608-4d5b-b118-9129b38ea617",
     "rb_votes": 2,
-    "rb_clicks": 0
+    "rb_clicks": 2
   },
   {
     "n": 1210,
@@ -18318,7 +18310,7 @@
     "bitrate": null,
     "rb_uuid": "ac784548-2762-4c85-a284-36dd5cec50be",
     "rb_votes": 5,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1211,
@@ -18554,7 +18546,7 @@
     "codec": "AAC+",
     "bitrate": 24,
     "rb_uuid": "659a02e6-8d60-4f83-8549-8f09eacfdd1f",
-    "rb_votes": 1,
+    "rb_votes": 2,
     "rb_clicks": 0
   },
   {
@@ -18569,7 +18561,7 @@
     "bitrate": 32,
     "rb_uuid": "62238a95-265f-42c4-9e7d-48416a5d4f0d",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1226,
@@ -18687,14 +18679,12 @@
     "provincia": "Argentina",
     "url": "https://streaming1.locucionar.com/proxy/radiochubut?mp=/stream",
     "logo": null,
-    "tags": [
-      "local talk"
-    ],
+    "tags": [],
     "homepage": "https://radiochubut.com/",
     "codec": "AAC+",
     "bitrate": 24,
-    "rb_uuid": "79a6b49f-99b4-4993-934a-1f68e161838e",
-    "rb_votes": 36,
+    "rb_uuid": "f74a407d-f6a5-4b23-a8a5-2542daeab587",
+    "rb_votes": 12,
     "rb_clicks": 1
   },
   {
@@ -18749,7 +18739,7 @@
     "bitrate": 128,
     "rb_uuid": "94eab365-5d84-11e9-a622-52543be04c81",
     "rb_votes": 145,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1236,
@@ -18823,7 +18813,7 @@
     "bitrate": null,
     "rb_uuid": "488e8398-d2a8-46d3-906c-d8e2320fee87",
     "rb_votes": 1,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1241,
@@ -18851,7 +18841,7 @@
     "bitrate": 128,
     "rb_uuid": "16eef88e-69c4-4c96-8e5e-7ef3872ecb3a",
     "rb_votes": 11,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1243,
@@ -18886,7 +18876,7 @@
     "bitrate": 128,
     "rb_uuid": "66a4f625-7cf6-48ad-93c4-ca4cb78ca458",
     "rb_votes": 0,
-    "rb_clicks": 1
+    "rb_clicks": 2
   },
   {
     "n": 1245,
@@ -18906,7 +18896,7 @@
     "codec": "AAC",
     "bitrate": 64,
     "rb_uuid": "0548e7fe-629d-4c3e-aa44-94d8195fb8e6",
-    "rb_votes": 6,
+    "rb_votes": 7,
     "rb_clicks": 0
   },
   {
@@ -18955,7 +18945,7 @@
     "bitrate": 128,
     "rb_uuid": "1f0035af-7deb-4165-89d6-ac87d0587cec",
     "rb_votes": 25,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1249,
@@ -18989,7 +18979,7 @@
     "bitrate": 128,
     "rb_uuid": "8c42a821-7752-4225-8866-26716ba872d9",
     "rb_votes": 6,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1251,
@@ -19005,7 +18995,7 @@
     "codec": "AAC",
     "bitrate": 32,
     "rb_uuid": "ffe8d097-ab72-4e9b-b77a-905416bb5150",
-    "rb_votes": 4,
+    "rb_votes": 6,
     "rb_clicks": 0
   },
   {
@@ -19023,7 +19013,7 @@
     "bitrate": 128,
     "rb_uuid": "0541521b-2628-4b51-8685-2e4884a9363f",
     "rb_votes": 36,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1253,
@@ -19040,7 +19030,7 @@
     "codec": "AAC+",
     "bitrate": 32,
     "rb_uuid": "0543932b-e4bb-4f97-92c1-90cf5db81ff9",
-    "rb_votes": 43,
+    "rb_votes": 44,
     "rb_clicks": 0
   },
   {
@@ -19150,7 +19140,7 @@
     "bitrate": null,
     "rb_uuid": "6b14a202-d919-4f9e-a0bf-42aaae00ad9d",
     "rb_votes": 8,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1260,
@@ -19163,7 +19153,7 @@
     "codec": "MP3",
     "bitrate": 128,
     "rb_uuid": "9e0b0fa1-cba4-4918-82d1-826c29c9522f",
-    "rb_votes": 2,
+    "rb_votes": 3,
     "rb_clicks": 0
   },
   {
@@ -19184,7 +19174,7 @@
     "bitrate": 64,
     "rb_uuid": "ee3dd678-3030-4100-9e7c-60ecdbfdca4f",
     "rb_votes": 18,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1262,
@@ -19220,7 +19210,7 @@
     "bitrate": 48,
     "rb_uuid": "3daaf1f1-8f49-4fdb-8c1b-1855dc25408c",
     "rb_votes": 24,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1264,
@@ -19355,7 +19345,7 @@
     "bitrate": 48,
     "rb_uuid": "1f48d358-7abd-4d10-93e4-836f2ea2e7b4",
     "rb_votes": 41,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1272,
@@ -19402,7 +19392,7 @@
     "bitrate": 48,
     "rb_uuid": "7a732ce1-be36-4527-888b-a281fecd2f32",
     "rb_votes": 4,
-    "rb_clicks": 1
+    "rb_clicks": 0
   },
   {
     "n": 1275,
@@ -19439,7 +19429,7 @@
     "bitrate": 128,
     "rb_uuid": "6c38d901-7d4d-4a4e-bce9-d2436936bd30",
     "rb_votes": 25,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1277,
@@ -19453,7 +19443,7 @@
     "bitrate": 32,
     "rb_uuid": "b88f6b8b-0284-4d4a-a4bd-559978eb70fb",
     "rb_votes": 13,
-    "rb_clicks": 0
+    "rb_clicks": 1
   },
   {
     "n": 1278,
@@ -19497,6 +19487,1701 @@
     "bitrate": null,
     "rb_uuid": "",
     "rb_votes": 0,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1281,
+    "nombre": "Gravity Radio",
+    "provincia": "Argentina",
+    "url": "https://media.xweb.ar/stream/gravity",
+    "logo": "https://www.gravityradio.com.ar/adjuntos/400/gravity/logopng-1.png",
+    "tags": [],
+    "homepage": "https://www.gravityradio.com.ar/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "5e0668d8-72ce-4cc7-8f57-d20acc94b718",
+    "rb_votes": 0,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1282,
+    "nombre": "Radiofonica 100.7",
+    "provincia": "Argentina",
+    "url": "https://edge03.radiohdvivo.com/radiofonica",
+    "logo": "https://radiofonica.com/radio-players/radio-en-vivo.png",
+    "tags": [],
+    "homepage": "https://radiofonica.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "0a871686-6289-4b22-b9b3-5eaeb9ae2969",
+    "rb_votes": 0,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1283,
+    "nombre": "Del Sol FM",
+    "provincia": "Montevideo",
+    "url": "https://delsol-1.nty.uy/?type=http&nocache=2780&dbl=0",
+    "logo": "https://delsol.uy/favicon.ico",
+    "tags": [],
+    "homepage": "https://delsol.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "96443c16-bb54-4437-964d-eef2d6f65239",
+    "rb_votes": 153,
+    "rb_clicks": 9
+  },
+  {
+    "n": 1284,
+    "nombre": "Azul FM 101.9",
+    "provincia": "Uruguay",
+    "url": "https://azul-2.nty.uy/",
+    "logo": null,
+    "tags": [
+      "alternativa",
+      "entretenimiento",
+      "indie rock",
+      "música",
+      "rock"
+    ],
+    "homepage": "https://azulfm.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "f51dc707-4538-4f8d-8fd2-2933013c8389",
+    "rb_votes": 520,
+    "rb_clicks": 8
+  },
+  {
+    "n": 1285,
+    "nombre": "Fm Inolvidable 93.1",
+    "provincia": "Uruguay",
+    "url": "https://inolvidable-2.nty.uy/",
+    "logo": null,
+    "tags": [],
+    "homepage": null,
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "d920b239-2c22-4913-92f2-555973548dd5",
+    "rb_votes": 1849,
+    "rb_clicks": 7
+  },
+  {
+    "n": 1286,
+    "nombre": "El Espectador 810",
+    "provincia": "Uruguay",
+    "url": "https://espectador-1.nty.uy/",
+    "logo": "https://espectador.com/public/img/favicon/apple-touch-icon.png",
+    "tags": [
+      "noticias"
+    ],
+    "homepage": "https://espectador.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "74cb6221-f1ad-45a3-99d1-34ecf7ad5a9b",
+    "rb_votes": 813,
+    "rb_clicks": 6
+  },
+  {
+    "n": 1287,
+    "nombre": "Sport 890",
+    "provincia": "Uruguay",
+    "url": "https://alba-uy-sport890-sport890.stream.mediatiquestream.com/index.m3u8",
+    "logo": "https://firebasestorage.googleapis.com/v0/b/radiogalaxy-580f4.appspot.com/o/images%2FIMG_20240623_101428021.jpg?alt=media&token=4553b784-4a5a-41b8-ae80-1e11e7359772",
+    "tags": [
+      "deportes",
+      "noticias"
+    ],
+    "homepage": "https://sport890.com.uy/",
+    "codec": "AAC",
+    "bitrate": 107,
+    "rb_uuid": "747c7cb7-e1d6-4447-ad7f-5fd8de9157a3",
+    "rb_votes": 218,
+    "rb_clicks": 5
+  },
+  {
+    "n": 1288,
+    "nombre": "970 Universal",
+    "provincia": "Uruguay",
+    "url": "https://970universal-3.nty.uy/",
+    "logo": null,
+    "tags": [
+      "futbol",
+      "noticias"
+    ],
+    "homepage": "https://970universal.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "8b241605-fac7-4e1f-b19b-d85ffa573733",
+    "rb_votes": 257,
+    "rb_clicks": 5
+  },
+  {
+    "n": 1289,
+    "nombre": "Metropolis 104.9",
+    "provincia": "Uruguay",
+    "url": "https://metropolis-web-1.nty.uy/",
+    "logo": null,
+    "tags": [],
+    "homepage": null,
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "d17ddeb6-141f-451e-993d-29c7e0ddb113",
+    "rb_votes": 143,
+    "rb_clicks": 5
+  },
+  {
+    "n": 1290,
+    "nombre": "Radio Clarin",
+    "provincia": "Montevideo",
+    "url": "https://radioclarin-zikoxweb.radioca.st/stream",
+    "logo": "https://radioclarin.uy/wp-content/uploads/2024/01/cropped-ic_launcher-playstore-180x180.png",
+    "tags": [],
+    "homepage": "https://radioclarin.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "3e10abc4-3128-4e38-b78f-1ef984e19015",
+    "rb_votes": 69,
+    "rb_clicks": 4
+  },
+  {
+    "n": 1291,
+    "nombre": "Concierto FM 95.1",
+    "provincia": "Punta del Este, Maldonado",
+    "url": "https://conectperu.com/8012/stream",
+    "logo": null,
+    "tags": [
+      "dance",
+      "reggaetón",
+      "rock"
+    ],
+    "homepage": "https://www.conciertofm.com/",
+    "codec": "MP3",
+    "bitrate": 256,
+    "rb_uuid": "42edf7a6-ed2d-4c02-ae9d-bca6f6809648",
+    "rb_votes": 568,
+    "rb_clicks": 3
+  },
+  {
+    "n": 1292,
+    "nombre": "CX 580 Radio Rural",
+    "provincia": "Uruguay",
+    "url": "https://radiolatina.live/9206/stream",
+    "logo": null,
+    "tags": [
+      "rural"
+    ],
+    "homepage": "https://radiorural.uy/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "7edc2b2a-656f-409b-bf88-7328ebb67a9d",
+    "rb_votes": 108,
+    "rb_clicks": 3
+  },
+  {
+    "n": 1293,
+    "nombre": "Multimedios Rincón FM 107.7 - Fray Bentos",
+    "provincia": "Río Negro",
+    "url": "https://rincon2-zikoxweb.radioca.st/stream",
+    "logo": "https://scontent.fmvd2-1.fna.fbcdn.net/v/t39.30808-6/337384218_1595585237572448_8701487168143709854_n.jpg?_nc_cat=109&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=oMl_JwxkgOQQ7kNvgFRKET9&_nc_ht=scontent.fmvd2-1.fna&oh=00_AYDVOWlfjxf-9fLoPFn84FIjQMOVEfvA0xykA6ut8bX05w&oe=66FE82EF",
+    "tags": [
+      "general"
+    ],
+    "homepage": "https://multimediosrincon.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b65915bf-7400-4c6e-9972-f18f7d6f71e5",
+    "rb_votes": 16,
+    "rb_clicks": 3
+  },
+  {
+    "n": 1294,
+    "nombre": "La Voz De Melo",
+    "provincia": "Cerro Largo",
+    "url": "https://stream.zeno.fm/fzc86k96yy8uv",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.lavozdemelo.com.uy/",
+    "codec": "MP3",
+    "bitrate": null,
+    "rb_uuid": "37ff12d8-ae3b-43fb-8715-392369808d21",
+    "rb_votes": 41,
+    "rb_clicks": 3
+  },
+  {
+    "n": 1295,
+    "nombre": "Impacto FM - Fray Bentos",
+    "provincia": "Río Negro",
+    "url": "https://a3.asurahosting.com:7740/radio.mp3",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://impacto989.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "60d6612c-19c8-4a4b-a5b7-8e45d1b4d9f7",
+    "rb_votes": 23,
+    "rb_clicks": 3
+  },
+  {
+    "n": 1296,
+    "nombre": "CX 46 Radio America",
+    "provincia": "Uruguay",
+    "url": "https://america-2.nty.uy/stream",
+    "logo": null,
+    "tags": [
+      "religious"
+    ],
+    "homepage": "https://www.cx46.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b4c30098-72cd-407a-90bc-60750811c426",
+    "rb_votes": 83,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1297,
+    "nombre": "Mega FM",
+    "provincia": "Vergara",
+    "url": "https://radio.cimaspeed.com/8070/stream",
+    "logo": "https://cdn-profiles.tunein.com/s210344/images/logod.png?t=164432",
+    "tags": [],
+    "homepage": "https://megafm.com.uy/mega/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "74bb61ea-570f-41de-b588-0a2b8ac60ee8",
+    "rb_votes": 22,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1298,
+    "nombre": "Radio Futura - 91.1 FM",
+    "provincia": "Montevideo",
+    "url": "https://alba-uy-radiofutura-futura.stream.mediatiquestream.com/index.m3u8",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.rf.com.uy/",
+    "codec": "AAC",
+    "bitrate": 108,
+    "rb_uuid": "f4dff1d7-e875-415e-8e3a-1cbfa3bd2fb9",
+    "rb_votes": 78,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1299,
+    "nombre": "Columbia FM 88.5",
+    "provincia": "Uruguay",
+    "url": "https://stm.gmpro.top:7008/;",
+    "logo": "https://fmcolumbia.com/wp-content/uploads/2020/02/columbia-1024x576.png",
+    "tags": [
+      "cumbia",
+      "entretenimiento",
+      "latino",
+      "música variada",
+      "tropical"
+    ],
+    "homepage": "https://fmcolumbia.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "3ed0c8a0-30fa-4260-bc6b-133f91cccadc",
+    "rb_votes": 28,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1300,
+    "nombre": "Alfa FM 96.3",
+    "provincia": "Uruguay",
+    "url": "http://radioonline.netgate.com.uy:8000/alfafm",
+    "logo": "https://alfafm.com.uy/assets/img/inicio__izquierda__video--splashscreen.png",
+    "tags": [
+      "cumbia",
+      "música",
+      "música en español e inglés"
+    ],
+    "homepage": "https://alfafm.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "fca906fe-988c-4bdf-b48d-3ab10ed86f02",
+    "rb_votes": 69,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1301,
+    "nombre": "Clásica 650 AM",
+    "provincia": "Uruguay",
+    "url": "https://radios.iwstreaming.uy/8032/stream",
+    "logo": null,
+    "tags": [
+      "música clásica",
+      "radio pública"
+    ],
+    "homepage": "https://clasica.uy/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "e8db6f2a-b986-407c-af2c-70a756b852c3",
+    "rb_votes": 252,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1302,
+    "nombre": "24 de Agosto",
+    "provincia": "Montevideo",
+    "url": "https://24deagosto-zikoxweb.radioca.st/stream",
+    "logo": null,
+    "tags": [
+      "classic rock oldies",
+      "golden oldies",
+      "goldies",
+      "oldies"
+    ],
+    "homepage": "https://24deagosto.com/",
+    "codec": "MP3",
+    "bitrate": 192,
+    "rb_uuid": "6c9ab68e-edd4-43f6-9ac1-a6f41826a4b7",
+    "rb_votes": 120,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1303,
+    "nombre": "Del Plata FM 95.5",
+    "provincia": "Uruguay",
+    "url": "https://alba-uy-delplata-delplata.stream.mediatiquestream.com/index.m3u8",
+    "logo": "https://www.delplatafm.com/wp-content/uploads/2021/10/logo-delta.png",
+    "tags": [
+      "adult contemporary",
+      "classic hits",
+      "retro"
+    ],
+    "homepage": "https://www.delplatafm.com/",
+    "codec": "AAC",
+    "bitrate": 108,
+    "rb_uuid": "b0cfe0f0-87f1-4083-aefd-b4727f620584",
+    "rb_votes": 61,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1304,
+    "nombre": "Celestial Fm 90.7",
+    "provincia": "Uruguay",
+    "url": "https://cloudstream2036.conectarhosting.com/8032/stream",
+    "logo": null,
+    "tags": [
+      "cristiana",
+      "religious"
+    ],
+    "homepage": "https://www.celestialfm.com/sitio/",
+    "codec": "AAC+",
+    "bitrate": 128,
+    "rb_uuid": "8ba8a34b-ec02-4463-b5f8-7400ed48e6c4",
+    "rb_votes": 32,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1305,
+    "nombre": "La Nueva del Sur",
+    "provincia": "Montevideo",
+    "url": "http://stream.zeno.fm/s6hdmgb9na0uv",
+    "logo": "https://zeno.fm/favicon.ico",
+    "tags": [],
+    "homepage": "https://zeno.fm/lanuevadelsur",
+    "codec": "MP3",
+    "bitrate": null,
+    "rb_uuid": "589a80ab-553d-4806-98ac-1e22009ab87b",
+    "rb_votes": 60,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1306,
+    "nombre": "RADIOMUNDO 1170 AM",
+    "provincia": "Uruguay",
+    "url": "https://stream1.enperspectiva.net:8443/radio.aac",
+    "logo": "https://enperspectiva.uy/logo_radiomundo.jpeg",
+    "tags": [],
+    "homepage": "https://enperspectiva.uy/",
+    "codec": "AAC",
+    "bitrate": null,
+    "rb_uuid": "cd4c5cad-c927-408b-834e-2efd090d780e",
+    "rb_votes": 1,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1307,
+    "nombre": "Diamante FM 98.7",
+    "provincia": "Uruguay",
+    "url": "https://radiolatina.live/8058/stream",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.diamantefm.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "15be12be-59a4-4919-8b50-e14c94ed9e66",
+    "rb_votes": 14,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1308,
+    "nombre": "Radio Disney Uruguay",
+    "provincia": "Uruguay",
+    "url": "https://27383.live.streamtheworld.com/DISNEY_URY_MV.mp3",
+    "logo": null,
+    "tags": [
+      "música",
+      "pop music"
+    ],
+    "homepage": "https://uy.radiodisney.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "8c251f8f-09a2-4755-a1d9-d89fb1bd05b8",
+    "rb_votes": 13,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1309,
+    "nombre": "FM cordialidad 94.9",
+    "provincia": "Uruguay",
+    "url": "https://cordialidad-zikoxweb2.radioca.st/stream",
+    "logo": "https://fmcordialidad.com/assets/img/basic/logo2.png",
+    "tags": [
+      "entretenimiento",
+      "música",
+      "música variada",
+      "noticias",
+      "radio hablada"
+    ],
+    "homepage": "https://fmcordialidad.com/",
+    "codec": "MP3",
+    "bitrate": 96,
+    "rb_uuid": "9834a837-d0e0-4052-a43c-49e6f5883979",
+    "rb_votes": 10,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1310,
+    "nombre": "FM Azul",
+    "provincia": "Montevideo",
+    "url": "https://azul-1.nty.uy/",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://azulfm.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b12f7b27-88d9-4ead-8130-b79735a56dc7",
+    "rb_votes": 83,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1311,
+    "nombre": "America FM",
+    "provincia": "Salto",
+    "url": "http://emisiones.com.uy:8118/america",
+    "logo": null,
+    "tags": [
+      "salto uruguay"
+    ],
+    "homepage": "http://americafm.com.uy/",
+    "codec": "AAC",
+    "bitrate": 128,
+    "rb_uuid": "52d65ca3-99b6-11e9-a605-52543be04c81",
+    "rb_votes": 281,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1312,
+    "nombre": "Radio Uruguay 1050",
+    "provincia": "Uruguay",
+    "url": "https://radios.iwstreaming.uy/8036/stream",
+    "logo": null,
+    "tags": [
+      "información",
+      "radio pública"
+    ],
+    "homepage": "https://radiouruguay.uy/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "51a267e2-7fe4-480c-8500-50795f7d86a3",
+    "rb_votes": 639,
+    "rb_clicks": 2
+  },
+  {
+    "n": 1313,
+    "nombre": "Conaicop",
+    "provincia": "Montevidei",
+    "url": "http://stream.zeno.fm/w5k0y0qbft5tv",
+    "logo": "http://radioconaicop.blogspot.com",
+    "tags": [],
+    "homepage": "http://radioconaicop.blogspot.com/",
+    "codec": "MP3",
+    "bitrate": null,
+    "rb_uuid": "f37db6c4-485b-49f2-818c-2bcc8376868f",
+    "rb_votes": 50,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1314,
+    "nombre": "Radio Pipí Cucú",
+    "provincia": "Montevideo",
+    "url": "https://comodin.uy/radio/8000/320.mp3",
+    "logo": null,
+    "tags": [
+      "brasil",
+      "música",
+      "popular"
+    ],
+    "homepage": "https://fediverse.blog/~/RadioPip%C3%ADCuc%C3%BA",
+    "codec": "MP3",
+    "bitrate": 320,
+    "rb_uuid": "ee04add0-4028-49ca-b59d-57a74e5e4a77",
+    "rb_votes": 1169,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1315,
+    "nombre": "Causes FM 89.1",
+    "provincia": "Uruguay",
+    "url": "https://streaming.radiosenlinea.com.ar/8870/stream",
+    "logo": "https://ss-static-001.esmsv.com/r/content/host1/6820fb3e32772eece15e2c7c6ce7fd7a/favicon/uMkSfsqrbY-32.png",
+    "tags": [
+      "baladas en español",
+      "deportes",
+      "entretenimiento",
+      "música",
+      "musica romantica",
+      "pop en español"
+    ],
+    "homepage": "https://caucesfm.uy/",
+    "codec": "AAC+",
+    "bitrate": 32,
+    "rb_uuid": "4df982e0-a83e-403e-98ae-709302848de1",
+    "rb_votes": 10,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1316,
+    "nombre": "90.3 FM DEL ESTE",
+    "provincia": "Uruguay",
+    "url": "http://usa15.ciudaddigital.com.uy:8010/DelEsteFM",
+    "logo": "https://noventatres.com/index_htm_files/2.png",
+    "tags": [
+      "entretenimiento",
+      "information",
+      "música"
+    ],
+    "homepage": "https://noventatres.com/",
+    "codec": "MP3",
+    "bitrate": 24,
+    "rb_uuid": "36548502-58b5-49d4-a57a-2f1c0d7ed43b",
+    "rb_votes": 17,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1317,
+    "nombre": "CX 40 Radio Fenix",
+    "provincia": "Uruguay",
+    "url": "https://sp3.servidorrprivado.com/8070/;",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://radiofenix.com.uy/",
+    "codec": "MP3",
+    "bitrate": 80,
+    "rb_uuid": "63fc568e-825a-4873-bb3b-e10d29531df5",
+    "rb_votes": 28,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1318,
+    "nombre": "La Otra - FM 104.5",
+    "provincia": "Paysandú",
+    "url": "https://cento02.mipanelradio.com/proxy/fmlaotra?mp=/stream",
+    "logo": "https://laotrafmpaysandu.blogspot.com/favicon.ico",
+    "tags": [
+      "cultura",
+      "folklore",
+      "información",
+      "música",
+      "pop",
+      "rock"
+    ],
+    "homepage": "https://laotrafmpaysandu.blogspot.com/",
+    "codec": "AAC+",
+    "bitrate": 48,
+    "rb_uuid": "4d8e230e-2fcc-4332-8310-db7052859ebb",
+    "rb_votes": 62,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1319,
+    "nombre": "Latina - FM 95.3",
+    "provincia": "Paysandú",
+    "url": "http://medios.ciudaddigital.com.uy:8168/LatinaFM",
+    "logo": "https://www.latinafm.com.uy/site/wp-content/uploads/2020/06/logolatina.png",
+    "tags": [
+      "cultura",
+      "información",
+      "música",
+      "pop",
+      "rock"
+    ],
+    "homepage": "https://www.latinafm.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "7f22bc88-e4e1-46b6-ab63-efca9067fcda",
+    "rb_votes": 79,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1320,
+    "nombre": "Radio Rivera CX144 AM 1440",
+    "provincia": "Uruguay",
+    "url": "http://usa15.ciudaddigital.com.uy:8060/RiveraAM",
+    "logo": null,
+    "tags": [
+      "news talk"
+    ],
+    "homepage": "http://www.radiorivera.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 112,
+    "rb_uuid": "6c514f49-f736-11e9-bbf2-52543be04c81",
+    "rb_votes": 217,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1321,
+    "nombre": "Atlantida FM 89.9",
+    "provincia": "Uruguay",
+    "url": "http://server-uk1.radioseninternet.net:8034/;",
+    "logo": "https://atlantidafm.com.uy/assets/images/bg.jpg",
+    "tags": [
+      "80s",
+      "90s",
+      "classic hits",
+      "hits 80s"
+    ],
+    "homepage": "https://atlantidafm.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "fba9c6de-ee84-4db7-ab12-c97ed5347789",
+    "rb_votes": 60,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1322,
+    "nombre": "Radio Activa Florida 101.1",
+    "provincia": "Uruguay",
+    "url": "https://streaming1.hostingmontevideo.com:7014/;",
+    "logo": "https://radioactivaflorida.com/wp-content/uploads/2022/12/Logo-1-Retocado-2048x2048.jpg",
+    "tags": [
+      "information",
+      "radio comunitaria",
+      "social",
+      "various"
+    ],
+    "homepage": "https://radioactivaflorida.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "06e2a1c6-be97-448f-98e7-435e4834ce27",
+    "rb_votes": 17,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1323,
+    "nombre": "Radio Cultura 1290 AM",
+    "provincia": "Uruguay",
+    "url": "https://radios.iwstreaming.uy/8034/stream",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://mediospublicos.uy/category/radio/radio-cultura/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "483af4b4-eaeb-4bb7-8a89-533973eb8e08",
+    "rb_votes": 66,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1324,
+    "nombre": "Felicidad - AM 1240",
+    "provincia": "Paysandú",
+    "url": "http://medios.ciudaddigital.com.uy:8042/Felicidad",
+    "logo": "https://www.radiofelicidad.com.uy/am_felicidad.jpg",
+    "tags": [
+      "cultura",
+      "deportes",
+      "información",
+      "música"
+    ],
+    "homepage": "https://www.radiofelicidad.com.uy/",
+    "codec": "MP3",
+    "bitrate": 24,
+    "rb_uuid": "944fc098-5e6c-47f3-9109-b2390ac3bc9b",
+    "rb_votes": 78,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1325,
+    "nombre": "Oldies FM",
+    "provincia": "Uruguay",
+    "url": "https://hit-1.nty.uy/stream",
+    "logo": null,
+    "tags": [
+      "80s",
+      "90s",
+      "classic hits",
+      "oldies"
+    ],
+    "homepage": "https://fmhit.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "a0a10c9c-bbd9-42e8-9434-5adce44abb20",
+    "rb_votes": 77,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1326,
+    "nombre": "Cosquin Rock Radio Uruguay",
+    "provincia": "Uruguay",
+    "url": "https://icecast15.innovanexo.com:9000/radiocero.mp3",
+    "logo": "https://cosquinrockuy.net/wp-content/uploads/2025/11/logo-color-17.png",
+    "tags": [
+      "chat",
+      "fun",
+      "gossip",
+      "rock"
+    ],
+    "homepage": "https://cosquinrockuy.net/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "2571cb2c-ef3c-4c9b-b475-ff308df9d29f",
+    "rb_votes": 23,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1327,
+    "nombre": "Sarandi 690",
+    "provincia": "Uruguay",
+    "url": "https://radiolatina.live:10977/sarandi",
+    "logo": null,
+    "tags": [
+      "noticias",
+      "talk radio"
+    ],
+    "homepage": "https://www.sarandi690.com.uy/",
+    "codec": "AAC",
+    "bitrate": null,
+    "rb_uuid": "4dc3cedb-ff17-46ce-86d6-65f874532d5c",
+    "rb_votes": 162,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1328,
+    "nombre": "La Isla Radio Online Del Uruguay",
+    "provincia": "San Carlos, Maldonado",
+    "url": "http://lirodu.zapto.org:8000/laislaradio",
+    "logo": "https://4.bp.blogspot.com/-kEcSU07Giuc/W_ghHfD0ufI/AAAAAAAAABs/7MizkiJ9v6QDzLkbUdpM9fUEfzabxBJVQCK4BGAYYCw/w800/La%2BIsla%2BRadio%2BOnline%2BDel%2BUruguay.png",
+    "tags": [
+      "arte",
+      "candombe",
+      "cultura",
+      "folklore",
+      "música",
+      "poesía"
+    ],
+    "homepage": "http://radiolaisla.blogspot.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "f8b82060-2912-45ce-8b71-7ee565d434b5",
+    "rb_votes": 325,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1329,
+    "nombre": "Aire FM 100.3",
+    "provincia": "Uruguay",
+    "url": "https://streaming3.hostingmontevideo.com/8064/stream",
+    "logo": null,
+    "tags": [
+      "cumbia",
+      "música",
+      "plena",
+      "reggaetón"
+    ],
+    "homepage": "https://www.airefm.com.uy/",
+    "codec": "MP3",
+    "bitrate": 192,
+    "rb_uuid": "802723bb-8cf7-4641-a810-fbcc8d20da75",
+    "rb_votes": 5,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1330,
+    "nombre": "FM La Ley",
+    "provincia": "Uruguay",
+    "url": "https://streaming2.locucionar.com/proxy/laleyfm?mp=/stream",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://fmlaley.com/",
+    "codec": "AAC+",
+    "bitrate": 32,
+    "rb_uuid": "aa807a7e-3804-433a-88ab-5853db531490",
+    "rb_votes": 49,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1331,
+    "nombre": "Difusora Treinta y Tres 1390 AM",
+    "provincia": "Uruguay",
+    "url": "https://server-usa2.radioseninternet.net/8132/stream",
+    "logo": "https://difusoratreintaytres.com.uy/assets/images/logo.png",
+    "tags": [
+      "baladas en español",
+      "entretenimiento",
+      "information",
+      "musica romantica",
+      "música variada",
+      "noticias"
+    ],
+    "homepage": "https://difusoratreintaytres.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "17d4fc6c-878d-4431-b48a-9774d183f31e",
+    "rb_votes": 13,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1332,
+    "nombre": "RADIO MARIA URUGUAY",
+    "provincia": "Uruguay",
+    "url": "http://dreamsiteradiocp.com:8088/stream",
+    "logo": "https://www.radiomaria.org.uy/favicon.ico",
+    "tags": [
+      "catholic",
+      "cristiana",
+      "noticias"
+    ],
+    "homepage": "https://www.radiomaria.org.uy/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "c1265edc-5a90-11e9-a622-52543be04c81",
+    "rb_votes": 283,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1333,
+    "nombre": "102.3 FM CORONILLA",
+    "provincia": "Uruguay",
+    "url": "https://streaming01.shockmedia.com.ar/9184/stream",
+    "logo": "https://fmcoronilla.uy/img/logo.png?v=1.1",
+    "tags": [
+      "entretenimiento",
+      "information",
+      "música variada",
+      "pop",
+      "radio hablada",
+      "reggaetón"
+    ],
+    "homepage": "https://fmcoronilla.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "e503a730-cf8c-43ec-9eec-da5692fe9896",
+    "rb_votes": 121,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1334,
+    "nombre": "Radio Carmelo",
+    "provincia": "Uruguay",
+    "url": "https://server.laradio.online/proxy/martin_barragan05?mp=/stream",
+    "logo": "https://www.radiocarmelo.com/images/faviconcarmelo.jpg",
+    "tags": [],
+    "homepage": "https://www.radiocarmelo.com/",
+    "codec": "AAC+",
+    "bitrate": 48,
+    "rb_uuid": "3abdcdee-4173-49af-85f7-93eb4bca5951",
+    "rb_votes": 121,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1335,
+    "nombre": "ARAPEY (AM 1450)",
+    "provincia": "Uruguay",
+    "url": "http://emisiones.com.uy:8085/arapey",
+    "logo": "https://cdn-radiotime-logos.tunein.com/s86075g.png",
+    "tags": [
+      "noticias opinion",
+      "deportes",
+      "talking",
+      "variety"
+    ],
+    "homepage": "https://10minutos.com.uy/arapeyon-line/",
+    "codec": "MP3",
+    "bitrate": 64,
+    "rb_uuid": "5f663a9d-5fd5-4a87-ad42-ce839c222fd0",
+    "rb_votes": 25,
+    "rb_clicks": 1
+  },
+  {
+    "n": 1336,
+    "nombre": "La Clave Uruguay 92.9 FM",
+    "provincia": "Uruguay",
+    "url": "https://stream-151.zeno.fm/ndwvn44vebruv?zs=gsCKxmQESE6hL5yVzBYFAA",
+    "logo": "https://laclave92.000webhostapp.com/reproductorluna/playershoutcastv2/favicon.png",
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://la-clave-92-9-fm.webnode.es/",
+    "codec": "MP3",
+    "bitrate": null,
+    "rb_uuid": "d465188b-0b53-4b81-9f43-a9a05210fba4",
+    "rb_votes": 17,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1337,
+    "nombre": "Azul Punta del Este 93.5",
+    "provincia": "Uruguay",
+    "url": "https://icecasthd.net/proxy/azulp/live",
+    "logo": null,
+    "tags": [],
+    "homepage": null,
+    "codec": "AAC",
+    "bitrate": 64,
+    "rb_uuid": "4632db98-adcb-4e3a-9e8c-a887cee1554c",
+    "rb_votes": 40,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1338,
+    "nombre": "El Libertador 1210 AM",
+    "provincia": "Uruguay",
+    "url": "https://streamingraddios.online/proxy/llamadad?mp=/stream",
+    "logo": "https://i0.wp.com/ellibertador.com.uy/wp-content/uploads/2020/11/cropped-cropped-Logo-El-Libertador-1-1.png?fit=935%2C337&ssl=1",
+    "tags": [
+      "folklore",
+      "folk",
+      "música",
+      "noticias",
+      "social",
+      "variety"
+    ],
+    "homepage": "https://ellibertador.com.uy/",
+    "codec": "MP3",
+    "bitrate": 48,
+    "rb_uuid": "5e70c41b-acac-4ab5-a3c0-ca56b9279635",
+    "rb_votes": 26,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1339,
+    "nombre": "Radio Continental 1600 AM Pando",
+    "provincia": "Uruguay",
+    "url": "https://server-usa2.radioseninternet.net/9316/stream",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.radiocontinental.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "285d89a3-9f3b-457e-98b6-c91693b71d90",
+    "rb_votes": 51,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1340,
+    "nombre": "M24 - 97.9 fm MVD y 102.5 fm Maldonado",
+    "provincia": "Montevideo",
+    "url": "https://streaming1.hostingmontevideo.com/8034/stream",
+    "logo": "https://cdn.onlineradiobox.com/img/l/2/86622.v3.png",
+    "tags": [
+      "entretenimiento",
+      "information",
+      "música",
+      "noticias",
+      "radio hablada",
+      "various"
+    ],
+    "homepage": "https://www.m24.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 96,
+    "rb_uuid": "90cd7767-efc5-4fdc-873b-8743049a667b",
+    "rb_votes": 22,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1341,
+    "nombre": "Radio 41",
+    "provincia": "Uruguay",
+    "url": "https://stream20.usastreams.com:7008/;",
+    "logo": "https://www.radio41.com.uy/templates/radio41_2017/img/logo-radio41-80px.png",
+    "tags": [],
+    "homepage": "https://www.radio41.com.uy/",
+    "codec": "MP3",
+    "bitrate": 48,
+    "rb_uuid": "49777892-8a22-4806-b509-d3d2d0f7edb1",
+    "rb_votes": 15,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1342,
+    "nombre": "El Puente FM 103.3",
+    "provincia": "Uruguay",
+    "url": "https://as100.globalhost1.com/8082/stream",
+    "logo": null,
+    "tags": [
+      "radio comunitaria"
+    ],
+    "homepage": "https://elpuenteportal.org.uy/",
+    "codec": "MP3",
+    "bitrate": 192,
+    "rb_uuid": "6184a45e-3156-4e23-9f60-d5622aa3db77",
+    "rb_votes": 8,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1343,
+    "nombre": "Radio Fm 99.1",
+    "provincia": "Uruguay",
+    "url": "https://rr5100.globalhost1.com/8454/stream",
+    "logo": "https://www.radiofm991.com/wp-content/uploads/2022/07/117723095_3171402616247190_7121555974750199924_n-150x150.jpg",
+    "tags": [
+      "adult contemporary",
+      "deportes",
+      "local radio",
+      "música",
+      "música en inglés",
+      "noticias"
+    ],
+    "homepage": "https://www.radiofm991.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "7384f164-b739-44b3-8533-24efc7c2c8c8",
+    "rb_votes": 14,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1344,
+    "nombre": "Radio Chiveo",
+    "provincia": "Montevideo",
+    "url": "https://comodin.uy/listen/chiveo/320.mp3",
+    "logo": "https://comodin.uy/static/uploads/chiveo/album_art.1680347629.png",
+    "tags": [
+      "infancia",
+      "musica infantil",
+      "música para niños",
+      "niñas",
+      "niñes",
+      "niños"
+    ],
+    "homepage": "https://comodin.uy/public/chiveo",
+    "codec": "MP3",
+    "bitrate": 320,
+    "rb_uuid": "0b61338e-2a44-4a0f-8833-f32f994b438d",
+    "rb_votes": 39,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1345,
+    "nombre": "Mundo fm",
+    "provincia": "Uruguay",
+    "url": "http://emisiones.com.uy:8088/mundo",
+    "logo": "http://mundofm.net/favicon.ico",
+    "tags": [],
+    "homepage": "http://mundofm.net/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b58eb7ad-0076-46c7-9e32-643aac0a7801",
+    "rb_votes": 49,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1346,
+    "nombre": "Exito - FM 99.7",
+    "provincia": "Paysandú",
+    "url": "http://salida.stream.com.uy:8506/stream",
+    "logo": "https://exitofm.com.uy/wp-content/uploads/2023/06/cropped-favvicon-32x32.jpg",
+    "tags": [
+      "comunicación",
+      "cultura",
+      "información",
+      "música",
+      "pop",
+      "rock"
+    ],
+    "homepage": "https://exitofm.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 192,
+    "rb_uuid": "e9a0ea6f-ed0d-4091-8221-986249dc6d92",
+    "rb_votes": 43,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1347,
+    "nombre": "Federal FM 99.1",
+    "provincia": "Uruguay",
+    "url": "http://usa15.ciudaddigital.com.uy:8040/FederalFM",
+    "logo": "https://federalfm.com.uy/img/fachada.gif",
+    "tags": [
+      "deportes",
+      "information",
+      "noticias",
+      "noticias y comentarios",
+      "radio hablada",
+      "variety"
+    ],
+    "homepage": "https://federalfm.com.uy/",
+    "codec": "MP3",
+    "bitrate": 256,
+    "rb_uuid": "903dd94b-5fa7-41b5-9d6a-21e144b98786",
+    "rb_votes": 39,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1348,
+    "nombre": "FM Ciudadela 88.7",
+    "provincia": "Centro, Cordón, Ciudad Vieja",
+    "url": "https://streaming1.locucionar.com/proxy/fmciudadela887?mp=/stream",
+    "logo": null,
+    "tags": [
+      "música",
+      "radio comunitaria"
+    ],
+    "homepage": "https://www.fmciudadela.com/",
+    "codec": "AAC+",
+    "bitrate": 32,
+    "rb_uuid": "76367ae7-3ce3-470d-ad59-ed2a31640d31",
+    "rb_votes": 15,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1349,
+    "nombre": "Radio San Carlos",
+    "provincia": "San Carlos, Maldonado",
+    "url": "http://198.49.65.43:10396/;",
+    "logo": null,
+    "tags": [
+      "variado"
+    ],
+    "homepage": "http://radiosancarlos.uy/",
+    "codec": "AAC+",
+    "bitrate": 36,
+    "rb_uuid": "1facf1b9-7977-419d-8b95-202fa77eec62",
+    "rb_votes": 95,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1350,
+    "nombre": "Radio Chiveo",
+    "provincia": "Montevideo",
+    "url": "https://comodin.uy/listen/chiveo/128.mp3",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://comodin.uy/public/chiveo",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "66edf56c-88c7-448b-bbe0-e7273ed33a36",
+    "rb_votes": 19,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1351,
+    "nombre": "Armonía FM 92.5",
+    "provincia": "Uruguay",
+    "url": "http://usa15.ciudaddigital.com.uy:8132/ArmoniaFM",
+    "logo": "https://emisoras.com.uy/uploads/img/armonia-fm.png",
+    "tags": [
+      "deportes",
+      "hits",
+      "música",
+      "música en español e inglés",
+      "noticias",
+      "pop"
+    ],
+    "homepage": "https://emisorastacuarembo.com/radio/",
+    "codec": "MP3",
+    "bitrate": 96,
+    "rb_uuid": "02c73aae-897a-4fb6-bddc-9cd65c50ad49",
+    "rb_votes": 12,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1352,
+    "nombre": "INOLVIDABLE FM",
+    "provincia": "Uruguay",
+    "url": "https://inolvidable-1.nty.uy/",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://www.inolvidablefm.com.uy/#",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "a1d9e634-7829-42c4-b509-79106234fb55",
+    "rb_votes": 14,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1353,
+    "nombre": "Perfil FM",
+    "provincia": "Treinta Y Tres",
+    "url": "https://radiosar.com:8086/stream",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://perfilfm.com/",
+    "codec": "AAC+",
+    "bitrate": 128,
+    "rb_uuid": "ed1466fc-9791-4f4c-aebf-fe89cff61dfd",
+    "rb_votes": 21,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1354,
+    "nombre": "Radio Señales",
+    "provincia": "Uruguay",
+    "url": "https://s1.radiosenialesfm.com:8030/radio.mp3",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://radiosenialesfm.com/index.html",
+    "codec": "AAC",
+    "bitrate": 64,
+    "rb_uuid": "4122a7e8-0843-429e-89da-03170248f4d4",
+    "rb_votes": 6,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1355,
+    "nombre": "LA VEREDA WEB RADIO",
+    "provincia": "Uruguay",
+    "url": "https://srv2.radiostreamuy.com/8012/stream",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://laveredawebradio.com/",
+    "codec": "MP3",
+    "bitrate": 192,
+    "rb_uuid": "55445708-b08f-49b4-822a-14374efa9641",
+    "rb_votes": 8,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1356,
+    "nombre": "OCÉANO FM",
+    "provincia": "Uruguay",
+    "url": "https://oceano-2.nty.uy/netradio/listen.mp3:8000/;?download=false",
+    "logo": "https://oceanofm.com/wp-content/uploads/2024/11/cropped-favicon-180x180.png",
+    "tags": [],
+    "homepage": "https://oceanofm.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b27a48ff-8368-4c3f-8711-73255d5a9b55",
+    "rb_votes": 1,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1357,
+    "nombre": "Zorrilla de San Martin",
+    "provincia": "Uruguay",
+    "url": "https://server-usa2.radioseninternet.net/9312/stream",
+    "logo": null,
+    "tags": [
+      "clásica"
+    ],
+    "homepage": null,
+    "codec": "AAC+",
+    "bitrate": 32,
+    "rb_uuid": "e0975f90-85bf-4fe9-8d8f-fcc11305fffa",
+    "rb_votes": 188,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1358,
+    "nombre": "Fm Like Uruguay",
+    "provincia": "Uruguay",
+    "url": "https://alba-uy-fmlike-likefm.stream.mediatiquestream.com/index.m3u8",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://www.fmlike.com.uy/",
+    "codec": "AAC",
+    "bitrate": 108,
+    "rb_uuid": "9627ff31-841f-4453-8e87-91abd62c9b25",
+    "rb_votes": 49,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1359,
+    "nombre": "Radio Mas FM",
+    "provincia": "Uruguay",
+    "url": "https://s1.radiosenialesfm.com:8020/radio.mp3",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://www.radiomasfm.com/",
+    "codec": "AAC",
+    "bitrate": 96,
+    "rb_uuid": "802161cd-f014-4e67-9a54-743b396726c5",
+    "rb_votes": 7,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1360,
+    "nombre": "La Bottega Radio Online",
+    "provincia": "Uruguay",
+    "url": "https://streaming6.locucionar.com:24048/stream",
+    "logo": "https://static-media.streema.com/media/cache/b7/b8/b7b8d13cd752de8782070ccec44ab932.png",
+    "tags": [],
+    "homepage": "https://www.labottegaonline.com/radio/index.html",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "a974b0af-bd2b-4437-a0c6-e5c7fafa1111",
+    "rb_votes": 0,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1361,
+    "nombre": "Babel",
+    "provincia": "Uruguay",
+    "url": "https://radios.iwstreaming.uy/8030/stream",
+    "logo": null,
+    "tags": [
+      "instrumental",
+      "jazz",
+      "música",
+      "radio pública"
+    ],
+    "homepage": "https://babel.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "b88337cc-110c-45c9-a482-9138a393eaeb",
+    "rb_votes": 646,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1362,
+    "nombre": "FM La Costa 88.3",
+    "provincia": "Uruguay",
+    "url": "https://streaming3.hostingmontevideo.com:8074/stream",
+    "logo": null,
+    "tags": [
+      "latino",
+      "música",
+      "pop music"
+    ],
+    "homepage": "https://www.lacostafm88.com/",
+    "codec": "MP3",
+    "bitrate": 192,
+    "rb_uuid": "b05b1cd3-4438-469f-a1d8-49152b03b5cf",
+    "rb_votes": 2,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1363,
+    "nombre": "Radio Uno FM",
+    "provincia": "Canelones",
+    "url": "http://radio.hostlagarto.com:9822/",
+    "logo": null,
+    "tags": [],
+    "homepage": "http://radiounofm.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "95daaff5-5803-4662-af59-2df2e486d848",
+    "rb_votes": 291,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1364,
+    "nombre": "Kairos FM Uruguay",
+    "provincia": "Uruguay",
+    "url": "https://panel.streamenviron.com:8264/radiokairos",
+    "logo": null,
+    "tags": [
+      "religious"
+    ],
+    "homepage": "https://www.radiokairos.net/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "1b39a6a6-fd5a-4d87-9a6a-33e28ab0e088",
+    "rb_votes": 86,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1365,
+    "nombre": "Radiocero 104.3 FM",
+    "provincia": "Uruguay",
+    "url": "http://streamingcasazorrilla.innovanexo.com:9000/radiocero.mp3",
+    "logo": null,
+    "tags": [
+      "música",
+      "talk radio"
+    ],
+    "homepage": "https://www.radiocero.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "cd51354d-f357-4ad0-a499-910d4cef28bf",
+    "rb_votes": 10,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1366,
+    "nombre": "Galaxia FM 105.9",
+    "provincia": "Uruguay",
+    "url": "https://stream-30.zeno.fm/bf4gt1pem0quv",
+    "logo": null,
+    "tags": [
+      "música",
+      "religious"
+    ],
+    "homepage": "https://zeno.fm/radio/galaxiafm1059/",
+    "codec": "MP3",
+    "bitrate": null,
+    "rb_uuid": "b75a0314-252b-4c18-b782-39f7ff321cb9",
+    "rb_votes": 1,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1367,
+    "nombre": "Amatista FM 90.7",
+    "provincia": "Uruguay",
+    "url": "http://usa15.ciudaddigital.com.uy:8044/AmatistaFM",
+    "logo": "https://amatistafm.com/Imagenes/desde%20artigas%20capital%20piedras.JPG",
+    "tags": [
+      "cristiana"
+    ],
+    "homepage": "https://amatistafm.com/",
+    "codec": "MP3",
+    "bitrate": 56,
+    "rb_uuid": "f49b28f9-c102-4bca-b388-8d96922a8926",
+    "rb_votes": 9,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1368,
+    "nombre": "La voz de Paysandú - AM 1320",
+    "provincia": "Paysandú",
+    "url": "http://salida.stream.com.uy:8508/stream",
+    "logo": "https://www.radiocw39.com/cw39.jpg",
+    "tags": [
+      "cultura",
+      "folklore",
+      "información",
+      "música",
+      "pop",
+      "rock"
+    ],
+    "homepage": "https://www.radiocw39.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "de763e10-21ee-428c-a7d8-ed1697e155f6",
+    "rb_votes": 64,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1369,
+    "nombre": "Oceano FM",
+    "provincia": "Uruguay",
+    "url": "https://oceano-2.nty.uy/",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://oceanofm.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "698580f9-d316-43bf-aa65-6cf6760353a3",
+    "rb_votes": 110,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1370,
+    "nombre": "Radio Acuarela",
+    "provincia": "Cerro Largo",
+    "url": "https://onlineradiobox.com/json/uy/acuarela/play?platform=web",
+    "logo": "https://cdn.onlineradiobox.com/img/l/6/75696.v4.png",
+    "tags": [],
+    "homepage": "https://onlineradiobox.com/uy/acuarela/",
+    "codec": "AAC+",
+    "bitrate": 144,
+    "rb_uuid": "d692ca37-13d7-4cda-8239-91a1212b5884",
+    "rb_votes": 19,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1371,
+    "nombre": "FM Digital 100.1",
+    "provincia": "Uruguay",
+    "url": "https://sh1.radioonlinehd.com:8001/stream",
+    "logo": "https://fmdigital.net/Digital.png",
+    "tags": [
+      "entretenimiento",
+      "hits",
+      "latino",
+      "música",
+      "reggaetón",
+      "urbano"
+    ],
+    "homepage": "https://fmdigital.net/",
+    "codec": "AAC",
+    "bitrate": 128,
+    "rb_uuid": "25abad2d-4125-4a87-b9ae-b2c63581e322",
+    "rb_votes": 15,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1372,
+    "nombre": "Exito FM 99.7",
+    "provincia": "Uruguay",
+    "url": "https://salida.stream.com.uy:8506/stream",
+    "logo": "https://exitofm.com.uy/wp-content/uploads/2023/06/EXITO-LOGO3-338x132.png",
+    "tags": [
+      "adult contemporary",
+      "entretenimiento",
+      "hits",
+      "música",
+      "música en español e inglés"
+    ],
+    "homepage": "https://exitofm.com.uy/",
+    "codec": "AAC+",
+    "bitrate": 192,
+    "rb_uuid": "6cca589c-2b43-4902-a860-6c1f123920a9",
+    "rb_votes": 16,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1373,
+    "nombre": "Radio Prado Sur",
+    "provincia": "Montevideo",
+    "url": "https://usa2.fastcast4u.com/proxy/wqzjjais?mp=/;",
+    "logo": "https://radiopradosur.com/wp-content/uploads/2022/06/cropped-faviconrps-270x270.png",
+    "tags": [
+      "ballads",
+      "classic rock",
+      "jazz",
+      "oldies",
+      "pop",
+      "pop rock"
+    ],
+    "homepage": "https://radiopradosur.com/",
+    "codec": "MP3",
+    "bitrate": 96,
+    "rb_uuid": "ebf3d864-bf40-4abc-b4d9-110e95271050",
+    "rb_votes": 22,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1374,
+    "nombre": "Boliche Radio",
+    "provincia": "Uruguay",
+    "url": "https://streaming1.locucionar.com/proxy/bolicheradio?mp=/stream",
+    "logo": null,
+    "tags": [
+      "música"
+    ],
+    "homepage": "https://bolicheradio.com/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "d9e79c5e-c9da-4a3d-808b-926d62e5536d",
+    "rb_votes": 90,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1375,
+    "nombre": "FM Buenos Aires 104.1",
+    "provincia": "Uruguay",
+    "url": "http://radio.solumedia.com.ar:8352/stream",
+    "logo": "https://fmbuenosaires.net/FMBA%20CXC281B2.png",
+    "tags": [
+      "baladas en español",
+      "hits",
+      "musica romantica",
+      "música en español e inglés",
+      "música variada"
+    ],
+    "homepage": "https://fmbuenosaires.net/",
+    "codec": "AAC+",
+    "bitrate": 64,
+    "rb_uuid": "9b8f7b58-c07b-4be4-a1dd-83fea0a75cd3",
+    "rb_votes": 16,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1376,
+    "nombre": "La Diaria Radio",
+    "provincia": "Uruguay",
+    "url": "https://radiolatina.live/8156/stream",
+    "logo": null,
+    "tags": [
+      "cultural",
+      "noticias",
+      "talk radio"
+    ],
+    "homepage": "https://radio.ladiaria.com.uy/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "55146c47-acf2-45e8-880e-ba9af4e8bf4b",
+    "rb_votes": 4,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1377,
+    "nombre": "Emisora Principal",
+    "provincia": "Uruguay",
+    "url": "https://s7.myradiostream.com/10764/listen.mp3?ver=755704",
+    "logo": "https://emisoraprincipal.com/wp-content/uploads/2020/02/emisoraprincipal_logo.png",
+    "tags": [],
+    "homepage": "https://emisoraprincipal.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "8b6636f7-bcea-4cf9-9f20-cc7fbb85a947",
+    "rb_votes": 12,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1378,
+    "nombre": "FM Días de Gloria 101.9",
+    "provincia": "Uruguay",
+    "url": "http://server.laradio.online:9114/;",
+    "logo": "https://www.diasdegloria.com/images/logotipo.png",
+    "tags": [
+      "70s",
+      "80s",
+      "90s",
+      "classic hits",
+      "hits",
+      "música"
+    ],
+    "homepage": "https://www.diasdegloria.com/",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "710eda9f-7b90-4f91-a414-6edb9ae9b422",
+    "rb_votes": 7,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1379,
+    "nombre": "Radio Pipí Cucú (128 kbps)",
+    "provincia": "Montevideo",
+    "url": "https://comodin.uy/radio/8000/128.mp3",
+    "logo": null,
+    "tags": [],
+    "homepage": "https://fediverse.blog/~/RadioPip%C3%ADCuc%C3%BA",
+    "codec": "MP3",
+    "bitrate": 128,
+    "rb_uuid": "cffddce7-c341-4fc8-8897-c03fa69ba713",
+    "rb_votes": 126,
+    "rb_clicks": 0
+  },
+  {
+    "n": 1380,
+    "nombre": "Radio La Zurda",
+    "provincia": "Montevideo",
+    "url": "https://radios.solumedia.com:6270/stream",
+    "logo": null,
+    "tags": [
+      "folk",
+      "latinamerican music",
+      "local music"
+    ],
+    "homepage": "https://radiolazurda.com/",
+    "codec": "AAC+",
+    "bitrate": 48,
+    "rb_uuid": "9fe98180-3855-4f43-963c-855fa02eeaae",
+    "rb_votes": 89,
     "rb_clicks": 0
   }
 ]

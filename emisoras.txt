@@ -3801,3 +3801,304 @@ https://streaming3.locucionar.com/proxy/fmtiempo925?mp=/stream
 
 [#1280] FM Klimax * Buenos Aires, Argentina
 http://tun.in/se8E9
+
+[#1281] Gravity Radio * Argentina
+https://media.xweb.ar/stream/gravity
+
+[#1282] Radiofonica 100.7 * Argentina
+https://edge03.radiohdvivo.com/radiofonica
+
+[#1283] Del Sol FM * Montevideo
+https://delsol-1.nty.uy/?type=http&nocache=2780&dbl=0
+
+[#1284] Azul FM 101.9 * Uruguay
+https://azul-2.nty.uy/
+
+[#1285] Fm Inolvidable 93.1 * Uruguay
+https://inolvidable-2.nty.uy/
+
+[#1286] El Espectador 810 * Uruguay
+https://espectador-1.nty.uy/
+
+[#1287] Sport 890 * Uruguay
+https://alba-uy-sport890-sport890.stream.mediatiquestream.com/index.m3u8
+
+[#1288] 970 Universal * Uruguay
+https://970universal-3.nty.uy/
+
+[#1289] Metropolis 104.9 * Uruguay
+https://metropolis-web-1.nty.uy/
+
+[#1290] Radio Clarin * Montevideo
+https://radioclarin-zikoxweb.radioca.st/stream
+
+[#1291] Concierto FM 95.1 * Punta del Este, Maldonado
+https://conectperu.com/8012/stream
+
+[#1292] CX 580 Radio Rural * Uruguay
+https://radiolatina.live/9206/stream
+
+[#1293] Multimedios Rincón FM 107.7 - Fray Bentos * Río Negro
+https://rincon2-zikoxweb.radioca.st/stream
+
+[#1294] La Voz De Melo * Cerro Largo
+https://stream.zeno.fm/fzc86k96yy8uv
+
+[#1295] Impacto FM - Fray Bentos * Río Negro
+https://a3.asurahosting.com:7740/radio.mp3
+
+[#1296] CX 46 Radio America * Uruguay
+https://america-2.nty.uy/stream
+
+[#1297] Mega FM * Vergara
+https://radio.cimaspeed.com/8070/stream
+
+[#1298] Radio Futura - 91.1 FM * Montevideo
+https://alba-uy-radiofutura-futura.stream.mediatiquestream.com/index.m3u8
+
+[#1299] Columbia FM 88.5 * Uruguay
+https://stm.gmpro.top:7008/;
+
+[#1300] Alfa FM 96.3 * Uruguay
+http://radioonline.netgate.com.uy:8000/alfafm
+
+[#1301] Clásica 650 AM * Uruguay
+https://radios.iwstreaming.uy/8032/stream
+
+[#1302] 24 de Agosto * Montevideo
+https://24deagosto-zikoxweb.radioca.st/stream
+
+[#1303] Del Plata FM 95.5 * Uruguay
+https://alba-uy-delplata-delplata.stream.mediatiquestream.com/index.m3u8
+
+[#1304] Celestial Fm 90.7 * Uruguay
+https://cloudstream2036.conectarhosting.com/8032/stream
+
+[#1305] La Nueva del Sur * Montevideo
+http://stream.zeno.fm/s6hdmgb9na0uv
+
+[#1306] RADIOMUNDO 1170 AM * Uruguay
+https://stream1.enperspectiva.net:8443/radio.aac
+
+[#1307] Diamante FM 98.7 * Uruguay
+https://radiolatina.live/8058/stream
+
+[#1308] Radio Disney Uruguay * Uruguay
+https://27383.live.streamtheworld.com/DISNEY_URY_MV.mp3
+
+[#1309] FM cordialidad 94.9 * Uruguay
+https://cordialidad-zikoxweb2.radioca.st/stream
+
+[#1310] FM Azul * Montevideo
+https://azul-1.nty.uy/
+
+[#1311] America FM * Salto
+http://emisiones.com.uy:8118/america
+
+[#1312] Radio Uruguay 1050 * Uruguay
+https://radios.iwstreaming.uy/8036/stream
+
+[#1313] Conaicop * Montevidei
+http://stream.zeno.fm/w5k0y0qbft5tv
+
+[#1314] Radio Pipí Cucú * Montevideo
+https://comodin.uy/radio/8000/320.mp3
+
+[#1315] Causes FM 89.1 * Uruguay
+https://streaming.radiosenlinea.com.ar/8870/stream
+
+[#1316] 90.3 FM DEL ESTE * Uruguay
+http://usa15.ciudaddigital.com.uy:8010/DelEsteFM
+
+[#1317] CX 40 Radio Fenix * Uruguay
+https://sp3.servidorrprivado.com/8070/;
+
+[#1318] La Otra - FM 104.5 * Paysandú
+https://cento02.mipanelradio.com/proxy/fmlaotra?mp=/stream
+
+[#1319] Latina - FM 95.3 * Paysandú
+http://medios.ciudaddigital.com.uy:8168/LatinaFM
+
+[#1320] Radio Rivera CX144 AM 1440 * Uruguay
+http://usa15.ciudaddigital.com.uy:8060/RiveraAM
+
+[#1321] Atlantida FM 89.9 * Uruguay
+http://server-uk1.radioseninternet.net:8034/;
+
+[#1322] Radio Activa Florida 101.1 * Uruguay
+https://streaming1.hostingmontevideo.com:7014/;
+
+[#1323] Radio Cultura 1290 AM * Uruguay
+https://radios.iwstreaming.uy/8034/stream
+
+[#1324] Felicidad - AM 1240 * Paysandú
+http://medios.ciudaddigital.com.uy:8042/Felicidad
+
+[#1325] Oldies FM * Uruguay
+https://hit-1.nty.uy/stream
+
+[#1326] Cosquin Rock Radio Uruguay * Uruguay
+https://icecast15.innovanexo.com:9000/radiocero.mp3
+
+[#1327] Sarandi 690 * Uruguay
+https://radiolatina.live:10977/sarandi
+
+[#1328] La Isla Radio Online Del Uruguay * San Carlos, Maldonado
+http://lirodu.zapto.org:8000/laislaradio
+
+[#1329] Aire FM 100.3 * Uruguay
+https://streaming3.hostingmontevideo.com/8064/stream
+
+[#1330] FM La Ley * Uruguay
+https://streaming2.locucionar.com/proxy/laleyfm?mp=/stream
+
+[#1331] Difusora Treinta y Tres 1390 AM * Uruguay
+https://server-usa2.radioseninternet.net/8132/stream
+
+[#1332] RADIO MARIA URUGUAY * Uruguay
+http://dreamsiteradiocp.com:8088/stream
+
+[#1333] 102.3 FM CORONILLA * Uruguay
+https://streaming01.shockmedia.com.ar/9184/stream
+
+[#1334] Radio Carmelo * Uruguay
+https://server.laradio.online/proxy/martin_barragan05?mp=/stream
+
+[#1335] ARAPEY (AM 1450) * Uruguay
+http://emisiones.com.uy:8085/arapey
+
+[#1336] La Clave Uruguay 92.9 FM * Uruguay
+https://stream-151.zeno.fm/ndwvn44vebruv?zs=gsCKxmQESE6hL5yVzBYFAA
+
+[#1337] Azul Punta del Este 93.5 * Uruguay
+https://icecasthd.net/proxy/azulp/live
+
+[#1338] El Libertador 1210 AM * Uruguay
+https://streamingraddios.online/proxy/llamadad?mp=/stream
+
+[#1339] Radio Continental 1600 AM Pando * Uruguay
+https://server-usa2.radioseninternet.net/9316/stream
+
+[#1340] M24 - 97.9 fm MVD y 102.5 fm Maldonado * Montevideo
+https://streaming1.hostingmontevideo.com/8034/stream
+
+[#1341] Radio 41 * Uruguay
+https://stream20.usastreams.com:7008/;
+
+[#1342] El Puente FM 103.3 * Uruguay
+https://as100.globalhost1.com/8082/stream
+
+[#1343] Radio Fm 99.1 * Uruguay
+https://rr5100.globalhost1.com/8454/stream
+
+[#1344] Radio Chiveo * Montevideo
+https://comodin.uy/listen/chiveo/320.mp3
+
+[#1345] Mundo fm * Uruguay
+http://emisiones.com.uy:8088/mundo
+
+[#1346] Exito - FM 99.7 * Paysandú
+http://salida.stream.com.uy:8506/stream
+
+[#1347] Federal FM 99.1 * Uruguay
+http://usa15.ciudaddigital.com.uy:8040/FederalFM
+
+[#1348] FM Ciudadela 88.7 * Centro, Cordón, Ciudad Vieja
+https://streaming1.locucionar.com/proxy/fmciudadela887?mp=/stream
+
+[#1349] Radio San Carlos * San Carlos, Maldonado
+http://198.49.65.43:10396/;
+
+[#1350] Radio Chiveo * Montevideo
+https://comodin.uy/listen/chiveo/128.mp3
+
+[#1351] Armonía FM 92.5 * Uruguay
+http://usa15.ciudaddigital.com.uy:8132/ArmoniaFM
+
+[#1352] INOLVIDABLE FM * Uruguay
+https://inolvidable-1.nty.uy/
+
+[#1353] Perfil FM * Treinta Y Tres
+https://radiosar.com:8086/stream
+
+[#1354] Radio Señales * Uruguay
+https://s1.radiosenialesfm.com:8030/radio.mp3
+
+[#1355] LA VEREDA WEB RADIO * Uruguay
+https://srv2.radiostreamuy.com/8012/stream
+
+[#1356] OCÉANO FM * Uruguay
+https://oceano-2.nty.uy/netradio/listen.mp3:8000/;?download=false
+
+[#1357] Zorrilla de San Martin * Uruguay
+https://server-usa2.radioseninternet.net/9312/stream
+
+[#1358] Fm Like Uruguay * Uruguay
+https://alba-uy-fmlike-likefm.stream.mediatiquestream.com/index.m3u8
+
+[#1359] Radio Mas FM * Uruguay
+https://s1.radiosenialesfm.com:8020/radio.mp3
+
+[#1360] La Bottega Radio Online * Uruguay
+https://streaming6.locucionar.com:24048/stream
+
+[#1361] Babel * Uruguay
+https://radios.iwstreaming.uy/8030/stream
+
+[#1362] FM La Costa 88.3 * Uruguay
+https://streaming3.hostingmontevideo.com:8074/stream
+
+[#1363] Radio Uno FM * Canelones
+http://radio.hostlagarto.com:9822/
+
+[#1364] Kairos FM Uruguay * Uruguay
+https://panel.streamenviron.com:8264/radiokairos
+
+[#1365] Radiocero 104.3 FM * Uruguay
+http://streamingcasazorrilla.innovanexo.com:9000/radiocero.mp3
+
+[#1366] Galaxia FM 105.9 * Uruguay
+https://stream-30.zeno.fm/bf4gt1pem0quv
+
+[#1367] Amatista FM 90.7 * Uruguay
+http://usa15.ciudaddigital.com.uy:8044/AmatistaFM
+
+[#1368] La voz de Paysandú - AM 1320 * Paysandú
+http://salida.stream.com.uy:8508/stream
+
+[#1369] Oceano FM * Uruguay
+https://oceano-2.nty.uy/
+
+[#1370] Radio Acuarela * Cerro Largo
+https://onlineradiobox.com/json/uy/acuarela/play?platform=web
+
+[#1371] FM Digital 100.1 * Uruguay
+https://sh1.radioonlinehd.com:8001/stream
+
+[#1372] Exito FM 99.7 * Uruguay
+https://salida.stream.com.uy:8506/stream
+
+[#1373] Radio Prado Sur * Montevideo
+https://usa2.fastcast4u.com/proxy/wqzjjais?mp=/;
+
+[#1374] Boliche Radio * Uruguay
+https://streaming1.locucionar.com/proxy/bolicheradio?mp=/stream
+
+[#1375] FM Buenos Aires 104.1 * Uruguay
+http://radio.solumedia.com.ar:8352/stream
+
+[#1376] La Diaria Radio * Uruguay
+https://radiolatina.live/8156/stream
+
+[#1377] Emisora Principal * Uruguay
+https://s7.myradiostream.com/10764/listen.mp3?ver=755704
+
+[#1378] FM Días de Gloria 101.9 * Uruguay
+http://server.laradio.online:9114/;
+
+[#1379] Radio Pipí Cucú (128 kbps) * Montevideo
+https://comodin.uy/radio/8000/128.mp3
+
+[#1380] Radio La Zurda * Montevideo
+https://radios.solumedia.com:6270/stream
+
