@@ -1,0 +1,31 @@
+name: Competitor Scan
+
+on:
+  schedule:
+    - cron: '0 11 * * 1'   # Todos los lunes 11:00 UTC (08:00 AR)
+  workflow_dispatch:         # Permite correrlo manualmente desde GitHub
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Download DB from FTP
+        run: |
+          curl --ftp-ssl -k \
+            -u "${{ secrets.FTP_USER }}:${{ secrets.FTP_PASS }}" \
+            "ftp://mammoli.ar/radio/db/radio_v2.sqlite" \
+            -o db/radio_v2.sqlite
+          echo "DB size: $(du -sh db/radio_v2.sqlite | cut -f1)"
+
+      - name: Run competitor scan
+        env:
+          TG_TOKEN:      ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID:    ${{ secrets.TG_CHAT_ID }}
+          RADIO_DB_PATH: db/radio_v2.sqlite
+        run: python3 crawlers/competitor_scan.py
