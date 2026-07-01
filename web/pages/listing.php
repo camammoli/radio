@@ -595,5 +595,6 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register(<?= json_enco
 
 }());
 </script>
+<?php require __DIR__ . '/../components/privacy.php'; ?>
 </body>
 </html>

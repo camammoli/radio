@@ -89,6 +89,7 @@ if (isset($_GET['ajax'])) {
                 'total'       => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1')->fetchColumn(),
                 'ok'          => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
                 'icy'         => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
+                'icy_activo'  => (int)$db->query("SELECT COUNT(*) FROM icy_cache WHERE supported=1 AND stream_title IS NOT NULL AND stream_title!=''")->fetchColumn(),
                 'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
                 'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
                 'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
@@ -420,27 +421,24 @@ $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
 
 <!-- ── Compartidos ─────────────────────────────────────────────────────────── -->
 <h2 id="shares">Compartidos recientes (últimas 100)</h2>
-<?php
-$ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR'];
-if ($shares_recientes): ?>
+<?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
 <table>
   <thead><tr>
     <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
   </tr></thead>
   <tbody id="shares-body">
-  <?php foreach ($shares_recientes as $sh): ?>
+  <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
   <tr>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
     <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
     <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
     <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
   </tr>
-  <?php endforeach; ?>
+  <?php endforeach; else: ?>
+  <tr><td colspan="4" class="empty">Sin compartidos registrados todavía.</td></tr>
+  <?php endif; ?>
   </tbody>
 </table>
-<?php else: ?>
-<p class="empty">Sin compartidos registrados todavía.</p>
-<?php endif; ?>
 
 <!-- ── Detalle encuestas ───────────────────────────────────────────────────── -->
 <h2 id="encuestas-detalle">Encuestas — detalle (últimas 100)</h2>
@@ -480,13 +478,12 @@ function fmt_duration(?int $secs): string {
     return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
 }
 ?>
-<?php if ($plays_recientes): ?>
 <table>
   <thead><tr>
     <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
   </tr></thead>
   <tbody id="plays-body">
-  <?php foreach ($plays_recientes as $pl): ?>
+  <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
   <tr>
     <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
     <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
@@ -501,12 +498,11 @@ function fmt_duration(?int $secs): string {
     <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
     <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
   </tr>
-  <?php endforeach; ?>
+  <?php endforeach; else: ?>
+  <tr><td colspan="6" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
+  <?php endif; ?>
   </tbody>
 </table>
-<?php else: ?>
-<p class="empty">Sin reproducciones registradas todavía.</p>
-<?php endif; ?>
 
 <!-- ── Sugerencias ─────────────────────────────────────────────────────────── -->
 <h2 id="sugerencias">Sugerencias pendientes (<?= count($sugerencias) ?>)</h2>
@@ -587,7 +583,7 @@ function fmt_duration(?int $secs): string {
 <table>
   <thead><tr>
     <th>Crawler</th><th>Inicio</th><th>Duración</th>
-    <th>Chequeadas</th><th>Con título</th><th>Sin título</th><th>Notas</th>
+    <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
   </tr></thead>
   <tbody>
   <?php foreach ($crawler_runs as $cr): ?>
@@ -641,7 +637,7 @@ function fmt_duration(?int $secs): string {
   }
 
   function refreshAdmin() {
-    fetch(location.pathname + '?ajax=1')
+    fetch(location.pathname + '?ajax=1&_=' + Date.now())
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
         if (!d) return;
@@ -651,6 +647,7 @@ function fmt_duration(?int $secs): string {
         upd('stat-total',      s.total);
         upd('stat-ok',         s.ok);
         upd('stat-icy',        s.icy);
+        upd('stat-icy-activo', s.icy_activo);
         upd('stat-plays-hoy',  s.plays_hoy);
         upd('stat-plays-total',s.plays_total);
         upd('stat-listeners',  s.listeners);

@@ -197,7 +197,7 @@ if ($prov) {
   <?php elseif (isset($_GET['reportar'])): ?>
   <?php
     // Notificar a Telegram y redirigir
-    if (defined('TG_TOKEN') && TG_TOKEN) {
+    if (notify_active($db) && defined('TG_TOKEN') && TG_TOKEN) {
         $msg = '⚠️ Reporte de caída: ' . $s['nombre'] . "\n" . $s['url'];
         $ch = curl_init('https://api.telegram.org/bot' . TG_TOKEN . '/sendMessage');
         curl_setopt_array($ch, [CURLOPT_POST=>true,CURLOPT_RETURNTRANSFER=>true,CURLOPT_TIMEOUT=>3,
@@ -377,5 +377,6 @@ if ($prov) {
   if ('serviceWorker' in navigator) navigator.serviceWorker.register(_swBase + '/sw.js').catch(function(){});
 }());
 </script>
+<?php require __DIR__ . '/../components/privacy.php'; ?>
 </body>
 </html>
