@@ -1,0 +1,6 @@
+# Sitios competidores a escanear automáticamente.
+# Formato: URL   # parser (opcional — default: generic)
+# Parsers disponibles: myradioenvivo, generic
+# Para agregar un sitio nuevo: ponelo acá y el crawler lo prueba en el próximo ciclo.
+
+# https://ejemplo-radio.ar/   # generic
