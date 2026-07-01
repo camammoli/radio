@@ -4,6 +4,74 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0728 — 2026-07-01 — FAQ reproductores externos (pendiente)
+
+Varias personas preguntaron cómo conectar Rhythmbox, VLC, Kodi, etc. al M3U.
+Texto borrador redactado. Se espera más demanda antes de publicar. Evaluar si va en README, en el sitio o en ambos.
+
+---
+
+## TKT-0727 — 2026-07-01 — Política de privacidad + eliminación de Google Analytics
+
+### Cambios
+- Eliminado `GA_ID` del `config.php` del servidor (analytics de terceros incompatible con la política declarada).
+- Creado `web/components/privacy.php`: bottom sheet scrolleable con fondo blanco, animación CSS, cierre con ✕/Escape/click fuera. Incluido en `listing.php` y `station.php`.
+- `LEGAL.md` publicado en el repo con el texto completo de la política.
+- Política cubre: datos anónimos registrados, qué no se registra, legalidad de streams ICY/URLs públicas, marco legal (Ley 25.326, 11.723, 25.690, 27.275), contacto `radio@mammoli.ar`.
+- Misma política adaptada y publicada en `camammoli/iptv` y `camammoli/Manuales` (LEGAL.md en cada repo).
+- Gist actual (21ce6e3b) y gist viejo (bfb2cdc2) actualizados con sección de uso legal.
+
+### Archivos modificados
+- `web/components/privacy.php` (nuevo)
+- `web/pages/listing.php` — include privacy.php
+- `web/pages/station.php` — include privacy.php
+- `LEGAL.md` (nuevo)
+- `config.php` en servidor — GA_ID eliminado
+
+---
+
+## TKT-0726 — 2026-07-01 — Fix: DB corrupta (segunda vez) + correcciones panel admin
+
+### DB corrupta (segunda vez)
+`check-streams-v2.yml` corrió antes de que el fix de concurrencia (`TKT-0722`) tomara efecto en GitHub Actions. DB restaurada desde copia local limpia (745 KB, 1257 emisoras, integrity OK) vía FTP atómico (put .new → mv). Fix de concurrencia confirmado activo.
+
+### Correcciones panel admin (`web/admin.php`)
+- **`stat-icy-activo` freezado**: faltaba `icy_activo` en la respuesta AJAX `?ajax=1` y en el JS `refreshAdmin()`. Agregado — ahora se refresca cada 10 s como el resto.
+- **Cabeceras tabla Crawlers incorrectas**: "Con título / Sin título" → "Cambios / Errores" (los campos reales son `changes_detected` y `errors`).
+- **`<tbody>` inexistente bloqueaba AJAX**: si `plays_recientes` o `shares_recientes` estaban vacíos al cargar, el `<tbody id="plays-body">` no existía en el DOM y el AJAX no podía poblarlos. Refactorizado para que la tabla siempre se renderice (fila vacía reemplazable).
+
+### Tab "Disponibles" por defecto (`web/pages/listing.php`)
+El directorio arrancaba en "Todas". Cambiado a `filterStatus = 'ok'` y botón `f-ok` marcado como activo. `applyFilters()` se llama siempre al cargar (no solo con filtros de URL).
+
+### Archivos modificados
+- `web/admin.php`
+- `web/pages/listing.php`
+
+---
+
+## TKT-0725 — 2026-06-28 — Fix: panel admin datos viejos + toggle Telegram ignorado
+
+### Problema 1 — Panel mostraba datos viejos tras unos segundos
+El auto-refresh JS hacía `fetch('?ajax=1')` sin cache-buster. El browser cacheaba la respuesta GET y sobreescribía los datos frescos del PHP inicial con datos viejos.
+
+**Fix:** `admin.php` — cambio `?ajax=1` → `?ajax=1&_=Date.now()`.
+
+### Problema 2 — Toggle Telegram desactivado pero notificaciones seguían llegando
+Tres rutas ignoraban el setting de BD:
+1. `api/_helpers.php` → `notify_active()` podía fallar con excepción si la tabla `settings` no existía (no la crea la API, solo admin.php). El catch devolvía la constante `NOTIFY_OYENTES = true`.
+2. `web/pages/station.php` → notificación de "reporte de caída" enviaba Telegram sin consultar el toggle.
+
+**Fix:**
+- `api/_helpers.php`: `notify_active()` ahora hace `CREATE TABLE IF NOT EXISTS settings` antes del SELECT, garantizando que la tabla existe independientemente de si admin.php cargó primero.
+- `web/pages/station.php`: reporte de caída ahora verifica `notify_active($db)`.
+
+### Archivos modificados
+- `web/admin.php` — cache-bust en fetch Ajax
+- `web/api/_helpers.php` — notify_active robusto
+- `web/pages/station.php` — reporte usa notify_active
+
+---
+
 ## TKT-0724 — 2026-06-27 — API endpoint /radio/api/stations.json
 
 ### Cambios
