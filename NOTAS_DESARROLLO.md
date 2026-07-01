@@ -4,6 +4,71 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0731 — 2026-07-01 — Crawler automático de competencia
+
+### Motivación
+Automatizar la comparación manual que hicimos contra myradioenvivo.ar — que corra solo y avise cuando hay algo nuevo.
+
+### Implementación
+- **`crawlers/competitor_scan.py`**: Scrapea myradioenvivo.ar (detecta streams en `data-src` base64 + nombres en `data-name`). Compara contra DB local por nombre normalizado y dominio de URL. CDNs compartidos (streamtheworld, radiohdvivo) se comparan por URL completa para evitar falsos negativos. Genera reporte Telegram con: nuevas, URLs alternativas, ya existentes.
+- **`.github/workflows/competitor-scan.yml`**: Corre todos los lunes 08:00 AR. Descarga DB desde FTP (solo lectura, no sube). Extensible: agregar targets en la lista `TARGETS` del script.
+- Diseño sin IA — solo muestra lo que encuentra, Carlos y Claude deciden qué agregar.
+
+### Primer resultado (prueba local)
+- myradioenvivo.ar: 54 emisoras, 2 nuevas (Radio Del Sur con URL y Belgrano Radio), 9 URLs alternativas, 43 ya teníamos.
+- Radio Del Sur: `https://cdn1.tvlin.net/icecast/radiodelsuraudio/icecast.audio` (pendiente de agregar).
+
+### Archivos nuevos
+- `crawlers/competitor_scan.py`
+- `.github/workflows/competitor-scan.yml`
+
+---
+
+## TKT-0730 — 2026-07-01 — Historial ICY: últimas canciones por emisora
+
+### Motivación
+Adoptar una funcionalidad vista en la competencia (myradioenvivo.ar): mostrar las canciones que sonaron en la emisora.
+
+### Implementación
+- **Nueva tabla `icy_history`**: `station_id, title, seen_at`. Índice en `(station_id, seen_at DESC)`. Máximo 50 entradas por emisora (limpieza automática en cada ciclo).
+- **`icy_refresh.php`**: detecta cambio de título (`prev != new`), INSERT en `icy_history`. Crea tabla con `CREATE TABLE IF NOT EXISTS` al arrancar, sin migración manual.
+- **`station.php`**: sección "♪ Últimas canciones" con las últimas 15 entradas, hora local AR, visible solo si `icy_supported=1` y hay historial.
+- DB desplegada (740 KB), archivos PHP pusheados a GitHub.
+
+### Archivos modificados
+- `crawlers/icy_refresh.php`
+- `web/pages/station.php`
+- `db/radio_v2.sqlite` (tabla icy_history + índice)
+
+### Pendiente relacionado
+- **TKT-0731**: Descripción editorial de emisoras generada con IA (campo `descripcion` en stations + renderizado en station.php). Espera a tener más rodaje con el historial.
+
+---
+
+## TKT-0729 — 2026-07-01 — v2.1.0: +6 emisoras nuevas, 3 URLs actualizadas
+
+### Cambios
+- Agregadas 6 emisoras nuevas (identificadas comparando con myradioenvivo.ar, confirmadas sin duplicados por nombre y URL):
+  - **LOS40 Argentina** (slug: `los40-argentina`) → radiohdvivo.com
+  - **Mía FM 104.1** (slug: `mia-fm-104-1`) → streamtheworld FM1041_56AAC
+  - **Radio Mitre Córdoba AM 810** (slug: `radio-mitre-cordoba-am-810`) → streamtheworld AM810_56AAC
+  - **Radio Colonia AM 550** (slug: `radio-colonia-am-550`) → streamtheworld COLONIA_SC
+  - **96.5 La Plata** (slug: `96-5-la-plata`) → solumedia.com/6466
+  - **Mujer FM** (slug: `mujer-fm`) → radiohdvivo.com
+- Actualizadas 3 URLs con estado `timeout` (también de la comparación):
+  - **Street** (id 102): cdn2.instream → ipanel.instream.audio:7006
+  - **Vale** (id 144): s6.stweb.tv → vale.stweb.tv
+  - **Rock & Pop** (id 554): 305streamcdn → streamtheworld ROCKANDPOP_SC
+- Fix `_helpers.php`: `CREATE TABLE IF NOT EXISTS settings` antes del query en `notify_active()`.
+- DB desplegada al servidor vía FTP atómico (749 KB).
+- Tag `v2.1.0` creado y pusheado a GitHub.
+
+### Estado DB post-update
+- Total emisoras aprobadas: 1263 (+6)
+- IDs nuevas: 1258–1263; n: 1281–1286
+
+---
+
 ## TKT-0728 — 2026-07-01 — FAQ reproductores externos (pendiente)
 
 Varias personas preguntaron cómo conectar Rhythmbox, VLC, Kodi, etc. al M3U.
