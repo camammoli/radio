@@ -15,8 +15,12 @@ Automatizar la comparación manual que hicimos contra myradioenvivo.ar — que c
 - Diseño sin IA — solo muestra lo que encuentra, Carlos y Claude deciden qué agregar.
 
 ### Primer resultado (prueba local)
-- myradioenvivo.ar: 54 emisoras, 2 nuevas (Radio Del Sur con URL y Belgrano Radio), 9 URLs alternativas, 43 ya teníamos.
-- Radio Del Sur: `https://cdn1.tvlin.net/icecast/radiodelsuraudio/icecast.audio` (pendiente de agregar).
+- Radio Browser API: 782 emisoras AR — ya las teníamos todas (0 nuevas). Confirma cobertura superior.
+- myradioenvivo.ar: 54 emisoras, 1 nueva post-insert (Radio Del Sur), 9 URLs alternativas.
+
+### Emisoras agregadas como resultado del scan
+- **Belgrano Radio** (`belgrano-radio`, id 1264) → `https://server.laradio.online:15223/live.mp3` — `approved=1`, stream verificado.
+- **Radio Del Sur** (`radio-del-sur`, id 1265) → `https://cdn1.tvlin.net/icecast/radiodelsuraudio/icecast.audio` — `approved=0`, URL sin respuesta al verificar, pendiente de confirmar.
 
 ### Archivos nuevos
 - `crawlers/competitor_scan.py`
