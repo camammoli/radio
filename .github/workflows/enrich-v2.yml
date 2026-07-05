@@ -35,12 +35,17 @@ jobs:
           bye
           LFTP
           python3 -c "
-          import sqlite3, os
+          import sqlite3, sys, os
           db = 'db/radio_v2.sqlite'
-          if os.path.exists(db):
-              c = sqlite3.connect(db)
-              c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-              c.close()
+          if not os.path.exists(db):
+              print('ERROR: DB no descargada'); sys.exit(1)
+          c = sqlite3.connect(db)
+          ok = c.execute('PRAGMA integrity_check').fetchone()[0]
+          if ok != 'ok':
+              print(f'ERROR: DB corrupta — {ok}'); sys.exit(1)
+          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+          c.close()
+          print('DB OK')
           "
 
       - name: Enriquecer con Radio Browser + ICY
@@ -62,5 +67,7 @@ jobs:
           set ssl:verify-certificate no
           put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
           mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
+          rm /radio/db/radio_v2.sqlite-wal || true
+          rm /radio/db/radio_v2.sqlite-shm || true
           bye
           LFTP
