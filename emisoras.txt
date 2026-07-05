@@ -2826,7 +2826,7 @@ https://radiozero.fm/reproductor/proxy/
 http://genexservicios.com:8310/;?1666493861674
 
 [#954] Radio AM 750 Objetivos, pero no imparciales * CABA, Argentina
-https://27433.live.streamtheworld.com/AM750AAC.aac?dist=triton-widget&amp;tdsdk=js-2.9&amp;swm=false&amp;pname=tdwidgets&amp;pversion=2.9&amp;banners=none&amp;burst-time=15&amp;sbmid=00ed0060-c497-4bc2-c0b8-3c8bf91188ab
+https://23113.live.streamtheworld.com/AM750AAC
 
 [#955] Radio chascomús La voz Regional AM 1520 khz * Buenos Aires, Argentina
 https://streaming1.locucionar.com/proxy/radiochascomus?mp=/stream
