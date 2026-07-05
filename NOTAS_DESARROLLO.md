@@ -4,6 +4,34 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0732 — 2026-07-05 — fix: corrupción DB producción + guardas en workflows
+
+### Síntoma
+6 runs consecutivos de `check-streams-v2.yml` fallando en ~1 minuto con `database disk image is malformed` para las 1264 emisoras. La DB en producción estaba corrupta; al descargarla y correr el crawler, todos los UPSERT fallaban y el run terminaba con error antes de llegar al upload.
+
+### Causa raíz
+WAL huérfano en el servidor. `icy_refresh.php` corre cada 10 minutos vía cron cPanel y escribe al SQLite del servidor en modo WAL. Si el proceso se interrumpe o el archivo se reemplaza con timing adverso, el WAL queda en estado inconsistente respecto al DB principal. La combinación DB-nueva + WAL-viejo produce `database disk image is malformed` en SQLite.
+
+El ciclo se auto-perpetuaba: el crawler descargaba la DB corrupta → fallaba antes de terminar → el upload (con DB limpia) nunca se ejecutaba → la DB corrupta se mantenía en el servidor.
+
+### Fix inmediato
+Subir la copia local (757760 bytes, `integrity_check=ok`) al servidor vía lftp atómico:
+```
+put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
+mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
+```
+Verificado: run manual exitoso en 13m38s, todos los steps verdes.
+
+### Guardas aplicadas (ambos workflows)
+1. **`PRAGMA integrity_check` al descargar**: si la DB está corrupta, el job falla inmediatamente con mensaje claro. Antes corría 12+ minutos reportando error por cada emisora.
+2. **`rm WAL` y `rm SHM` en el servidor tras el upload**: elimina archivos de journal huérfanos que podrían corromper la DB nueva cuando `icy_refresh.php` la re-abra.
+
+### Archivos modificados
+- `.github/workflows/check-streams-v2.yml`
+- `.github/workflows/enrich-v2.yml`
+
+---
+
 ## TKT-0731 — 2026-07-01 — Crawler automático de competencia
 
 ### Motivación
