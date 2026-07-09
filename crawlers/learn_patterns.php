@@ -10,8 +10,10 @@
  */
 
 $base = dirname(__FILE__, 2);
-require_once $base . '/web/config.php';
-require_once $base . '/web/api/_db.php';
+$cfg  = is_file($base . '/config.php') ? $base . '/config.php' : $base . '/web/config.php';
+$dbf  = is_file($base . '/api/_db.php') ? $base . '/api/_db.php' : $base . '/web/api/_db.php';
+require_once $cfg;
+require_once $dbf;
 
 $db  = radio_db();
 $log = function(string $msg) { echo date('[H:i:s] ') . $msg . "\n"; };
