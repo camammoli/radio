@@ -81,10 +81,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         $err = 'Token inválido.'; $mode = 'register';
     } else {
         $prefs = [];
-        if (!empty($_POST['keywords'])) {
-            foreach (preg_split('/[\n,]+/', $_POST['keywords']) as $k) {
+        if (!empty($_POST['keywords_artist'])) {
+            foreach (preg_split('/[\n,]+/', $_POST['keywords_artist']) as $k) {
                 $k = trim($k);
                 if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'artist', 'value' => $k];
+            }
+        }
+        if (!empty($_POST['keywords_program'])) {
+            foreach (preg_split('/[\n,]+/', $_POST['keywords_program']) as $k) {
+                $k = trim($k);
+                if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'program', 'value' => $k];
             }
         }
         if (!empty($_POST['generos']) && is_array($_POST['generos'])) {
@@ -163,11 +169,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $value = trim($_POST['value'] ?? '');
     $prefs = [];
 
-    // Artistas/keywords (texto libre)
-    if (!empty($_POST['keywords'])) {
-        foreach (preg_split('/[\n,]+/', $_POST['keywords']) as $k) {
+    // Artistas
+    if (!empty($_POST['keywords_artist'])) {
+        foreach (preg_split('/[\n,]+/', $_POST['keywords_artist']) as $k) {
             $k = trim($k);
             if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'artist', 'value' => $k];
+        }
+    }
+    // Programas / periodistas
+    if (!empty($_POST['keywords_program'])) {
+        foreach (preg_split('/[\n,]+/', $_POST['keywords_program']) as $k) {
+            $k = trim($k);
+            if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'program', 'value' => $k];
         }
     }
 
@@ -354,8 +367,9 @@ a{color:var(--accent)}
 
 <?php elseif ($mode === 'manage' && $manage_sub): ?>
   <?php
-    $existing_prefs = json_decode($manage_sub['preferences'] ?? '[]', true) ?: [];
-    $existing_keywords = implode("\n", array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') !== 'genre')));
+    $existing_prefs    = json_decode($manage_sub['preferences'] ?? '[]', true) ?: [];
+    $existing_artists  = implode("\n", array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') === 'artist')));
+    $existing_programs = implode("\n", array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') === 'program')));
     $existing_genres   = array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') === 'genre'));
   ?>
   <?php if ($ok): ?>
@@ -373,8 +387,13 @@ a{color:var(--accent)}
       <input type="hidden" name="action" value="editar">
       <input type="hidden" name="token" value="<?= htmlspecialchars($manage_sub['token']) ?>">
 
-      <label>Artistas o programas (uno por línea)</label>
-      <textarea name="keywords"><?= htmlspecialchars($existing_keywords) ?></textarea>
+      <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">🎤 Artistas o música</label>
+      <textarea name="keywords_artist" placeholder="Michael Jackson&#10;Gustavo Cerati"><?= htmlspecialchars($existing_artists) ?></textarea>
+      <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">Avisa cuando haya <strong>2 o más temas</strong> en 30 minutos.</p>
+
+      <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">📺 Programas o periodistas</label>
+      <textarea name="keywords_program" placeholder="Feinmann&#10;La Cornisa&#10;Lanata"><?= htmlspecialchars($existing_programs) ?></textarea>
+      <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">Avisa en la <strong>primera detección</strong>.</p>
 
       <label>Géneros (opcional)</label>
       <div class="genre-grid" id="genre-grid">
@@ -481,10 +500,20 @@ a{color:var(--accent)}
     <div class="card">
       <h2>¿Qué querés escuchar?</h2>
 
-      <label>Artistas o programas (uno por línea o separados por coma)</label>
-      <textarea name="keywords" placeholder="Michael Jackson&#10;La Cornisa&#10;Rock Nacional&#10;Gustavo Cerati"><?= htmlspecialchars($_POST['keywords'] ?? '') ?></textarea>
-      <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:14px">
-        El sistema busca estos textos en los títulos ICY que transmiten las emisoras. Podés poner cualquier cosa: artista, nombre de programa, locución, etc.
+      <div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:13px;color:#f59e0b">
+        🧪 <strong>Función experimental.</strong> Las alertas dependen de que la emisora transmita metadatos ICY con el nombre del artista o programa. Muchas emisoras argentinas no los envían todavía.
+      </div>
+
+      <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">🎤 Artistas o música</label>
+      <textarea name="keywords_artist" placeholder="Michael Jackson&#10;Gustavo Cerati&#10;Soda Stereo"><?= htmlspecialchars($_POST['keywords_artist'] ?? '') ?></textarea>
+      <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">
+        Te avisamos cuando una emisora lleve <strong>2 o más temas</strong> del artista en 30 minutos — así filtramos el tema suelto ocasional.
+      </p>
+
+      <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">📺 Programas o periodistas</label>
+      <textarea name="keywords_program" placeholder="Feinmann&#10;La Cornisa&#10;Lanata&#10;Baby Radio"><?= htmlspecialchars($_POST['keywords_program'] ?? '') ?></textarea>
+      <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">
+        Te avisamos <strong>en la primera detección</strong> — si aparece el nombre en el aire, el programa ya arrancó.
       </p>
 
       <label>Géneros (opcional)</label>

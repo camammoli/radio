@@ -86,13 +86,14 @@ foreach ($cooldown_raw as $c) {
 }
 
 // ── Función de normalización ──────────────────────────────────────────────────
+// Devuelve array de ['value'=>..., 'type'=>...] de las prefs que coinciden en el texto
 function keywords_match(string $text, array $prefs): array {
     $matches = [];
     foreach ($prefs as $pref) {
         if (($pref['type'] ?? '') === 'genre') continue;
         $kw = strtolower($pref['value']);
         if (mb_strlen($kw) >= 3 && strpos($text, $kw) !== false) {
-            $matches[] = $pref['value'];
+            $matches[] = $pref;
         }
     }
     return $matches;
@@ -130,18 +131,28 @@ foreach ($subscribers as $sub) {
         $ck = $sub['id'] . '_' . $sid;
         if (isset($cooldowns[$ck])) continue;
 
-        // Contar cuántos titles del historial reciente matchean alguna preferencia
-        $matched_keywords = [];
-        $match_count = 0;
+        // Contar matches por tipo: artist requiere 2+, program requiere 1+
+        // Acumular: [pref_value => ['type'=>..., 'count'=>int]]
+        $pref_hits = [];
         foreach ($titles as $title) {
-            $m = keywords_match($title, $prefs);
-            if ($m) {
-                $match_count++;
-                $matched_keywords = array_unique(array_merge($matched_keywords, $m));
+            foreach (keywords_match($title, $prefs) as $m) {
+                $key = strtolower($m['value']);
+                if (!isset($pref_hits[$key])) $pref_hits[$key] = ['type' => $m['type'], 'value' => $m['value'], 'count' => 0];
+                $pref_hits[$key]['count']++;
             }
         }
 
-        if ($match_count < 2) continue;
+        // Determinar qué prefs superan su umbral
+        $matched_keywords = [];
+        foreach ($pref_hits as $hit) {
+            $threshold = ($hit['type'] === 'program') ? 1 : 2;
+            if ($hit['count'] >= $threshold) {
+                $matched_keywords[] = $hit['value'];
+            }
+        }
+
+        $match_count = count($matched_keywords);
+        if ($match_count < 1) continue;
 
         // Suficientes matches → notificar
         $stn = $station_names[$sid] ?? null;
