@@ -71,7 +71,7 @@ jobs:
           set ssl:verify-certificate no
           put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
           mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
-          rm /radio/db/radio_v2.sqlite-wal || true
-          rm /radio/db/radio_v2.sqlite-shm || true
           bye
           LFTP
+          # Limpiar WAL/SHM del servidor si existen (|| true a nivel bash, no lftp)
+          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar -e "set ssl:verify-certificate no; glob -a rm /radio/db/radio_v2.sqlite-wal /radio/db/radio_v2.sqlite-shm; quit" 2>/dev/null || true
