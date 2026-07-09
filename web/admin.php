@@ -1,6 +1,6 @@
 <?php
 /**
- * admin.php — Panel de administración Radio Argentina v2.
+ * admin.php — Panel de administración Radio Argentina v3.
  * Autenticación por sesión. No indexado.
  */
 
@@ -104,6 +104,21 @@ if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
     $db->prepare('DELETE FROM stations WHERE id=? AND source="sugerencia" AND approved=0')
        ->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#sugerencias');
+    exit;
+}
+if ($act === 'sub_activate' && ($_POST['csrf'] ?? '') === $csrf) {
+    $db->prepare('UPDATE subscribers SET active=1 WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#suscriptores');
+    exit;
+}
+if ($act === 'sub_deactivate' && ($_POST['csrf'] ?? '') === $csrf) {
+    $db->prepare('UPDATE subscribers SET active=0 WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#suscriptores');
+    exit;
+}
+if ($act === 'sub_delete' && ($_POST['csrf'] ?? '') === $csrf) {
+    $db->prepare('DELETE FROM subscribers WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#suscriptores');
     exit;
 }
 
@@ -261,7 +276,37 @@ $icy = $db->query(
      FROM icy_cache WHERE supported=1"
 )->fetch(PDO::FETCH_ASSOC);
 
-// ICY activas (con título, las más recientes)
+// ── Suscriptores ──────────────────────────────────────────────────────────────
+$sub_stats = [
+    'total'   => (int)$db->query('SELECT COUNT(*) FROM subscribers')->fetchColumn(),
+    'activos' => (int)$db->query('SELECT COUNT(*) FROM subscribers WHERE active=1')->fetchColumn(),
+    'tg'      => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='telegram' AND active=1")->fetchColumn(),
+    'email'   => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='email' AND active=1")->fetchColumn(),
+    'pendientes' => (int)$db->query('SELECT COUNT(*) FROM subscribers WHERE active=0')->fetchColumn(),
+];
+
+$subscribers_list = $db->query(
+    "SELECT id, contact_type, contact_value, preferences, active, token, created_at, last_notified
+     FROM subscribers ORDER BY created_at DESC LIMIT 100"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+$notif_recientes = $db->query(
+    "SELECT sm.first_seen, sm.keyword, sm.match_count, s.nombre AS station, sub.contact_type, sub.contact_value
+     FROM subscriber_matches sm
+     JOIN subscribers sub ON sub.id = sm.subscriber_id
+     LEFT JOIN stations s ON s.id = sm.station_id
+     WHERE sm.notified = 1
+     ORDER BY sm.first_seen DESC LIMIT 30"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+$program_patterns = $db->query(
+    "SELECT pp.keyword, pp.day_of_week, pp.hour, pp.confidence, pp.occurrences, pp.last_seen, s.nombre
+     FROM program_patterns pp
+     JOIN stations s ON s.id = pp.station_id
+     ORDER BY pp.confidence DESC LIMIT 40"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// ── ICY activas (con título, las más recientes)
 $icy_activas = $db->query(
     "SELECT s.nombre, s.slug, ic.stream_title, ic.last_checked,
             ROUND((julianday('now')-julianday(ic.last_checked))*1440) AS mins_ago
@@ -335,7 +380,7 @@ if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('li
 </script>
 
 <div class="top-bar">
-  <h1>📻 Radio Argentina — Admin v2</h1>
+  <h1>📻 Radio Argentina — Admin v3</h1>
   <div class="top-actions">
     <span id="refresh-ind" style="font-size:11px;color:var(--muted)"></span>
     <a href="admin_stats.php" class="btn-out">📊 Estadísticas</a>
@@ -388,6 +433,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <div class="card"><div class="v pos" id="stat-listeners"><?= $stats['listeners'] ?></div><div class="l">Oyentes ahora</div></div>
   <div class="card"><div class="v"><?= $stats['surveys'] ?></div><div class="l">Encuestas recibidas</div></div>
   <div class="card"><div class="v <?= $stats['suger_pend'] > 0 ? 'neg' : '' ?>"><?= $stats['suger_pend'] ?></div><div class="l">Sugerencias pendientes</div></div>
+  <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Suscriptores activos</div></div>
+  <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
 </div>
 
 <!-- ── Encuestas ───────────────────────────────────────────────────────────── -->
@@ -578,6 +625,145 @@ function fmt_duration(?int $secs): string {
 </table>
 <?php else: ?>
 <p class="empty">No hay sugerencias pendientes.</p>
+<?php endif; ?>
+
+<!-- ── Suscriptores ────────────────────────────────────────────────────────── -->
+<h2 id="suscriptores">Suscriptores de alertas</h2>
+
+<div class="cards" style="margin-bottom:16px">
+  <div class="card"><div class="v"><?= $sub_stats['total'] ?></div><div class="l">Total registrados</div></div>
+  <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Activos</div></div>
+  <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
+  <div class="card"><div class="v"><?= $sub_stats['tg'] ?></div><div class="l">📱 Telegram</div></div>
+  <div class="card"><div class="v"><?= $sub_stats['email'] ?></div><div class="l">✉️ Email</div></div>
+</div>
+
+<?php
+function mask_contact(string $type, string $val): string {
+    if ($type === 'email') {
+        [$u, $d] = explode('@', $val, 2);
+        return mb_substr($u, 0, 2) . str_repeat('*', max(2, mb_strlen($u)-2)) . '@' . $d;
+    }
+    return substr($val, 0, 3) . str_repeat('*', max(3, strlen($val)-5)) . substr($val, -2);
+}
+function fmt_prefs(string $json): string {
+    $prefs = json_decode($json, true) ?: [];
+    $out = [];
+    foreach ($prefs as $p) {
+        $icon = $p['type'] === 'genre' ? '🎵' : ($p['type'] === 'program' ? '📺' : '🎤');
+        $out[] = $icon . ' ' . htmlspecialchars($p['value'], ENT_QUOTES, 'UTF-8');
+    }
+    return $out ? implode(' · ', $out) : '<span style="color:var(--muted)">—</span>';
+}
+$days_es = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+?>
+
+<?php if ($subscribers_list): ?>
+<table>
+  <thead><tr>
+    <th>ID</th><th>Tipo</th><th>Contacto</th><th>Preferencias</th><th>Estado</th><th>Última notif.</th><th>Registrado</th><th>Acciones</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($subscribers_list as $sub):
+    $active = (int)$sub['active'];
+  ?>
+  <tr>
+    <td style="color:var(--muted);font-size:12px">#<?= $sub['id'] ?></td>
+    <td><?= $sub['contact_type'] === 'telegram' ? '📱 TG' : '✉️ Mail' ?></td>
+    <td style="font-family:monospace;font-size:12px"><?= h(mask_contact($sub['contact_type'], $sub['contact_value'])) ?></td>
+    <td style="font-size:12px;max-width:280px"><?= fmt_prefs($sub['preferences'] ?? '[]') ?></td>
+    <td>
+      <?php if ($active): ?>
+        <span class="badge-ok">● Activo</span>
+      <?php else: ?>
+        <span style="color:var(--yellow)">⏳ Pendiente</span>
+      <?php endif; ?>
+    </td>
+    <td style="font-size:12px;color:var(--muted)"><?= ago($sub['last_notified']) ?></td>
+    <td style="font-size:12px;color:var(--muted);white-space:nowrap"><?= ago($sub['created_at']) ?></td>
+    <td style="white-space:nowrap">
+      <?php if (!$active): ?>
+      <form class="inline" method="post">
+        <input type="hidden" name="action" value="sub_activate">
+        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+        <button class="btn-ok" type="submit" title="Activar">✓</button>
+      </form>
+      <?php else: ?>
+      <form class="inline" method="post">
+        <input type="hidden" name="action" value="sub_deactivate">
+        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+        <button class="btn-out" type="submit" title="Pausar">⏸</button>
+      </form>
+      <?php endif; ?>
+      &nbsp;
+      <form class="inline" method="post">
+        <input type="hidden" name="action" value="sub_delete">
+        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+        <button class="btn-del" type="submit" onclick="return confirm('¿Eliminar suscriptor #<?= $sub['id'] ?>?')" title="Eliminar">✕</button>
+      </form>
+    </td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">
+  Sin suscriptores todavía. El form público está en
+  <a href="/radio/suscribirse.php" target="_blank">/radio/suscribirse.php</a>.
+</p>
+<?php endif; ?>
+
+<!-- Notificaciones recientes -->
+<h2 id="notificaciones">Notificaciones enviadas (últimas 30)</h2>
+<?php if ($notif_recientes): ?>
+<table>
+  <thead><tr>
+    <th>Fecha</th><th>Suscriptor</th><th>Keyword detectado</th><th>Emisora</th><th>Matches</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($notif_recientes as $n): ?>
+  <tr>
+    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($n['first_seen'],0,16))) ?></td>
+    <td style="font-size:12px"><?= $n['contact_type']==='telegram' ? '📱' : '✉️' ?> <?= h(mask_contact($n['contact_type'], $n['contact_value'])) ?></td>
+    <td><strong><?= h($n['keyword']) ?></strong></td>
+    <td><?= h($n['station'] ?? '—') ?></td>
+    <td style="color:var(--green)"><?= (int)$n['match_count'] ?> temas</td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">Sin notificaciones enviadas todavía. El cron de alertas debe estar corriendo.</p>
+<?php endif; ?>
+
+<!-- Patrones de programas aprendidos -->
+<h2 id="patrones">Patrones de programas detectados</h2>
+<?php if ($program_patterns): ?>
+<table>
+  <thead><tr>
+    <th>Programa / Keyword</th><th>Emisora</th><th>Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
+  </tr></thead>
+  <tbody>
+  <?php foreach ($program_patterns as $pp):
+    $conf_color = $pp['confidence'] >= 0.7 ? 'var(--green)' : ($pp['confidence'] >= 0.4 ? 'var(--yellow)' : 'var(--muted)');
+  ?>
+  <tr>
+    <td><strong><?= h($pp['keyword']) ?></strong></td>
+    <td style="font-size:12px"><?= h($pp['nombre']) ?></td>
+    <td style="font-size:12px"><?= $pp['day_of_week'] !== null ? $days_es[(int)$pp['day_of_week']] : 'Todos' ?></td>
+    <td><?= $pp['hour'] !== null ? sprintf('%02d:00', (int)$pp['hour']) : '—' ?></td>
+    <td style="color:<?= $conf_color ?>;font-weight:600"><?= round($pp['confidence'] * 100) ?>%</td>
+    <td style="color:var(--muted)"><?= (int)$pp['occurrences'] ?>x</td>
+    <td style="font-size:12px;color:var(--muted)"><?= h($pp['last_seen'] ?? '—') ?></td>
+  </tr>
+  <?php endforeach; ?>
+  </tbody>
+</table>
+<?php else: ?>
+<p class="empty">Sin patrones todavía. Se aprenden automáticamente con el cron semanal (<code>learn_patterns.php</code>) una vez que haya suficiente historial ICY.</p>
 <?php endif; ?>
 
 <!-- ── ICY activas ─────────────────────────────────────────────────────────── -->
