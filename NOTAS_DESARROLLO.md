@@ -4,6 +4,68 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0734 — 2026-07-09 — fix+feat: v3.0.0 — fix crawler workflows + suscriptores + alertas ICY
+
+### Fix: lftp `|| true` dentro de heredoc (85% de failures desde 07/07)
+
+**Síntoma:** 85% de las corridas de `check-streams-v2.yml` fallando en el último step ("Checkpoint WAL y subir DB"). La DB se subía correctamente pero el step retornaba exit code 1.
+
+**Causa:** El comando `rm /radio/db/radio_v2.sqlite-wal || true` estaba dentro del heredoc de lftp. El `|| true` es sintaxis bash; dentro de lftp se interpreta como el comando lftp `true` que no existe. Cuando los archivos WAL/SHM no existen en el servidor, el `rm` falla y lftp sale con error. Los archivos WAL no existen en la mayoría de los runs porque el checkpoint de Python los elimina antes del upload.
+
+**Fix:** Separar el rm WAL/SHM en una invocación lftp independiente usando `-e` flag con `glob -a rm` (que no falla si no hay match). El `|| true` queda a nivel bash donde corresponde.
+
+**Archivos:** `.github/workflows/check-streams-v2.yml`, `.github/workflows/enrich-v2.yml`
+
+---
+
+### Feat: Sistema de alertas para oyentes (v3.0.0)
+
+**Nuevas funcionalidades:**
+
+**1. Suscripción de oyentes** (`web/suscribirse.php` + `web/api/subscribe` implícito en el form)
+- Oyente registra Telegram (chat_id numérico) o email + preferencias (artistas, programas, géneros)
+- Telegram: envía link de activación al chat_id para confirmar que el bot puede escribirle
+- Email: envía link de activación por correo
+- Las preferencias son keywords libres: cualquier texto que aparezca en los títulos ICY
+
+**2. Notificaciones automáticas** (`crawlers/notify_subscribers.php`)
+- Cron PHP cada 5 minutos: compara preferencias de cada suscriptor vs. ICY activo (últimos 30 min)
+- Condición de disparo: **2+ temas matching** en una misma emisora en 30 min (no el primero suelto)
+- Cooldown de 4 horas por (suscriptor, emisora) para no spamear
+- También notifica programas próximos (15 min antes) según patrones aprendidos con ≥60% de confianza
+- Configurar en cPanel: `*/5 * * * * php /home/username/radio/crawlers/notify_subscribers.php`
+
+**3. Aprendizaje de patrones de programas** (`crawlers/learn_patterns.php`)
+- Analiza `icy_history` de los últimos 60 días
+- Agrupa por station + keyword normalizado + día_semana + hora (hora local ARG = UTC-3)
+- Si un keyword aparece ≥3 días distintos en el mismo slot → crea/actualiza `program_patterns`
+- Confianza = ocurrencias / semanas en rango (mínimo 25% para guardar)
+- Los patrones con >45 días sin verse se eliminan automáticamente
+- Configurar en cPanel: `0 4 * * 1  php /home/username/radio/crawlers/learn_patterns.php`
+
+**4. Cafecito toast mejorado** (`web/pages/listing.php`)
+- Antes: aparecía a los 20 segundos siempre
+- Ahora: aparece después de **5 minutos de reproducción activa**
+- Cooldown de 7 días entre apariciones
+- No molesta al visitante que entra y sale sin escuchar
+
+**5. UI player** (`web/pages/listing.php`)
+- Badge `🔔 Alertas` en el header → suscribirse.php
+- Banner dismissible "v3 — Activar alertas" que aparece una sola vez (localStorage)
+
+**6. Estadísticas de oyentes** (`web/admin_stats.php`)
+- Gráficos por día/mes (seleccionable), hora del día, top emisoras
+- Vinculado desde el admin con botón `📊 Estadísticas`
+
+**Nuevas tablas en DB:**
+- `subscribers`: suscriptores, contact_type, preferences (JSON), token de activación
+- `subscriber_matches`: tracking de matches detectados + cooldown de notificaciones
+- `program_patterns`: patrones aprendidos (station, keyword, día, hora, confianza)
+
+**Tag git:** `v3.0.0`
+
+---
+
 ## TKT-0732 — 2026-07-05 — fix: corrupción DB producción + guardas en workflows
 
 ### Síntoma
