@@ -11,6 +11,7 @@ $db  = radio_db();
 $err = '';
 $ok  = false;
 $pending_token = '';
+$mode = 'register'; // register | manage | baja_ok | baja_link
 
 // Asegurar tablas
 try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
@@ -37,6 +38,108 @@ foreach ($top_tags as $raw) {
 }
 arsort($tag_counts);
 $generos_disponibles = array_keys(array_slice($tag_counts, 0, 16, true));
+
+// Acción: gestión (editar / dar de baja) — GET ?manage=TOKEN
+$manage_sub = null;
+if (isset($_GET['manage'])) {
+    $tok = preg_replace('/[^a-f0-9]/', '', $_GET['manage']);
+    if (strlen($tok) === 32) {
+        $st = $db->prepare("SELECT * FROM subscribers WHERE token=? LIMIT 1");
+        $st->execute([$tok]);
+        $manage_sub = $st->fetch(PDO::FETCH_ASSOC);
+    }
+    $mode = $manage_sub ? 'manage' : 'register';
+    if (!$manage_sub) $err = 'Link de gestión inválido o expirado.';
+}
+
+// Acción: dar de baja con token — GET ?baja=TOKEN
+if (isset($_GET['baja']) && strlen($_GET['baja']) === 32) {
+    $tok = preg_replace('/[^a-f0-9]/', '', $_GET['baja']);
+    $st  = $db->prepare("SELECT id FROM subscribers WHERE token=? LIMIT 1");
+    $st->execute([$tok]);
+    $row = $st->fetch();
+    if ($row) {
+        $db->prepare("DELETE FROM subscribers WHERE token=?")->execute([$tok]);
+        $mode = 'baja_ok';
+    } else {
+        $err = 'Link de baja inválido o ya procesado.';
+    }
+}
+
+// Acción: solicitar link de gestión por email/telegram (GET ?baja=1 sin token)
+if (isset($_GET['baja']) && $_GET['baja'] === '1') {
+    $mode = 'baja_link';
+}
+
+// POST: guardar cambios desde la página de gestión
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'editar') {
+    $tok = preg_replace('/[^a-f0-9]/', '', $_POST['token'] ?? '');
+    $st  = $db->prepare("SELECT * FROM subscribers WHERE token=? LIMIT 1");
+    $st->execute([$tok]);
+    $manage_sub = $st->fetch(PDO::FETCH_ASSOC);
+    if (!$manage_sub) {
+        $err = 'Token inválido.'; $mode = 'register';
+    } else {
+        $prefs = [];
+        if (!empty($_POST['keywords'])) {
+            foreach (preg_split('/[\n,]+/', $_POST['keywords']) as $k) {
+                $k = trim($k);
+                if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'artist', 'value' => $k];
+            }
+        }
+        if (!empty($_POST['generos']) && is_array($_POST['generos'])) {
+            foreach ($_POST['generos'] as $g) {
+                $g = trim($g);
+                if ($g) $prefs[] = ['type' => 'genre', 'value' => $g];
+            }
+        }
+        if (empty($prefs)) {
+            $err = 'Agregá al menos un artista, programa o género.';
+        } else {
+            $db->prepare("UPDATE subscribers SET preferences=? WHERE token=?")
+               ->execute([json_encode($prefs, JSON_UNESCAPED_UNICODE), $tok]);
+            $manage_sub['preferences'] = json_encode($prefs, JSON_UNESCAPED_UNICODE);
+            $ok = true;
+        }
+        $mode = 'manage';
+    }
+}
+
+// POST: solicitar link de gestión
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_link') {
+    $type  = in_array($_POST['type'] ?? '', ['telegram', 'email']) ? $_POST['type'] : '';
+    $value = trim($_POST['value'] ?? '');
+    if ($type && $value) {
+        $st = $db->prepare("SELECT token, contact_type FROM subscribers WHERE contact_type=? AND contact_value=? LIMIT 1");
+        $st->execute([$type, $value]);
+        $found = $st->fetch(PDO::FETCH_ASSOC);
+        if ($found) {
+            $manage_url = 'https://mammoli.ar/radio/suscribirse.php?manage=' . $found['token'];
+            $baja_url   = 'https://mammoli.ar/radio/suscribirse.php?baja='   . $found['token'];
+            $tg_token   = defined('TG_TOKEN') ? TG_TOKEN : '';
+            if ($type === 'telegram') {
+                $msg = "📻 *Radio Argentina — Gestión de suscripción*\n\n"
+                     . "✏️ Editar preferencias: {$manage_url}\n"
+                     . "❌ Dar de baja: {$baja_url}";
+                @file_get_contents("https://api.telegram.org/bot{$tg_token}/sendMessage?" . http_build_query([
+                    'chat_id' => $value, 'text' => $msg, 'parse_mode' => 'Markdown'
+                ]));
+            } else {
+                $body = "Gestión de suscripción — Radio Argentina\n\n"
+                      . "✏️ Editar preferencias:\n{$manage_url}\n\n"
+                      . "❌ Dar de baja:\n{$baja_url}\n\n"
+                      . "Si no pediste esto, ignorá el mensaje.";
+                @mail($value, 'Gestión de suscripción — Radio Argentina', $body,
+                    "From: Radio Argentina <radio@mammoli.ar>\r\nContent-Type: text/plain; charset=UTF-8");
+            }
+        }
+        // Mostrar siempre el mismo mensaje (no revelar si existe o no)
+        $mode = 'link_sent';
+    } else {
+        $err  = 'Completá el campo.';
+        $mode = 'baja_link';
+    }
+}
 
 // Acción: activar por token GET
 if (isset($_GET['activar']) && strlen($_GET['activar']) === 32) {
@@ -108,9 +211,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Enviar confirmación según tipo
         if ($type === 'telegram') {
             $tg_token = defined('TG_TOKEN') ? TG_TOKEN : '';
+            $manage_url = 'https://mammoli.ar/radio/suscribirse.php?manage=' . $pending_token;
+            $baja_url   = 'https://mammoli.ar/radio/suscribirse.php?baja='   . $pending_token;
             $msg = "📻 *Radio Argentina — Confirmar suscripción*\n\n"
                  . "Tus preferencias quedaron registradas. Para activarlas:\n\n"
                  . "👉 https://mammoli.ar/radio/suscribirse.php?activar=" . $pending_token . "\n\n"
+                 . "Guardá estos links:\n"
+                 . "✏️ Editar: {$manage_url}\n"
+                 . "❌ Dar de baja: {$baja_url}\n\n"
                  . "Si no pediste esto, ignorá el mensaje.";
             $r = @file_get_contents("https://api.telegram.org/bot{$tg_token}/sendMessage?" . http_build_query([
                 'chat_id'    => $value,
@@ -129,11 +237,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $ok = false; // mostrar pantalla de pendiente
             }
         } else {
-            // Email: enviar confirmación
-            $url   = 'https://mammoli.ar/radio/suscribirse.php?activar=' . $pending_token;
-            $body  = "Hola!\n\nTe suscribiste a alertas de Radio Argentina.\n\nActivá tu suscripción en:\n{$url}\n\nSi no fuiste vos, ignorá este mensaje.\n\n— Radio Argentina";
+            // Email: enviar confirmación con links de gestión
+            $activar_url = 'https://mammoli.ar/radio/suscribirse.php?activar=' . $pending_token;
+            $manage_url  = 'https://mammoli.ar/radio/suscribirse.php?manage='  . $pending_token;
+            $baja_url    = 'https://mammoli.ar/radio/suscribirse.php?baja='    . $pending_token;
+            $body = "Hola!\n\nTe suscribiste a alertas de Radio Argentina.\n\n"
+                  . "Activá tu suscripción:\n{$activar_url}\n\n"
+                  . "Guardá estos links para gestionar tu suscripción:\n"
+                  . "✏️ Editar preferencias: {$manage_url}\n"
+                  . "❌ Dar de baja: {$baja_url}\n\n"
+                  . "Si no fuiste vos, ignorá este mensaje.\n\n— Radio Argentina";
             @mail($value, 'Confirmá tu suscripción — Radio Argentina', $body,
-                "From: Radio Argentina <no-reply@mammoli.ar>\r\nContent-Type: text/plain; charset=UTF-8");
+                "From: Radio Argentina <radio@mammoli.ar>\r\nContent-Type: text/plain; charset=UTF-8");
         }
     }
 }
@@ -202,7 +317,100 @@ a{color:var(--accent)}
 
 <div class="container">
 
-<?php if ($ok): ?>
+<?php if ($mode === 'baja_ok'): ?>
+  <div class="alert-ok">
+    ✅ <strong>Suscripción cancelada.</strong><br>
+    Ya no vas a recibir más alertas de Radio Argentina. Si cambiás de opinión podés volver a suscribirte cuando quieras.
+    <br><br>
+    <a href="/radio/">← Volver al player</a>
+  </div>
+
+<?php elseif ($mode === 'link_sent'): ?>
+  <div class="alert-ok" style="color:var(--text)">
+    📨 <strong>Listo.</strong> Si tu email o Telegram estaba registrado, te mandamos el link de gestión ahora mismo.
+    <br><br>
+    <a href="/radio/">← Volver al player</a>
+  </div>
+
+<?php elseif ($mode === 'baja_link'): ?>
+  <?php if ($err): ?><div class="alert-err">⚠️ <?= htmlspecialchars($err) ?></div><?php endif; ?>
+  <div class="card">
+    <h2>Gestionar mi suscripción</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px">
+      Ingresá tu Telegram o email y te mandamos el link para editar tus preferencias o darte de baja.
+    </p>
+    <form method="post">
+      <input type="hidden" name="action" value="send_link">
+      <div class="radio-group">
+        <input type="radio" name="type" id="bl-tg" value="telegram" checked>
+        <label for="bl-tg">📱 Telegram</label>
+        <input type="radio" name="type" id="bl-em" value="email">
+        <label for="bl-em">✉️ Email</label>
+      </div>
+      <input type="text" name="value" placeholder="Chat ID o correo electrónico">
+      <button type="submit" class="btn">Enviar link de gestión</button>
+    </form>
+  </div>
+
+<?php elseif ($mode === 'manage' && $manage_sub): ?>
+  <?php
+    $existing_prefs = json_decode($manage_sub['preferences'] ?? '[]', true) ?: [];
+    $existing_keywords = implode("\n", array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') !== 'genre')));
+    $existing_genres   = array_map(fn($p) => $p['value'], array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') === 'genre'));
+  ?>
+  <?php if ($ok): ?>
+  <div class="alert-ok">✅ <strong>Preferencias actualizadas.</strong></div>
+  <?php endif; ?>
+  <?php if ($err): ?><div class="alert-err">⚠️ <?= htmlspecialchars($err) ?></div><?php endif; ?>
+
+  <div class="card">
+    <h2>Editar mis alertas</h2>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px">
+      <?= $manage_sub['contact_type'] === 'telegram' ? '📱 Telegram' : '✉️ Email' ?> ·
+      Estado: <?= $manage_sub['active'] ? '<span style="color:var(--green)">Activa</span>' : '<span style="color:var(--yellow)">Pendiente activación</span>' ?>
+    </p>
+    <form method="post">
+      <input type="hidden" name="action" value="editar">
+      <input type="hidden" name="token" value="<?= htmlspecialchars($manage_sub['token']) ?>">
+
+      <label>Artistas o programas (uno por línea)</label>
+      <textarea name="keywords"><?= htmlspecialchars($existing_keywords) ?></textarea>
+
+      <label>Géneros (opcional)</label>
+      <div class="genre-grid" id="genre-grid">
+        <?php foreach ($generos_disponibles as $g):
+          $sel = in_array($g, $existing_genres);
+        ?>
+        <div class="genre-chip <?= $sel ? 'sel' : '' ?>" data-val="<?= htmlspecialchars($g) ?>"><?= htmlspecialchars($g) ?></div>
+        <?php endforeach; ?>
+      </div>
+      <div id="genre-hidden"></div>
+
+      <button type="submit" class="btn" style="margin-top:8px">💾 Guardar cambios</button>
+    </form>
+  </div>
+
+  <div class="card" style="border-color:rgba(239,68,68,.3)">
+    <h2 style="color:var(--red)">Cancelar suscripción</h2>
+    <p style="font-size:14px;color:var(--muted);margin-bottom:16px">
+      Si cancelás, dejás de recibir alertas. Podés volver a suscribirte cuando quieras.
+    </p>
+    <a href="/radio/suscribirse.php?baja=<?= htmlspecialchars($manage_sub['token']) ?>"
+       class="btn" style="background:#b91c1c;text-align:center;display:block;text-decoration:none"
+       onclick="return confirm('¿Confirmar baja?')">
+      ❌ Dar de baja
+    </a>
+  </div>
+
+<?php elseif ($ok && $mode === 'register'): ?>
+  <div class="alert-ok">
+    ✅ <strong>¡Suscripción activada!</strong><br>
+    A partir de ahora te vamos a avisar cuando detectemos tus preferencias en el aire.
+    <br><br>
+    <a href="/radio/">← Volver al player</a>
+  </div>
+
+<?php elseif ($ok): ?>
   <div class="alert-ok">
     ✅ <strong>¡Suscripción activada!</strong><br>
     A partir de ahora te vamos a avisar cuando detectemos tus preferencias en el aire.
@@ -297,8 +505,8 @@ a{color:var(--accent)}
 
   <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:20px">
     No spam. Solo alertas cuando hay algo que te interesa.<br>
-    <a href="/radio/suscribirse.php?baja=1" style="color:var(--muted)">Dar de baja</a> ·
-    ¿Problemas? <a href="mailto:<?= htmlspecialchars(defined('SITE_EMAIL') ? SITE_EMAIL : 'carlos@mammoli.ar') ?>">Escribinos</a>
+    <a href="/radio/suscribirse.php?baja=1" style="color:var(--muted)">Editar o dar de baja</a> ·
+    ¿Problemas? <a href="mailto:radio@mammoli.ar">Escribinos</a>
   </p>
 </div>
 
