@@ -99,12 +99,20 @@ $ld_itemlist = [
   <div class="badges">
     <a  class="badge" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
     <a  class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
+    <a  class="badge" href="/radio/suscribirse.php">🔔 Alertas</a>
     <a  class="badge" href="/radio/estadisticas.php">📊 Estadísticas</a>
     <a  class="badge" href="https://github.com/camammoli/radio" target="_blank" rel="noopener">GitHub</a>
     <a  class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Café</a>
     <button id="theme-btn" class="badge">☀️ Modo claro</button>
   </div>
 </header>
+
+<!-- Banner v3 — aparece una sola vez, dismissible -->
+<div id="banner-v3" style="display:none;background:#1e3a5f;border-bottom:1px solid #334155;padding:10px 16px;text-align:center;font-size:13px;color:#e2e8f0;position:relative">
+  🆕 <strong>Radio Argentina v3</strong> — Ahora podés suscribirte para recibir alertas cuando suene tu artista favorito o empiece tu programa.
+  <a href="/radio/suscribirse.php" style="color:#60a5fa;margin-left:8px;font-weight:600">→ Activar alertas</a>
+  <button onclick="dismissV3Banner()" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#94a3b8;font-size:16px;cursor:pointer;padding:4px">✕</button>
+</div>
 
 <!-- Buscador y filtros -->
 <div class="search-wrap">
@@ -428,16 +436,55 @@ function updateShare(slug, nombre) {
 document.getElementById('qr-close').addEventListener('click', function () { qrModal.classList.remove('visible'); });
 qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrModal.classList.remove('visible'); });
 
-// ── Toast cafecito ────────────────────────────────────────────────────────────
+// ── Toast cafecito — aparece tras 5 min de reproducción activa ───────────────
 (function () {
-  var key = 'cafecito_shown';
-  if (localStorage.getItem(key)) return;
-  setTimeout(function () {
+  var THRESHOLD_MS = 5 * 60 * 1000;
+  var COOLDOWN_DAYS = 7;
+  var key = 'cafecito_last';
+  var lastShown = parseInt(localStorage.getItem(key) || '0', 10);
+  if (Date.now() - lastShown < COOLDOWN_DAYS * 86400 * 1000) return;
+
+  var playStart = null;
+  var accumulated = 0;
+  var timer = null;
+
+  function onState(state) {
+    if (state === 'playing') {
+      playStart = Date.now();
+      timer = setInterval(check, 10000);
+    } else {
+      if (playStart) accumulated += Date.now() - playStart;
+      playStart = null;
+      clearInterval(timer);
+    }
+  }
+  function check() {
+    var total = accumulated + (playStart ? Date.now() - playStart : 0);
+    if (total >= THRESHOLD_MS) {
+      clearInterval(timer);
+      showToast();
+    }
+  }
+  function showToast() {
     var t = document.getElementById('support-toast');
-    if (!t) return;
+    if (!t || t.classList.contains('hide')) return;
     t.style.display = 'block';
-    localStorage.setItem(key, '1');
-  }, 20000);
+    localStorage.setItem(key, String(Date.now()));
+  }
+
+  // Hookearse al player después de que esté inicializado
+  setTimeout(function () {
+    if (typeof player !== 'undefined' && player._onStateHooks) {
+      player._onStateHooks.push(onState);
+    } else {
+      // Fallback: observar clase rp-active en el listado
+      var obs = new MutationObserver(function () {
+        var active = !!document.querySelector('.rp-active');
+        onState(active ? 'playing' : 'idle');
+      });
+      obs.observe(document.getElementById('lista'), { attributes: true, subtree: true, attributeFilter: ['class'] });
+    }
+  }, 500);
 }());
 
 // ── Filtros y búsqueda ────────────────────────────────────────────────────────
@@ -594,6 +641,20 @@ fetch('/radio/api/nowplaying?batch=1')
 if ('serviceWorker' in navigator) navigator.serviceWorker.register(<?= json_encode($__base . '/sw.js') ?>).catch(function(){});
 
 }());
+</script>
+<script>
+// Banner v3 — mostrar una sola vez
+(function () {
+  var KEY = 'radio_v3_banner_ok';
+  if (localStorage.getItem(KEY)) return;
+  var el = document.getElementById('banner-v3');
+  if (el) el.style.display = 'block';
+}());
+function dismissV3Banner() {
+  localStorage.setItem('radio_v3_banner_ok', '1');
+  var el = document.getElementById('banner-v3');
+  if (el) el.style.display = 'none';
+}
 </script>
 <?php require __DIR__ . '/../components/privacy.php'; ?>
 </body>

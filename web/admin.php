@@ -49,6 +49,37 @@ try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Except
 try { $db->exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
 try { $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
 try { $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'); } catch (Exception $e) {}
+// v3: suscriptores y patrones de programas
+try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    contact_type TEXT NOT NULL,
+    contact_value TEXT NOT NULL,
+    preferences TEXT DEFAULT "[]",
+    active INTEGER DEFAULT 0,
+    token TEXT UNIQUE NOT NULL,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_notified TEXT
+)'); } catch (Exception $e) {}
+try { $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    subscriber_id INTEGER REFERENCES subscribers(id) ON DELETE CASCADE,
+    station_id INTEGER REFERENCES stations(id),
+    keyword TEXT NOT NULL,
+    first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
+    match_count INTEGER DEFAULT 1,
+    notified INTEGER DEFAULT 0
+)'); } catch (Exception $e) {}
+try { $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER REFERENCES stations(id),
+    keyword TEXT NOT NULL,
+    day_of_week INTEGER,
+    hour INTEGER,
+    confidence REAL DEFAULT 0.0,
+    occurrences INTEGER DEFAULT 0,
+    last_seen TEXT,
+    UNIQUE(station_id, keyword, day_of_week, hour)
+)'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -307,6 +338,7 @@ if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('li
   <h1>📻 Radio Argentina — Admin v2</h1>
   <div class="top-actions">
     <span id="refresh-ind" style="font-size:11px;color:var(--muted)"></span>
+    <a href="admin_stats.php" class="btn-out">📊 Estadísticas</a>
     <button class="btn-out" id="theme-btn" onclick="toggleTheme()">☀️ Claro</button>
     <form method="post" style="margin:0">
       <input type="hidden" name="action" value="logout">
