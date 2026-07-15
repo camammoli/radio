@@ -4102,3 +4102,73 @@ https://comodin.uy/radio/8000/128.mp3
 [#1380] Radio La Zurda * Montevideo
 https://radios.solumedia.com:6270/stream
 
+
+[#1381] Radio Mágica Digital * Provincia de Buenos Aires
+https://01.solumedia.com.ar:8564/stream/
+
+[#1382] Golden Wings * Argentina
+https://centova.servidoraweb.net:9079/stream
+
+[#1383] Fm Sierras 107.9Mhz * Córdoba(Argentina)
+http://giss.tv:8000/fmsierras.mp3
+
+[#1384] Radio Federal Bolivar * Provincia de Buenos Aires
+http://radio2.dev54.com:8500/radiofederal.mp3
+
+[#1385] La Mega Radio 94.1 * Pehuajo, Provincia de Buenos Aires
+https://01.solumedia.com.ar:8110/stream
+
+[#1386] Radio Estudio 97 ½ - Pehuajó * Argentina
+https://streaming.escuchanosonline.com:7224/stream
+
+[#1387] LT32 Radio Chivilcoy * Provincia de Buenos Aires
+https://streaming1.locucionar.com/proxy/laradiodechivilcoy?mp=/stream
+
+[#1388] Steady State Radio * Argentina
+https://radio.steadystateradio.com/listen/steady_state/radio.mp3
+
+[#1389] LU 11 Radio Trenque Lauquen - AM 1280 * Provincia de Buenos Aires
+https://radiosar.com:9330/stream
+
+[#1390] LA NACION 104.9 Más Música * Gran Buenos Aires
+https://api-distribucion-ln.lnapps.com.ar/audiofm1049
+
+[#1391] AM750 * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM750.mp3
+
+[#1392] Jaus90 * Buenos Aires
+https://stream.zeno.fm/e1th9vchbvxuv
+
+[#1393] URBAN 98.5 FM * Argentina
+https://01.solumedia.com.ar:8012/stream
+
+[#1394] Carve Deportiva * Montevideo
+https://streamingcasazorrilla.innovanexo.com:8000/carvedeportiva.mp3
+
+[#1395] CX 20 Radio Monte Carlo * Uruguay
+https://streamingcasazorrilla.innovanexo.com:8000/montecarlo.mp3
+
+[#1396] Horizonte - FM 106.3 * Paysandú
+http://1063fm.ddns.net:8025/online
+
+[#1397] OCEANO * Uruguay
+https://oceano-2.nty.uy/netradio/listen.mp3
+
+[#1398] Laser FM * Uruguay
+https://server.laradio.online/proxy/eduardo_correa?mp=/stream
+
+[#1399] Radio Nuevo Tiempo Uruguay * Uruguay
+https://streamradio.novotempo.com/CDN-RADIO-ES/smil:rntMontevideoUY.smil/playlist.m3u8
+
+[#1400] FM Naturaleza 88.1 * Canelones
+http://stm.gmpro.top:7006/
+
+[#1401] Radio 098 * Uruguay
+https://stream.zeno.fm/aam2ts855p8uv
+
+[#1402] Delta FM 88.3 * Uruguay
+http://server-uk1.radioseninternet.net:8104/;
+
+[#1403] Multimedios Rincón AM 1510 - Fray Bentos * Río Negro
+https://rinconam-zikoxweb.radioca.st/stream
+
