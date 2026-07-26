@@ -20,7 +20,7 @@ http://01.solumedia.com.ar:8178/aac
 http://01.solumedia.com.ar:8238/stream
 
 [006] La Redonda
-http://01.solumedia.com.ar:8290/aac
+https://01.solumedia.com.ar:8290/stream?icy=http
 
 [007] Libre
 http://01.solumedia.com.ar:8420/;stream.nsv
@@ -322,7 +322,7 @@ https://streaming.escuchanosonline.com/8514/;
 https://cdn.instream.audio/:9069/stream
 
 [110] Radio 3
-https://cdn.instream.audio/:9085/stream
+https://media.nexxisgroup.com.ar:8851/stream.mp3
 
 [111] Del Bosque
 https://radio01.ferozo.com/proxy/ra01000983?mp=/stream
@@ -469,7 +469,7 @@ https://streaming450tb.locucionar.com/proxy/fmvida979?mp=/stream
 https://streaming.escuchanosonline.com:7216/stream
 
 [159] Radio Salta
-https://streamingraddios.online/proxy/salta2?mp=/stream
+https://01.solumedia.com.ar:8348/stream
 
 [160] Masters's
 https://streaming.turadioinfo.com/audio/cliente_251669/streaming_token/5860_hash==epoiMeQ==5a631901fc84fa9dfb3e5d83acfd4af9ad7a0d4a_proxy_ssl
@@ -601,7 +601,7 @@ http://streaming.shockmedia.com.ar:9832/stream
 http://streamlky.alsolnet.com:443/fmdelsol
 
 [203] Pasión
-http://streamlky.alsolnet.com:443/fmpasion
+https://cdn.instream.audio:9688/stream
 
 [204] FMQ
 http://streamlky.alsolnet.com:443/radiofmq
@@ -1456,7 +1456,7 @@ http://questreaming.info:28277/;
 http://radio02.ferozo.com:8728/;stream/1
 
 [#492] Radio Panorama
-http://radio02.ferozo.com/tunein.php/ra02000023/playlist.pls
+https://stream.arcast.com.ar/radio/sgodelestero.stream/playlist.m3u8
 
 [#493] JCU
 http://radio.argentinastream.info:25409/live
@@ -1754,7 +1754,7 @@ https://streamall.alsolnet.com/fmklimax
 http://streamall.alsolnet.com:443/lacolifata
 
 [#596] Radio 3
-http://streamall.alsolnet.com:443/radio3hd
+https://media.nexxisgroup.com.ar:8851/stream.mp3
 
 [#597] Pasión
 http://streamall.alsolnet.com:8080/cadenapasion
