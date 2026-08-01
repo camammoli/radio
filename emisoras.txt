@@ -4172,3 +4172,304 @@ http://server-uk1.radioseninternet.net:8104/;
 [#1403] Multimedios Rincón AM 1510 - Fray Bentos * Río Negro
 https://rinconam-zikoxweb.radioca.st/stream
 
+
+[#1404] Rock and Pop Tucumán 106.9 FM * Argentina
+https://streaming.tucumanradio.com.ar:7066/stream
+
+[#1405] LRA 15 Radio Nacional Tucumán Mercedes Sosa * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad15
+
+[#1406] Radio Amadeus - Cultura Musical * Argentina
+https://usa3.fastcast4u.com/proxy/amadeusradio?mp=/stream/1/
+
+[#1407] LV7 Radio Tucumán * Argentina
+https://stream.zeno.fm/hjb5if7bemvvv
+
+[#1408] Radio AM 750 * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM750AAC.aac
+
+[#1409] Radio Argentina 89.3 FM * Argentina
+https://ssl.radiosnethosting.com/index.php?port=9358/;stream.mp3
+
+[#1410] Mega 98.3 Trelew * Chubut
+https://cdn.instream.audio:9116/stream
+
+[#1411] LRA 26 Radio Nacional Resistencia * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad26
+
+[#1412] Urbana Play 103.1 Necochea * Argentina
+https://cdn.instream.audio:9714/stream
+
+[#1413] LRA 27 Radio Nacional Catamarca * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad27
+
+[#1414] Radio Del Plata Tucumán 93.9 FM * Argentina
+https://streaming.tucumanradio.com.ar:7066/
+
+[#1415] FM Milenium Tucumán * Argentina
+https://streaming.tucumanradio.com.ar:7067/
+
+[#1416] Frecuencia Sundance 98.7 * Argentina
+https://streaming01.shockmedia.com.ar:10948/stream?icy=http
+
+[#1417] Cadena 3 Rosario * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/c3rosario.mp3
+
+[#1418] MDZ Radio * Argentina
+https://streaming6.locucionar.com:24110/stream
+
+[#1419] Radio Litoral Rosario * Argentina
+https://streamconex.com:8174/stream
+
+[#1420] Radio Rivadavia Tucumán 97.7 * Argentina
+https://streaming.tucumanradio.com.ar:7068/stream
+
+[#1421] Radio Rosario 3 * Argentina
+https://g2.vxral-slo.transport.edge-access.net/nx-beta/nx.hor.livetx.01/60a2b24baf8c7e00145e64e1.m3u8
+
+[#1422] Radio Urbana * Argentina
+https://stm2.livecastradio.com:27404/stream
+
+[#1423] Radio Disney República Dominicana * Argentina
+https://stream.zeno.fm/zky9fvlfkootv
+
+[#1424] FM Recuerdos 91.1 * Argentina
+https://server.streamcasthd.com:7371/
+
+[#1425] Wox radio Rosario 88.3 FM * Argentina
+https://vivo.solumedia.com:19360/woxfm/woxfm.m3u8
+
+[#1426] Radio Enjoy FM 100.9 Arrecifes * Argentina
+https://streaming6.locucionar.com:24090/stream
+
+[#1427] Radio Vox 102.9 FM * Argentina
+https://streaming01.shockmedia.com.ar:10636/stream
+
+[#1428] Beat Digital * Argentina
+https://stream-57.zeno.fm/9s7nnwmknkhvv
+
+[#1429] Frecuencia Z * Argentina
+https://radios.streamingdha.com.ar:8102/
+
+[#1430] Maxima FM 94.5 * Argentina
+https://mediapanel.siglocero.net:8002/stream
+
+[#1431] Radio Cristal 107.1 * Argentina
+https://stream.zeno.fm/2cg12xpx2e0vv
+
+[#1432] 221 Radio * Argentina
+https://01.solumedia.com.ar:8612/stream
+
+[#1433] Campeones Radio * Argentina
+https://01.solumedia.com.ar:7193/stream
+
+[#1434] CN Radio Rosario 88.1 FM * Argentina
+https://stmv7.voxtvhd.com.br/elsignofish/elsignofish/playlist.m3u8
+
+[#1435] La Rocka 80 Argentina * Argentina
+https://audiopanel.com.ar:8000/radio.aac
+
+[#1436] La Rocka 90 * Argentina
+https://audiopanel.com.ar:8020/radio.aac
+
+[#1437] Solo Rock Nacional * Argentina
+https://stream.zeno.fm/g9purm3158quv
+
+[#1438] Planeta Cumbia Latina * Argentina
+https://stream.zeno.fm/60pqgs97f2zuv
+
+[#1439] Pungas Radio * Argentina
+https://pungasradio.rebel.ar/pungasradio
+
+[#1440] Frecuencia Zero 92.5 FM * Argentina
+https://cdn.instream.audio/stream/9508
+
+[#1441] Radio La Cacharpaya 101.7 * Argentina
+https://streaming01.shockmedia.com.ar:10813/stream/1/
+
+[#1442] FM Recuerdos 91.1 * Argentina
+https://server.streamcasthd.com/8744/stream
+
+[#1443] Radio Mitre Córdoba * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/AM810_56AAC.aac
+
+[#1444] FM Libertad 100.1 San Luis, Radio * Argentina
+https://streaming.escuchanosonline.com:7141/stream
+
+[#1445] Radio de Folklore * Argentina
+https://stm17.xcast.com.br:7296/stream
+
+[#1446] Memory Project Radio * Argentina
+https://stream.zeno.fm/sct1zvqz1uquv
+
+[#1447] FM Premium Classics 98.9 * Argentina
+https://stream.zeno.fm/cvvvykmtpg8uv
+
+[#1448] Radio Jazz Cafè FM-Smooth & Jazzy * Argentina
+https://stream-289.surfernetwork.com/qktzze7sb18uv?zt=eyJhbGciOiJIUzI1NiJ9.eyJzdHJlYW0iOiJxa3R6emU3c2IxOHV2IiwiaG9zdCI6InN0cmVhbS0yODkuc3VyZmVybmV0d29yay5jb20iLCJ0bSI6ZmFsc2UsInJ0dGwiOjUsImp0aSI6ImRJdHNoUFlzUTVXeEx1eU1FaXFPNEEiLCJpYXQiOjE3ODQ2NjUzMjksImV4cCI6MTc4NDY2NTM4OX0.7XyKKUJbq9EeYsH-5sVAgODWzo04SH5UOdPwtYwtuwc
+
+[#1449] Cristal 100.3 * Argentina
+https://streaming01.shockmedia.com.ar:10158/stream?icy=http
+
+[#1450] LRA 59 Radio Nacional Gobernador Gregores * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad59
+
+[#1451] LRA 55 Radio Nacional Alto Rio Senguer * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad55
+
+[#1452] LRA 56 Radio Nacional Perito Moreno * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad34
+
+[#1453] Vorterix Bahía Blanca 99.1 FM * Argentina
+https://masservidor.net:7192/stream
+
+[#1454] Vorterix Mar del Plata 104.5 FM * Argentina
+https://vivo.solumedia.com:19360/vorterixmdp/vorterixmdp.m3u8
+
+[#1455] Radio 10 * Argentina
+https://d1.stweb.tv/radio10/live/chunks.m3u8
+
+[#1456] Radio Nueva Presidencia Roque Sáenz Peña 92.1 FM * Argentina
+https://panel.ispui.lat:1065/stream
+
+[#1457] LRA 11 Radio Nacional Comodoro Rivadavia * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad11
+
+[#1458] LRA 58 Radio Nacional Rio Mayo * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad58
+
+[#1459] LRA 7 Radio Nacional Córdoba * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad7
+
+[#1460] Radio La Red 90.5 FM Necochea * Argentina
+https://cdn.instream.audio:9566/stream
+
+[#1461] LT 12 Radio Nacional Paso de los Libres * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad43
+
+[#1462] Radio Rivadavia Necochea 97.3 FM * Argentina
+https://cdn.instream.audio:9542/stream
+
+[#1463] LRA 12 Radio Nacional Santo Tomé * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad12
+
+[#1464] Fm urbana * Argentina
+http://streaming6.locucionar.com:24420/stream
+
+[#1465] Radio del Sol 93.7 * Argentina
+https://stream.hego.com.ar/listen/radio_del_sol/radio.mp3
+
+[#1466] LRA 42 Radio Nacional Gualeguaychú * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad31
+
+[#1467] LRA 8 Radio Nacional Formosa * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad8
+
+[#1468] Rock & Pop Córdoba FM 87.9 * Argentina
+https://streaming.gostreaming.com.ar:10985/stream
+
+[#1469] LRA 20 Radio Nacional Las Lomitas * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad20
+
+[#1470] Rock & Pop 88.5 Mar del Plata * Argentina
+https://tolkien.republicahosting.net:2112/live
+
+[#1471] LRA 3 Radio Nacional Santa Rosa * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad3
+
+[#1472] LRA 9 Radio Nacional Esquel * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad9
+
+[#1473] LRA 28 Radio Nacional La Rioja * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad28
+
+[#1474] LRA 14 Radio Nacional Santa Fe AM 540 * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad14
+
+[#1475] LRA 22 Radio Nacional Jujuy AM 790 * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad22
+
+[#1476] CNN Radio Mendoza 93.9 FM * Argentina
+https://radio13.servidorderadio.net:7034/stream
+
+[#1477] LV 19 Nacional Malargüe * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad47
+
+[#1478] Max Classic FM 103.9 * Argentina
+https://sonicpanel.hostradios.com:7278/
+
+[#1479] LV 4 Radio Nacional San Rafael * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad46
+
+[#1480] Emociones 102.5 FM * Argentina
+https://sonicpanel.hostradios.com:7167/
+
+[#1481] LRA 17 Radio Nacional Zapala * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad17
+
+[#1482] Radio Mitre Bahía Blanca * Argentina
+https://srv1.streamingradio.ar:7134/live
+
+[#1483] LRA 53 Radio Nacional San Martín de los Andes * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad53
+
+[#1484] LRA 30 Radio Nacional Bariloche * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad30
+
+[#1485] LRA 57 Radio Nacional El Bolsón * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad57
+
+[#1486] LRA 54 Radio Nacional Ingeniero Jacobacci * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad54
+
+[#1487] Radio Mitre Jujuy 106.3 FM * Argentina
+https://5cd577a3dd8ec.streamlock.net/radiomitre/live_2/playlist.m3u8
+
+[#1488] LRA 2 Radio Nacional Viedma * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad2
+
+[#1489] Radio Mitre Resistencia 90.7 FM * Argentina
+https://01.solumedia.com.ar:9068/stream
+
+[#1490] Radio Mitre Santa Fe 99.3 FM * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/FM993_56AAC.aac
+
+[#1491] LRA 25 Radio Nacional Tartagal * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad72
+
+[#1492] Radio La Red Mendoza 94.1 FM * Argentina
+https://playerservices.streamtheworld.com/api/livestream-redirect/LA_RED_MDZ_FM941.mp3
+
+[#1493] LRA 23 Radio Nacional San Juan * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad23
+
+[#1494] Radio La Red Rosario 98.3 FM * Argentina
+https://stream.lt8.com.ar:8443/laredrosario.mp3
+
+[#1495] LRA 51 Radio Nacional Jáchal * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad102
+
+[#1496] Radio La Red La Rioja 88.3 FM * Argentina
+https://streaming01.shockmedia.com.ar:10623/stream
+
+[#1497] Radio La Red Mar del Plata 91.3 FM * Argentina
+https://streaming01.shockmedia.com.ar:10921/stream
+
+[#1498] LRA 18 Radio Nacional Río Turbio * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad18
+
+[#1499] La Red Villa Mercedes 99.1 FM * Argentina
+https://sonic.host-live.com:8032/stream
+
+[#1500] Radio Rivadavia Villa Mercedes 90.1 FM * Argentina
+https://stream.radiosmundiales.com:8006/stream
+
+[#1501] LRA 21 Radio Nacional Santiago del Estero * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad21
+
+[#1502] LRA 24 Radio Nacional Río Grande * Argentina
+https://sa.mp3.icecast.magma.edge-access.net/sc_rad24
+
+[#1503] Radio 10 Rosario FM 89.7 * Argentina
+https://server4.hostradios.com:7028/stream
+
