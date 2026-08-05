@@ -16,9 +16,11 @@ jobs:
           ref: master
 
       - name: Download DB from FTP
+        env:
+          FTP_PASS: ${{ secrets.FTP_PASS }}
         run: |
           curl --ftp-ssl -k \
-            -u "${{ secrets.FTP_USER }}:${{ secrets.FTP_PASS }}" \
+            -u "carlos@mammoli.ar:${FTP_PASS}" \
             "ftp://mammoli.ar/radio/db/radio_v2.sqlite" \
             -o db/radio_v2.sqlite
           echo "DB size: $(du -sh db/radio_v2.sqlite | cut -f1)"
