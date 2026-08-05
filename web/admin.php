@@ -80,6 +80,18 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
     last_seen TEXT,
     UNIQUE(station_id, keyword, day_of_week, hour)
 )'); } catch (Exception $e) {}
+// Metadata de gestión de emisoras (contacto, destacada, seguimiento)
+try { $db->exec('ALTER TABLE stations ADD COLUMN en_observacion INTEGER DEFAULT 0') ; } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0') ; } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT') ; } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_privado TEXT') ; } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE stations ADD COLUMN notas_privadas TEXT') ; } catch (Exception $e) {}
+try { $db->exec('CREATE TABLE IF NOT EXISTS reportes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    station_id INTEGER REFERENCES stations(id),
+    mensaje TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -119,6 +131,23 @@ if ($act === 'sub_deactivate' && ($_POST['csrf'] ?? '') === $csrf) {
 if ($act === 'sub_delete' && ($_POST['csrf'] ?? '') === $csrf) {
     $db->prepare('DELETE FROM subscribers WHERE id=?')->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#suscriptores');
+    exit;
+}
+if ($act === 'update_meta' && ($_POST['csrf'] ?? '') === $csrf) {
+    $db->prepare('UPDATE stations SET
+            en_observacion = ?, destacada = ?,
+            contacto_publico = ?, contacto_privado = ?, notas_privadas = ?,
+            updated_at = datetime("now")
+         WHERE id = ?')
+       ->execute([
+            !empty($_POST['en_observacion']) ? 1 : 0,
+            !empty($_POST['destacada']) ? 1 : 0,
+            trim($_POST['contacto_publico'] ?? '') ?: null,
+            trim($_POST['contacto_privado'] ?? '') ?: null,
+            trim($_POST['notas_privadas'] ?? '') ?: null,
+            (int)($_POST['id'] ?? 0),
+       ]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#' . preg_replace('/[^a-z]/', '', $_POST['volver'] ?? 'seguimiento'));
     exit;
 }
 
@@ -176,6 +205,18 @@ $stats = [
     'listeners'  => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
     'surveys'    => (int)$db->query('SELECT COUNT(*) FROM surveys')->fetchColumn(),
     'suger_pend' => (int)$db->query("SELECT COUNT(*) FROM stations WHERE source='sugerencia' AND approved=0")->fetchColumn(),
+    'problemas'  => (int)$db->query(
+        "SELECT COUNT(DISTINCT s.id) FROM stations s
+         LEFT JOIN stream_status ss ON ss.station_id = s.id
+         WHERE s.approved = 0
+            OR ss.estado IN ('muerto','timeout')
+            OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))"
+    )->fetchColumn(),
+    'pendientes_crawler' => (int)$db->query(
+        "SELECT COUNT(*) FROM stations s
+         LEFT JOIN stream_status ss ON ss.station_id = s.id
+         WHERE s.approved = 1 AND ss.station_id IS NULL"
+    )->fetchColumn(),
 ];
 
 // Encuesta bienvenida — rating
@@ -215,6 +256,33 @@ $sugerencias = $db->query(
     "SELECT id, nombre, url, provincia, homepage, contacto, created_at
      FROM stations WHERE source='sugerencia' AND approved=0
      ORDER BY created_at DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Radios con problemas: ocultas, muertas/timeout, o reportadas en los últimos 14 días
+$problemas = $db->query(
+    "SELECT s.*, ss.estado,
+            (SELECT COUNT(*) FROM reportes r WHERE r.station_id = s.id AND r.created_at >= datetime('now','-14 days')) AS reportes_recientes
+     FROM stations s
+     LEFT JOIN stream_status ss ON ss.station_id = s.id
+     WHERE s.approved = 0
+        OR ss.estado IN ('muerto','timeout')
+        OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))
+     ORDER BY s.updated_at DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Radios aprobadas que el crawler todavía no verificó ni una vez
+$pendientes_crawler = $db->query(
+    "SELECT s.* FROM stations s
+     LEFT JOIN stream_status ss ON ss.station_id = s.id
+     WHERE s.approved = 1 AND ss.station_id IS NULL
+     ORDER BY s.created_at DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// Seguimiento especial: en observación, o con contacto privado cargado
+$seguimiento = $db->query(
+    "SELECT * FROM stations
+     WHERE en_observacion = 1 OR (contacto_privado IS NOT NULL AND contacto_privado != '')
+     ORDER BY updated_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Últimas ejecuciones de crawlers
@@ -278,10 +346,10 @@ $icy = $db->query(
 
 // ── Suscriptores ──────────────────────────────────────────────────────────────
 $sub_stats = [
-    'total'   => (int)$db->query('SELECT COUNT(*) FROM subscribers')->fetchColumn(),
-    'activos' => (int)$db->query('SELECT COUNT(*) FROM subscribers WHERE active=1')->fetchColumn(),
-    'tg'      => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='telegram' AND active=1")->fetchColumn(),
-    'email'   => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='email' AND active=1")->fetchColumn(),
+    'total'      => (int)$db->query('SELECT COUNT(*) FROM subscribers')->fetchColumn(),
+    'activos'    => (int)$db->query('SELECT COUNT(*) FROM subscribers WHERE active=1')->fetchColumn(),
+    'tg'         => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='telegram' AND active=1")->fetchColumn(),
+    'email'      => (int)$db->query("SELECT COUNT(*) FROM subscribers WHERE contact_type='email' AND active=1")->fetchColumn(),
     'pendientes' => (int)$db->query('SELECT COUNT(*) FROM subscribers WHERE active=0')->fetchColumn(),
 ];
 
@@ -306,6 +374,34 @@ $program_patterns = $db->query(
      ORDER BY pp.confidence DESC LIMIT 40"
 )->fetchAll(PDO::FETCH_ASSOC);
 
+// Top artistas desde icy_history (para preview de chips de suscripción)
+$noise_icy = ['classic hits','variados','mix','desconocido','various','unknown',
+              'fm del mar','sport billy','cop centro','symploké','symploke',
+              'el hacedor iglesia','sarah nimmo','variado'];
+$preview_raw = $db->query("
+    SELECT trim(substr(title, 1, instr(title,' - ')-1)) AS artista, COUNT(*) AS n
+    FROM icy_history
+    WHERE title LIKE '% - %'
+      AND length(trim(substr(title, 1, instr(title,' - ')-1))) BETWEEN 2 AND 45
+    GROUP BY lower(trim(substr(title, 1, instr(title,' - ')-1)))
+    HAVING n >= 2 ORDER BY n DESC LIMIT 80
+")->fetchAll(PDO::FETCH_ASSOC);
+$preview_artistas = [];
+if ($preview_raw) {
+    $max_n = max(array_column($preview_raw, 'n'));
+    foreach ($preview_raw as $r) {
+        $low = strtolower($r['artista']);
+        if (preg_match('/\bfm\b/i', $r['artista'])) continue;
+        if (preg_match('/\b\d{4}\b/', $r['artista'])) continue;
+        if (in_array($low, $noise_icy)) continue;
+        $norm  = mb_convert_case($r['artista'], MB_CASE_TITLE, 'UTF-8');
+        $ratio = $r['n'] / $max_n;
+        $tier  = $ratio >= 0.4 ? 'hot' : ($ratio >= 0.15 ? 'warm' : 'cool');
+        $preview_artistas[] = ['name' => $norm, 'n' => (int)$r['n'], 'tier' => $tier];
+        if (count($preview_artistas) >= 40) break;
+    }
+}
+
 // ── ICY activas (con título, las más recientes)
 $icy_activas = $db->query(
     "SELECT s.nombre, s.slug, ic.stream_title, ic.last_checked,
@@ -329,6 +425,40 @@ function ago(?string $dt): string {
     return 'hace ' . floor($diff/86400) . 'd';
 }
 
+// Fila de emisora con formulario de edición (contacto/observación/destacada/notas),
+// reusada en las pestañas Problemas, Pendientes y Seguimiento.
+function station_meta_row(array $s, string $csrf, string $volver, string $motivo = ''): void {
+    ?>
+    <tr>
+      <td>
+        <?= h($s['nombre']) ?>
+        <?php if (!empty($s['en_observacion'])): ?><span title="En observación">🔎</span><?php endif; ?>
+        <?php if (!empty($s['destacada'])): ?><span title="Destacada">⭐</span><?php endif; ?>
+        <br><span style="font-size:11px;color:var(--muted)"><?= h($s['slug']) ?></span>
+      </td>
+      <td class="url" style="max-width:260px"><a href="<?= h($s['url']) ?>" target="_blank" rel="noopener"><?= h($s['url']) ?></a></td>
+      <td style="font-size:12px"><?= $motivo ?: '—' ?></td>
+      <td style="white-space:nowrap">
+        <details>
+          <summary style="cursor:pointer;color:var(--accent)">Editar</summary>
+          <form method="post" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;min-width:240px">
+            <input type="hidden" name="action" value="update_meta">
+            <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+            <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+            <input type="hidden" name="volver" value="<?= h($volver) ?>">
+            <label style="font-size:12px"><input type="checkbox" name="en_observacion" value="1" <?= !empty($s['en_observacion']) ? 'checked' : '' ?>> En observación</label>
+            <label style="font-size:12px"><input type="checkbox" name="destacada" value="1" <?= !empty($s['destacada']) ? 'checked' : '' ?>> Destacada</label>
+            <input type="text" name="contacto_publico" placeholder="Contacto público (visible en la ficha)" value="<?= h($s['contacto_publico'] ?? '') ?>">
+            <input type="text" name="contacto_privado" placeholder="Contacto privado (solo nosotros)" value="<?= h($s['contacto_privado'] ?? '') ?>">
+            <textarea name="notas_privadas" placeholder="Notas privadas" rows="2"><?= h($s['notas_privadas'] ?? '') ?></textarea>
+            <button class="btn-ok" type="submit">Guardar</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+    <?php
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -343,7 +473,7 @@ body.light{--bg:#f1f5f9;--card:#ffffff;--card2:#f8fafc;--border:#e2e8f0;--text:#
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--text);font:14px/1.5 system-ui,sans-serif;padding:16px;transition:background .2s,color .2s}
 h1{font-size:20px}
-h2{font-size:15px;color:var(--accent);margin:28px 0 10px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+h2{font-size:15px;color:var(--accent);margin:0 0 14px;padding-bottom:6px;border-bottom:1px solid var(--border)}
 .cards{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 18px;min-width:120px}
 .card .v{font-size:26px;font-weight:700;color:var(--accent)}
@@ -361,7 +491,7 @@ button{cursor:pointer;border:none;border-radius:4px;padding:4px 10px;font-size:1
 .btn-del{background:#b91c1c;color:#fff} .btn-del:hover{background:#991b1b}
 .btn-out{background:var(--card);border:1px solid var(--border);color:var(--muted);padding:5px 12px;font-size:13px;border-radius:6px}
 .btn-out:hover{color:var(--text)}
-.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:10px;flex-wrap:wrap}
+.top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:10px;flex-wrap:wrap}
 .top-actions{display:flex;gap:8px;align-items:center}
 .mins-ok{color:var(--green)} .mins-warn{color:var(--yellow)} .mins-old{color:var(--red)}
 a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
@@ -372,6 +502,21 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 .welcome-block h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em}
 .loc-bar{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px}
 .loc-bar-fill{height:8px;border-radius:4px;background:var(--accent);min-width:4px;transition:width .3s}
+/* ICY chip preview */
+.icy-chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:20px;border:1px solid var(--border);font-size:12px;background:var(--card2);white-space:nowrap}
+.icy-chip.freq-hot{border-color:rgba(34,197,94,.45);color:var(--green)}
+.icy-chip.freq-warm{border-color:rgba(59,130,246,.4);color:var(--accent)}
+.icy-chip.freq-cool{color:var(--muted)}
+.icy-chip .cn{font-size:10px;font-weight:700;opacity:.65}
+/* Tabs */
+.tab-bar{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:20px;border-bottom:2px solid var(--border);padding-bottom:0}
+.tab-btn{background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-bottom:-2px;transition:color .15s,border-color .15s;white-space:nowrap}
+.tab-btn:hover{color:var(--text)}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-badge{background:var(--red);color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px;font-weight:700}
+.tab-badge.warn{background:var(--yellow);color:#000}
+.tab-content{display:none}
+.tab-content.active{display:block}
 </style>
 </head>
 <body>
@@ -398,437 +543,549 @@ function toggleTheme() {
   localStorage.setItem('radio_theme', light ? 'light' : 'dark');
   themeBtn.textContent = light ? '🌙 Oscuro' : '☀️ Claro';
 }
-// Sincronizar texto del botón con estado actual
 if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscuro';
 </script>
 
-<!-- ── Telegram ────────────────────────────────────────────────────────────── -->
-<h2 id="telegram">Notificaciones Telegram</h2>
-<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
-  <span style="font-size:14px">
-    Estado actual:
-    <strong style="color:<?= $notify_val ? 'var(--green)' : 'var(--muted)' ?>">
-      <?= $notify_val ? '● Activas' : '● Inactivas' ?>
-    </strong>
-    <span style="font-size:12px;color:var(--muted)">(oyentes nuevos + compartidos)</span>
-  </span>
-  <form method="post" style="margin:0">
-    <input type="hidden" name="action" value="toggle_notify">
-    <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-    <button class="<?= $notify_val ? 'btn-del' : 'btn-ok' ?>" type="submit">
-      <?= $notify_val ? '⏸ Desactivar' : '▶ Activar' ?>
-    </button>
-  </form>
+<!-- ── Tab bar ──────────────────────────────────────────────────────────────── -->
+<div class="tab-bar" id="tab-bar">
+  <button class="tab-btn" data-tab="resumen">Resumen</button>
+  <button class="tab-btn" data-tab="telegram">Telegram</button>
+  <button class="tab-btn" data-tab="encuestas">Encuestas</button>
+  <button class="tab-btn" data-tab="compartidos">Compartidos</button>
+  <button class="tab-btn" data-tab="reproducciones">Reproducciones</button>
+  <button class="tab-btn" data-tab="sugerencias">
+    Sugerencias
+    <?php if ($stats['suger_pend'] > 0): ?><span class="tab-badge"><?= $stats['suger_pend'] ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="problemas">
+    Problemas
+    <?php if ($stats['problemas'] > 0): ?><span class="tab-badge"><?= $stats['problemas'] ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="pendientes">
+    Pendientes de verificación
+    <?php if ($stats['pendientes_crawler'] > 0): ?><span class="tab-badge warn"><?= $stats['pendientes_crawler'] ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="seguimiento">
+    Seguimiento
+    <?php if (count($seguimiento) > 0): ?><span class="tab-badge warn"><?= count($seguimiento) ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="suscriptores">
+    Suscriptores
+    <?php if ($sub_stats['pendientes'] > 0): ?><span class="tab-badge warn"><?= $sub_stats['pendientes'] ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="icy">ICY</button>
+  <button class="tab-btn" data-tab="crawlers">Crawlers</button>
 </div>
 
-<!-- ── Resumen ─────────────────────────────────────────────────────────────── -->
-<h2 id="resumen">Resumen</h2>
-<div class="cards">
-  <div class="card"><div class="v" id="stat-total"><?= $stats['total'] ?></div><div class="l">Emisoras activas</div></div>
-  <div class="card"><div class="v badge-ok" id="stat-ok"><?= $stats['ok'] ?></div><div class="l">Streams OK</div></div>
-  <div class="card"><div class="v" id="stat-icy"><?= $stats['icy'] ?></div><div class="l">Con ICY</div></div>
-  <div class="card"><div class="v pos" id="stat-icy-activo"><?= $stats['icy_activo'] ?></div><div class="l">ICY con título ahora</div></div>
-  <div class="card"><div class="v" id="stat-plays-hoy"><?= $stats['plays_hoy'] ?></div><div class="l">Plays hoy</div></div>
-  <div class="card"><div class="v" id="stat-plays-total"><?= $stats['plays_total'] ?></div><div class="l">Plays totales</div></div>
-  <div class="card"><div class="v pos" id="stat-listeners"><?= $stats['listeners'] ?></div><div class="l">Oyentes ahora</div></div>
-  <div class="card"><div class="v"><?= $stats['surveys'] ?></div><div class="l">Encuestas recibidas</div></div>
-  <div class="card"><div class="v <?= $stats['suger_pend'] > 0 ? 'neg' : '' ?>"><?= $stats['suger_pend'] ?></div><div class="l">Sugerencias pendientes</div></div>
-  <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Suscriptores activos</div></div>
-  <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
-</div>
-
-<!-- ── Encuestas ───────────────────────────────────────────────────────────── -->
-<h2 id="encuestas">Encuestas</h2>
-
-<?php
-$w_total = array_sum($wrating);
-$loc_total = array_sum(array_column($welcome_loc, 'cnt'));
-?>
-<div class="welcome-row">
-  <div class="welcome-block">
-    <h3>¿Qué te parece el sitio? (<?= $w_total ?>)</h3>
-    <?php if ($w_total > 0): ?>
-      <?php foreach ([1=>'👍 Me gusta', 0=>'😐 Regular', -1=>'👎 No me convence'] as $r => $lbl): ?>
-      <div class="loc-bar">
-        <span style="min-width:130px"><?= $lbl ?></span>
-        <div class="loc-bar-fill" style="width:<?= $w_total > 0 ? round($wrating[$r]/$w_total*120) : 0 ?>px"></div>
-        <span style="color:var(--muted)"><?= $wrating[$r] ?></span>
-      </div>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
-    <?php endif; ?>
-  </div>
-
-  <div class="welcome-block">
-    <h3>¿Desde dónde escuchás? (<?= $loc_total ?>)</h3>
-    <?php if ($welcome_loc): ?>
-      <?php foreach ($welcome_loc as $loc): ?>
-      <div class="loc-bar">
-        <span style="min-width:130px"><?= ($loc_icons[$loc['location']] ?? '📍') . ' ' . h(ucfirst($loc['location'])) ?></span>
-        <div class="loc-bar-fill" style="width:<?= $loc_total > 0 ? round($loc['cnt']/$loc_total*120) : 0 ?>px"></div>
-        <span style="color:var(--muted)"><?= (int)$loc['cnt'] ?></span>
-      </div>
-      <?php endforeach; ?>
-    <?php else: ?>
-      <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
-    <?php endif; ?>
+<!-- ══ Tab: Resumen ══════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-resumen">
+  <h2 id="resumen">Resumen</h2>
+  <div class="cards">
+    <div class="card"><div class="v" id="stat-total"><?= $stats['total'] ?></div><div class="l">Emisoras activas</div></div>
+    <div class="card"><div class="v badge-ok" id="stat-ok"><?= $stats['ok'] ?></div><div class="l">Streams OK</div></div>
+    <div class="card"><div class="v" id="stat-icy"><?= $stats['icy'] ?></div><div class="l">Con ICY</div></div>
+    <div class="card"><div class="v pos" id="stat-icy-activo"><?= $stats['icy_activo'] ?></div><div class="l">ICY con título ahora</div></div>
+    <div class="card"><div class="v" id="stat-plays-hoy"><?= $stats['plays_hoy'] ?></div><div class="l">Plays hoy</div></div>
+    <div class="card"><div class="v" id="stat-plays-total"><?= $stats['plays_total'] ?></div><div class="l">Plays totales</div></div>
+    <div class="card"><div class="v pos" id="stat-listeners"><?= $stats['listeners'] ?></div><div class="l">Oyentes ahora</div></div>
+    <div class="card"><div class="v"><?= $stats['surveys'] ?></div><div class="l">Encuestas recibidas</div></div>
+    <div class="card"><div class="v <?= $stats['suger_pend'] > 0 ? 'neg' : '' ?>"><?= $stats['suger_pend'] ?></div><div class="l">Sugerencias pendientes</div></div>
+    <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Suscriptores activos</div></div>
+    <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
   </div>
 </div>
 
-<?php if ($station_surveys): ?>
-<table>
-  <thead><tr>
-    <th>Emisora</th><th>👍</th><th>😐</th><th>👎</th><th>Total</th><th>Última</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($station_surveys as $sv): ?>
-  <tr>
-    <td><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre']) ?></a></td>
-    <td class="pos"><?= $sv['pos'] ?></td>
-    <td class="neu"><?= $sv['neu'] ?></td>
-    <td class="neg"><?= $sv['neg'] ?></td>
-    <td><?= $sv['total'] ?></td>
-    <td style="color:var(--muted);font-size:12px"><?= ago($sv['ultima']) ?></td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin encuestas de emisoras todavía.</p>
-<?php endif; ?>
-
-<!-- ── Compartidos ─────────────────────────────────────────────────────────── -->
-<h2 id="shares">Compartidos recientes (últimas 100)</h2>
-<?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
-<table>
-  <thead><tr>
-    <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
-  </tr></thead>
-  <tbody id="shares-body">
-  <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
-  <tr>
-    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
-    <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
-    <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
-    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
-  </tr>
-  <?php endforeach; else: ?>
-  <tr><td colspan="4" class="empty">Sin compartidos registrados todavía.</td></tr>
-  <?php endif; ?>
-  </tbody>
-</table>
-
-<!-- ── Detalle encuestas ───────────────────────────────────────────────────── -->
-<h2 id="encuestas-detalle">Encuestas — detalle (últimas 100)</h2>
-<p class="note" style="margin-bottom:10px">IP hasheada: identificador anónimo consistente (misma IP = mismo hash).</p>
-<?php if ($surveys_detalle): ?>
-<table>
-  <thead><tr>
-    <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th>IP hash</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($surveys_detalle as $sv):
-    $rlbl = $sv['rating'] ==  1 ? '<span class="pos">👍</span>'
-          : ($sv['rating'] == -1 ? '<span class="neg">👎</span>'
-                                 : '<span class="neu">😐</span>');
-  ?>
-  <tr>
-    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sv['created_at'],0,19))) ?></td>
-    <td><?= $rlbl ?></td>
-    <td><?php if ($sv['slug']): ?><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">bienvenida</span><?php endif; ?></td>
-    <td style="color:var(--muted)"><?= $sv['location'] ? h(ucfirst($sv['location'])) : '—' ?></td>
-    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sv['ip_hash'] ?? '', 0, 16)) ?>…</td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin encuestas todavía.</p>
-<?php endif; ?>
-
-<!-- ── Reproducciones ──────────────────────────────────────────────────────── -->
-<h2 id="plays">Reproducciones recientes (últimas 200)</h2>
-<?php
-function fmt_duration(?int $secs): string {
-    if ($secs === null) return '—';
-    if ($secs < 60)   return $secs . 's';
-    if ($secs < 3600) return floor($secs/60) . 'm ' . ($secs%60) . 's';
-    return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
-}
-?>
-<table>
-  <thead><tr>
-    <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
-  </tr></thead>
-  <tbody id="plays-body">
-  <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
-  <tr>
-    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
-    <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
-    <td style="font-size:12px;white-space:nowrap">
-      <?php if ($pl['is_active']): ?>
-        <span style="color:#22c55e">▶ <?= fmt_duration((int)$pl['duration_secs']) ?></span>
-      <?php else: ?>
-        <?= fmt_duration(isset($pl['duration_secs']) ? (int)$pl['duration_secs'] : null) ?>
-      <?php endif; ?>
-    </td>
-    <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
-    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
-    <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
-  </tr>
-  <?php endforeach; else: ?>
-  <tr><td colspan="6" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
-  <?php endif; ?>
-  </tbody>
-</table>
-
-<!-- ── Sugerencias ─────────────────────────────────────────────────────────── -->
-<h2 id="sugerencias">Sugerencias pendientes (<?= count($sugerencias) ?>)</h2>
-
-<?php if ($sugerencias): ?>
-<table>
-  <thead><tr>
-    <th>Nombre</th><th>URL</th><th>Provincia</th><th>Contacto</th><th>Recibida</th><th>Acción</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($sugerencias as $sg): ?>
-  <tr>
-    <td>
-      <?= h($sg['nombre']) ?>
-      <?php if ($sg['homepage']): ?>
-        <br><a href="<?= h($sg['homepage']) ?>" target="_blank" rel="noopener" style="font-size:11px">homepage ↗</a>
-      <?php endif; ?>
-    </td>
-    <td class="url"><a href="<?= h($sg['url']) ?>" target="_blank" rel="noopener"><?= h($sg['url']) ?></a></td>
-    <td><?= h($sg['provincia'] ?? '—') ?></td>
-    <td style="font-size:12px"><?= $sg['contacto'] ? h($sg['contacto']) : '<span style="color:var(--muted)">—</span>' ?></td>
-    <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($sg['created_at']) ?></td>
-    <td style="white-space:nowrap">
-      <form class="inline" method="post">
-        <input type="hidden" name="action" value="approve">
-        <input type="hidden" name="id" value="<?= (int)$sg['id'] ?>">
-        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-        <button class="btn-ok" type="submit" onclick="return confirm('¿Aprobar <?= h(addslashes($sg['nombre'])) ?>?')">✓ Aprobar</button>
-      </form>
-      &nbsp;
-      <form class="inline" method="post">
-        <input type="hidden" name="action" value="reject">
-        <input type="hidden" name="id" value="<?= (int)$sg['id'] ?>">
-        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-        <button class="btn-del" type="submit" onclick="return confirm('¿Eliminar esta sugerencia?')">✕ Rechazar</button>
-      </form>
-    </td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">No hay sugerencias pendientes.</p>
-<?php endif; ?>
-
-<!-- ── Suscriptores ────────────────────────────────────────────────────────── -->
-<h2 id="suscriptores">Suscriptores de alertas</h2>
-
-<div class="cards" style="margin-bottom:16px">
-  <div class="card"><div class="v"><?= $sub_stats['total'] ?></div><div class="l">Total registrados</div></div>
-  <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Activos</div></div>
-  <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
-  <div class="card"><div class="v"><?= $sub_stats['tg'] ?></div><div class="l">📱 Telegram</div></div>
-  <div class="card"><div class="v"><?= $sub_stats['email'] ?></div><div class="l">✉️ Email</div></div>
+<!-- ══ Tab: Telegram ═════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-telegram">
+  <h2 id="telegram">Notificaciones Telegram</h2>
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+    <span style="font-size:14px">
+      Estado actual:
+      <strong style="color:<?= $notify_val ? 'var(--green)' : 'var(--muted)' ?>">
+        <?= $notify_val ? '● Activas' : '● Inactivas' ?>
+      </strong>
+      <span style="font-size:12px;color:var(--muted)">(oyentes nuevos + compartidos)</span>
+    </span>
+    <form method="post" style="margin:0">
+      <input type="hidden" name="action" value="toggle_notify">
+      <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+      <button class="<?= $notify_val ? 'btn-del' : 'btn-ok' ?>" type="submit">
+        <?= $notify_val ? '⏸ Desactivar' : '▶ Activar' ?>
+      </button>
+    </form>
+  </div>
 </div>
 
-<?php
-function mask_contact(string $type, string $val): string {
-    if ($type === 'email') {
-        [$u, $d] = explode('@', $val, 2);
-        return mb_substr($u, 0, 2) . str_repeat('*', max(2, mb_strlen($u)-2)) . '@' . $d;
-    }
-    return substr($val, 0, 3) . str_repeat('*', max(3, strlen($val)-5)) . substr($val, -2);
-}
-function fmt_prefs(string $json): string {
-    $prefs = json_decode($json, true) ?: [];
-    $out = [];
-    foreach ($prefs as $p) {
-        $icon = $p['type'] === 'genre' ? '🎵' : ($p['type'] === 'program' ? '📺' : '🎤');
-        $out[] = $icon . ' ' . htmlspecialchars($p['value'], ENT_QUOTES, 'UTF-8');
-    }
-    return $out ? implode(' · ', $out) : '<span style="color:var(--muted)">—</span>';
-}
-$days_es = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-?>
-
-<?php if ($subscribers_list): ?>
-<table>
-  <thead><tr>
-    <th>ID</th><th>Tipo</th><th>Contacto</th><th>Preferencias</th><th>Estado</th><th>Última notif.</th><th>Registrado</th><th>Acciones</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($subscribers_list as $sub):
-    $active = (int)$sub['active'];
+<!-- ══ Tab: Encuestas ════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-encuestas">
+  <h2 id="encuestas">Encuestas</h2>
+  <?php
+  $w_total = array_sum($wrating);
+  $loc_total = array_sum(array_column($welcome_loc, 'cnt'));
   ?>
-  <tr>
-    <td style="color:var(--muted);font-size:12px">#<?= $sub['id'] ?></td>
-    <td><?= $sub['contact_type'] === 'telegram' ? '📱 TG' : '✉️ Mail' ?></td>
-    <td style="font-family:monospace;font-size:12px"><?= h(mask_contact($sub['contact_type'], $sub['contact_value'])) ?></td>
-    <td style="font-size:12px;max-width:280px"><?= fmt_prefs($sub['preferences'] ?? '[]') ?></td>
-    <td>
-      <?php if ($active): ?>
-        <span class="badge-ok">● Activo</span>
+  <div class="welcome-row">
+    <div class="welcome-block">
+      <h3>¿Qué te parece el sitio? (<?= $w_total ?>)</h3>
+      <?php if ($w_total > 0): ?>
+        <?php foreach ([1=>'👍 Me gusta', 0=>'😐 Regular', -1=>'👎 No me convence'] as $r => $lbl): ?>
+        <div class="loc-bar">
+          <span style="min-width:130px"><?= $lbl ?></span>
+          <div class="loc-bar-fill" style="width:<?= $w_total > 0 ? round($wrating[$r]/$w_total*120) : 0 ?>px"></div>
+          <span style="color:var(--muted)"><?= $wrating[$r] ?></span>
+        </div>
+        <?php endforeach; ?>
       <?php else: ?>
-        <span style="color:var(--yellow)">⏳ Pendiente</span>
+        <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
       <?php endif; ?>
-    </td>
-    <td style="font-size:12px;color:var(--muted)"><?= ago($sub['last_notified']) ?></td>
-    <td style="font-size:12px;color:var(--muted);white-space:nowrap"><?= ago($sub['created_at']) ?></td>
-    <td style="white-space:nowrap">
-      <?php if (!$active): ?>
-      <form class="inline" method="post">
-        <input type="hidden" name="action" value="sub_activate">
-        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
-        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-        <button class="btn-ok" type="submit" title="Activar">✓</button>
-      </form>
+    </div>
+
+    <div class="welcome-block">
+      <h3>¿Desde dónde escuchás? (<?= $loc_total ?>)</h3>
+      <?php if ($welcome_loc): ?>
+        <?php foreach ($welcome_loc as $loc): ?>
+        <div class="loc-bar">
+          <span style="min-width:130px"><?= ($loc_icons[$loc['location']] ?? '📍') . ' ' . h(ucfirst($loc['location'])) ?></span>
+          <div class="loc-bar-fill" style="width:<?= $loc_total > 0 ? round($loc['cnt']/$loc_total*120) : 0 ?>px"></div>
+          <span style="color:var(--muted)"><?= (int)$loc['cnt'] ?></span>
+        </div>
+        <?php endforeach; ?>
       <?php else: ?>
-      <form class="inline" method="post">
-        <input type="hidden" name="action" value="sub_deactivate">
-        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
-        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-        <button class="btn-out" type="submit" title="Pausar">⏸</button>
-      </form>
+        <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
       <?php endif; ?>
-      &nbsp;
-      <form class="inline" method="post">
-        <input type="hidden" name="action" value="sub_delete">
-        <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
-        <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
-        <button class="btn-del" type="submit" onclick="return confirm('¿Eliminar suscriptor #<?= $sub['id'] ?>?')" title="Eliminar">✕</button>
-      </form>
-    </td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">
-  Sin suscriptores todavía. El form público está en
-  <a href="/radio/suscribirse.php" target="_blank">/radio/suscribirse.php</a>.
-</p>
-<?php endif; ?>
+    </div>
+  </div>
 
-<!-- Notificaciones recientes -->
-<h2 id="notificaciones">Notificaciones enviadas (últimas 30)</h2>
-<?php if ($notif_recientes): ?>
-<table>
-  <thead><tr>
-    <th>Fecha</th><th>Suscriptor</th><th>Keyword detectado</th><th>Emisora</th><th>Matches</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($notif_recientes as $n): ?>
-  <tr>
-    <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($n['first_seen'],0,16))) ?></td>
-    <td style="font-size:12px"><?= $n['contact_type']==='telegram' ? '📱' : '✉️' ?> <?= h(mask_contact($n['contact_type'], $n['contact_value'])) ?></td>
-    <td><strong><?= h($n['keyword']) ?></strong></td>
-    <td><?= h($n['station'] ?? '—') ?></td>
-    <td style="color:var(--green)"><?= (int)$n['match_count'] ?> temas</td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin notificaciones enviadas todavía. El cron de alertas debe estar corriendo.</p>
-<?php endif; ?>
+  <?php if ($station_surveys): ?>
+  <table>
+    <thead><tr>
+      <th>Emisora</th><th>👍</th><th>😐</th><th>👎</th><th>Total</th><th>Última</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($station_surveys as $sv): ?>
+    <tr>
+      <td><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre']) ?></a></td>
+      <td class="pos"><?= $sv['pos'] ?></td>
+      <td class="neu"><?= $sv['neu'] ?></td>
+      <td class="neg"><?= $sv['neg'] ?></td>
+      <td><?= $sv['total'] ?></td>
+      <td style="color:var(--muted);font-size:12px"><?= ago($sv['ultima']) ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin encuestas de emisoras todavía.</p>
+  <?php endif; ?>
 
-<!-- Patrones de programas aprendidos -->
-<h2 id="patrones">Patrones de programas detectados</h2>
-<?php if ($program_patterns): ?>
-<table>
-  <thead><tr>
-    <th>Programa / Keyword</th><th>Emisora</th><th>Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($program_patterns as $pp):
-    $conf_color = $pp['confidence'] >= 0.7 ? 'var(--green)' : ($pp['confidence'] >= 0.4 ? 'var(--yellow)' : 'var(--muted)');
+  <h2 id="encuestas-detalle" style="margin-top:28px">Encuestas — detalle (últimas 100)</h2>
+  <p class="note" style="margin-bottom:10px">IP hasheada: identificador anónimo consistente (misma IP = mismo hash).</p>
+  <?php if ($surveys_detalle): ?>
+  <table>
+    <thead><tr>
+      <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th>IP hash</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($surveys_detalle as $sv):
+      $rlbl = $sv['rating'] ==  1 ? '<span class="pos">👍</span>'
+            : ($sv['rating'] == -1 ? '<span class="neg">👎</span>'
+                                   : '<span class="neu">😐</span>');
+    ?>
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sv['created_at'],0,19))) ?></td>
+      <td><?= $rlbl ?></td>
+      <td><?php if ($sv['slug']): ?><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">bienvenida</span><?php endif; ?></td>
+      <td style="color:var(--muted)"><?= $sv['location'] ? h(ucfirst($sv['location'])) : '—' ?></td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sv['ip_hash'] ?? '', 0, 16)) ?>…</td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin encuestas todavía.</p>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: Compartidos ══════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-compartidos">
+  <h2 id="shares">Compartidos recientes (últimas 100)</h2>
+  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
+  <table>
+    <thead><tr>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
+    </tr></thead>
+    <tbody id="shares-body">
+    <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
+      <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
+      <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
+    </tr>
+    <?php endforeach; else: ?>
+    <tr><td colspan="4" class="empty">Sin compartidos registrados todavía.</td></tr>
+    <?php endif; ?>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ Tab: Reproducciones ═══════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-reproducciones">
+  <h2 id="plays">Reproducciones recientes (últimas 200)</h2>
+  <?php
+  function fmt_duration(?int $secs): string {
+      if ($secs === null) return '—';
+      if ($secs < 60)   return $secs . 's';
+      if ($secs < 3600) return floor($secs/60) . 'm ' . ($secs%60) . 's';
+      return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
+  }
   ?>
-  <tr>
-    <td><strong><?= h($pp['keyword']) ?></strong></td>
-    <td style="font-size:12px"><?= h($pp['nombre']) ?></td>
-    <td style="font-size:12px"><?= $pp['day_of_week'] !== null ? $days_es[(int)$pp['day_of_week']] : 'Todos' ?></td>
-    <td><?= $pp['hour'] !== null ? sprintf('%02d:00', (int)$pp['hour']) : '—' ?></td>
-    <td style="color:<?= $conf_color ?>;font-weight:600"><?= round($pp['confidence'] * 100) ?>%</td>
-    <td style="color:var(--muted)"><?= (int)$pp['occurrences'] ?>x</td>
-    <td style="font-size:12px;color:var(--muted)"><?= h($pp['last_seen'] ?? '—') ?></td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin patrones todavía. Se aprenden automáticamente con el cron semanal (<code>learn_patterns.php</code>) una vez que haya suficiente historial ICY.</p>
-<?php endif; ?>
+  <table>
+    <thead><tr>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
+    </tr></thead>
+    <tbody id="plays-body">
+    <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
+      <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
+      <td style="font-size:12px;white-space:nowrap">
+        <?php if ($pl['is_active']): ?>
+          <span style="color:#22c55e">▶ <?= fmt_duration((int)$pl['duration_secs']) ?></span>
+        <?php else: ?>
+          <?= fmt_duration(isset($pl['duration_secs']) ? (int)$pl['duration_secs'] : null) ?>
+        <?php endif; ?>
+      </td>
+      <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
+    </tr>
+    <?php endforeach; else: ?>
+    <tr><td colspan="6" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
+    <?php endif; ?>
+    </tbody>
+  </table>
+</div>
 
-<!-- ── ICY activas ─────────────────────────────────────────────────────────── -->
-<h2 id="icy">ICY — títulos en tiempo real</h2>
-<p class="note" style="margin-bottom:10px">
-  <?= $icy['total'] ?> emisoras con soporte ICY &nbsp;·&nbsp;
-  <?= $icy['con_titulo'] ?> con título activo &nbsp;·&nbsp;
-  Última actualización: <strong><?= ago($icy['ultima'] ?? null) ?></strong>
-</p>
+<!-- ══ Tab: Sugerencias ══════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-sugerencias">
+  <h2 id="sugerencias">Sugerencias pendientes (<?= count($sugerencias) ?>)</h2>
+  <?php if ($sugerencias): ?>
+  <table>
+    <thead><tr>
+      <th>Nombre</th><th>URL</th><th>Provincia</th><th>Contacto</th><th>Recibida</th><th>Acción</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($sugerencias as $sg): ?>
+    <tr>
+      <td>
+        <?= h($sg['nombre']) ?>
+        <?php if ($sg['homepage']): ?>
+          <br><a href="<?= h($sg['homepage']) ?>" target="_blank" rel="noopener" style="font-size:11px">homepage ↗</a>
+        <?php endif; ?>
+      </td>
+      <td class="url"><a href="<?= h($sg['url']) ?>" target="_blank" rel="noopener"><?= h($sg['url']) ?></a></td>
+      <td><?= h($sg['provincia'] ?? '—') ?></td>
+      <td style="font-size:12px"><?= $sg['contacto'] ? h($sg['contacto']) : '<span style="color:var(--muted)">—</span>' ?></td>
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($sg['created_at']) ?></td>
+      <td style="white-space:nowrap">
+        <form class="inline" method="post">
+          <input type="hidden" name="action" value="approve">
+          <input type="hidden" name="id" value="<?= (int)$sg['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <button class="btn-ok" type="submit" onclick="return confirm('¿Aprobar <?= h(addslashes($sg['nombre'])) ?>?')">✓ Aprobar</button>
+        </form>
+        &nbsp;
+        <form class="inline" method="post">
+          <input type="hidden" name="action" value="reject">
+          <input type="hidden" name="id" value="<?= (int)$sg['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <button class="btn-del" type="submit" onclick="return confirm('¿Eliminar esta sugerencia?')">✕ Rechazar</button>
+        </form>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">No hay sugerencias pendientes.</p>
+  <?php endif; ?>
+</div>
 
-<?php if ($icy_activas): ?>
-<table>
-  <thead><tr><th>Emisora</th><th>Sonando ahora</th><th>Actualizado</th></tr></thead>
-  <tbody>
-  <?php foreach ($icy_activas as $ic):
-    $mins = (int)($ic['mins_ago'] ?? 0);
-    $cls  = $mins <= 15 ? 'mins-ok' : ($mins <= 60 ? 'mins-warn' : 'mins-old');
+<!-- ══ Tab: Problemas ════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-problemas">
+  <h2 id="problemas">Radios con problemas (<?= count($problemas) ?>)</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Ocultas, con stream caído/timeout según el último chequeo, o reportadas por oyentes en los últimos 14 días.</p>
+  <?php if ($problemas): ?>
+  <table>
+    <thead><tr><th>Nombre</th><th>URL</th><th>Motivo</th><th>Acción</th></tr></thead>
+    <tbody>
+    <?php foreach ($problemas as $p):
+      $motivos = [];
+      if (!$p['approved']) $motivos[] = 'oculta';
+      if ($p['estado'] === 'muerto') $motivos[] = 'stream caído';
+      if ($p['estado'] === 'timeout') $motivos[] = 'timeout';
+      if ($p['reportes_recientes'] > 0) $motivos[] = $p['reportes_recientes'] . ' reporte(s)';
+      station_meta_row($p, $csrf, 'problemas', implode(', ', $motivos));
+    endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin problemas detectados.</p>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: Pendientes de verificación ═══════════════════════════════════════ -->
+<div class="tab-content" id="tab-pendientes">
+  <h2 id="pendientes">Pendientes de verificación (<?= count($pendientes_crawler) ?>)</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Aprobadas, pero el crawler de streams (cada 6hs) todavía no las chequeó ni una vez.</p>
+  <?php if ($pendientes_crawler): ?>
+  <table>
+    <thead><tr><th>Nombre</th><th>URL</th><th>Agregada</th><th>Acción</th></tr></thead>
+    <tbody>
+    <?php foreach ($pendientes_crawler as $p): station_meta_row($p, $csrf, 'pendientes', ago($p['created_at'])); endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">No hay radios esperando el primer chequeo.</p>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: Seguimiento especial ═════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-seguimiento">
+  <h2 id="seguimiento">Seguimiento especial (<?= count($seguimiento) ?>)</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">En observación, o con un contacto privado cargado (radios que nos escribieron directamente, casos piloto, etc).</p>
+  <?php if ($seguimiento): ?>
+  <table>
+    <thead><tr><th>Nombre</th><th>URL</th><th>Contacto privado</th><th>Acción</th></tr></thead>
+    <tbody>
+    <?php foreach ($seguimiento as $s): station_meta_row($s, $csrf, 'seguimiento', h($s['contacto_privado'] ?? '')); endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin radios en seguimiento especial.</p>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: Suscriptores ═════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-suscriptores">
+  <h2 id="suscriptores">Suscriptores de alertas</h2>
+
+  <div class="cards" style="margin-bottom:16px">
+    <div class="card"><div class="v"><?= $sub_stats['total'] ?></div><div class="l">Total registrados</div></div>
+    <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Activos</div></div>
+    <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
+    <div class="card"><div class="v"><?= $sub_stats['tg'] ?></div><div class="l">📱 Telegram</div></div>
+    <div class="card"><div class="v"><?= $sub_stats['email'] ?></div><div class="l">✉️ Email</div></div>
+  </div>
+
+  <?php
+  function mask_contact(string $type, string $val): string {
+      if ($type === 'email') {
+          [$u, $d] = explode('@', $val, 2);
+          return mb_substr($u, 0, 2) . str_repeat('*', max(2, mb_strlen($u)-2)) . '@' . $d;
+      }
+      return substr($val, 0, 3) . str_repeat('*', max(3, strlen($val)-5)) . substr($val, -2);
+  }
+  function fmt_prefs(string $json): string {
+      $prefs = json_decode($json, true) ?: [];
+      $out = [];
+      foreach ($prefs as $p) {
+          $icon = $p['type'] === 'genre' ? '🎵' : ($p['type'] === 'program' ? '📺' : '🎤');
+          $out[] = $icon . ' ' . htmlspecialchars($p['value'], ENT_QUOTES, 'UTF-8');
+      }
+      return $out ? implode(' · ', $out) : '<span style="color:var(--muted)">—</span>';
+  }
+  $days_es = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
   ?>
-  <tr>
-    <td><a href="/radio/<?= h($ic['slug']) ?>/" target="_blank"><?= h($ic['nombre']) ?></a></td>
-    <td><?= h($ic['stream_title']) ?></td>
-    <td class="<?= $cls ?>" style="font-size:12px;white-space:nowrap"><?= ago($ic['last_checked']) ?></td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin títulos ICY activos.</p>
-<?php endif; ?>
 
-<!-- ── Crawlers ────────────────────────────────────────────────────────────── -->
-<h2 id="crawlers">Crawlers — últimas ejecuciones</h2>
+  <?php if ($subscribers_list): ?>
+  <table>
+    <thead><tr>
+      <th>ID</th><th>Tipo</th><th>Contacto</th><th>Preferencias</th><th>Estado</th><th>Última notif.</th><th>Registrado</th><th>Acciones</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($subscribers_list as $sub):
+      $active = (int)$sub['active'];
+    ?>
+    <tr>
+      <td style="color:var(--muted);font-size:12px">#<?= $sub['id'] ?></td>
+      <td><?= $sub['contact_type'] === 'telegram' ? '📱 TG' : '✉️ Mail' ?></td>
+      <td style="font-family:monospace;font-size:12px"><?= h(mask_contact($sub['contact_type'], $sub['contact_value'])) ?></td>
+      <td style="font-size:12px;max-width:280px"><?= fmt_prefs($sub['preferences'] ?? '[]') ?></td>
+      <td>
+        <?php if ($active): ?>
+          <span class="badge-ok">● Activo</span>
+        <?php else: ?>
+          <span style="color:var(--yellow)">⏳ Pendiente</span>
+        <?php endif; ?>
+      </td>
+      <td style="font-size:12px;color:var(--muted)"><?= ago($sub['last_notified']) ?></td>
+      <td style="font-size:12px;color:var(--muted);white-space:nowrap"><?= ago($sub['created_at']) ?></td>
+      <td style="white-space:nowrap">
+        <?php if (!$active): ?>
+        <form class="inline" method="post">
+          <input type="hidden" name="action" value="sub_activate">
+          <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <button class="btn-ok" type="submit" title="Activar">✓</button>
+        </form>
+        <?php else: ?>
+        <form class="inline" method="post">
+          <input type="hidden" name="action" value="sub_deactivate">
+          <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <button class="btn-out" type="submit" title="Pausar">⏸</button>
+        </form>
+        <?php endif; ?>
+        &nbsp;
+        <form class="inline" method="post">
+          <input type="hidden" name="action" value="sub_delete">
+          <input type="hidden" name="id" value="<?= (int)$sub['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <button class="btn-del" type="submit" onclick="return confirm('¿Eliminar suscriptor #<?= $sub['id'] ?>?')" title="Eliminar">✕</button>
+        </form>
+      </td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">
+    Sin suscriptores todavía. El form público está en
+    <a href="/radio/suscribirse.php" target="_blank">/radio/suscribirse.php</a>.
+  </p>
+  <?php endif; ?>
 
-<?php if ($crawler_runs): ?>
-<table>
-  <thead><tr>
-    <th>Crawler</th><th>Inicio</th><th>Duración</th>
-    <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
-  </tr></thead>
-  <tbody>
-  <?php foreach ($crawler_runs as $cr): ?>
-  <tr>
-    <td><strong><?= h($cr['crawler']) ?></strong></td>
-    <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($cr['started_at']) ?></td>
-    <td style="white-space:nowrap">
-      <?php if ($cr['secs'] !== null):
-        $s = (int)$cr['secs'];
-        echo $s >= 60 ? floor($s/60).'min '.($s%60).'s' : $s.'s';
-      else: echo '—'; endif; ?>
-    </td>
-    <td><?= $cr['stations_checked'] ?: '—' ?></td>
-    <td class="<?= $cr['changes_detected'] > 0 ? 'pos' : '' ?>"><?= $cr['changes_detected'] ?: '—' ?></td>
-    <td style="color:var(--muted)"><?= $cr['errors'] ?: '—' ?></td>
-    <td style="font-size:12px;color:var(--muted)"><?= h($cr['notes'] ?? '') ?></td>
-  </tr>
-  <?php endforeach; ?>
-  </tbody>
-</table>
-<?php else: ?>
-<p class="empty">Sin ejecuciones registradas todavía.</p>
-<?php endif; ?>
+  <h2 id="notificaciones" style="margin-top:28px">Notificaciones enviadas (últimas 30)</h2>
+  <?php if ($notif_recientes): ?>
+  <table>
+    <thead><tr>
+      <th>Fecha</th><th>Suscriptor</th><th>Keyword detectado</th><th>Emisora</th><th>Matches</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($notif_recientes as $n): ?>
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($n['first_seen'],0,16))) ?></td>
+      <td style="font-size:12px"><?= $n['contact_type']==='telegram' ? '📱' : '✉️' ?> <?= h(mask_contact($n['contact_type'], $n['contact_value'])) ?></td>
+      <td><strong><?= h($n['keyword']) ?></strong></td>
+      <td><?= h($n['station'] ?? '—') ?></td>
+      <td style="color:var(--green)"><?= (int)$n['match_count'] ?> temas</td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin notificaciones enviadas todavía. El cron de alertas debe estar corriendo.</p>
+  <?php endif; ?>
 
-<p class="note" style="margin-top:8px">
-  "Sin título" = emisoras que en ese momento no devolvieron StreamTitle (offline, silencio, ICY vacío). No son errores del cron.
-</p>
+  <h2 id="patrones" style="margin-top:28px">Patrones de programas detectados</h2>
+  <?php if ($program_patterns): ?>
+  <table>
+    <thead><tr>
+      <th>Programa / Keyword</th><th>Emisora</th><th>Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($program_patterns as $pp):
+      $conf_color = $pp['confidence'] >= 0.7 ? 'var(--green)' : ($pp['confidence'] >= 0.4 ? 'var(--yellow)' : 'var(--muted)');
+    ?>
+    <tr>
+      <td><strong><?= h($pp['keyword']) ?></strong></td>
+      <td style="font-size:12px"><?= h($pp['nombre']) ?></td>
+      <td style="font-size:12px"><?= $pp['day_of_week'] !== null ? $days_es[(int)$pp['day_of_week']] : 'Todos' ?></td>
+      <td><?= $pp['hour'] !== null ? sprintf('%02d:00', (int)$pp['hour']) : '—' ?></td>
+      <td style="color:<?= $conf_color ?>;font-weight:600"><?= round($pp['confidence'] * 100) ?>%</td>
+      <td style="color:var(--muted)"><?= (int)$pp['occurrences'] ?>x</td>
+      <td style="font-size:12px;color:var(--muted)"><?= h($pp['last_seen'] ?? '—') ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin patrones todavía. Se aprenden automáticamente con el cron semanal (<code>learn_patterns.php</code>) una vez que haya suficiente historial ICY.</p>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: ICY ═══════════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-icy">
+  <h2 id="icy">ICY — títulos en tiempo real</h2>
+  <p class="note" style="margin-bottom:10px">
+    <?= $icy['total'] ?> emisoras con soporte ICY &nbsp;·&nbsp;
+    <?= $icy['con_titulo'] ?> con título activo &nbsp;·&nbsp;
+    Última actualización: <strong><?= ago($icy['ultima'] ?? null) ?></strong>
+  </p>
+  <?php if ($icy_activas): ?>
+  <table>
+    <thead><tr><th>Emisora</th><th>Sonando ahora</th><th>Actualizado</th></tr></thead>
+    <tbody>
+    <?php foreach ($icy_activas as $ic):
+      $mins = (int)($ic['mins_ago'] ?? 0);
+      $cls  = $mins <= 15 ? 'mins-ok' : ($mins <= 60 ? 'mins-warn' : 'mins-old');
+    ?>
+    <tr>
+      <td><a href="/radio/<?= h($ic['slug']) ?>/" target="_blank"><?= h($ic['nombre']) ?></a></td>
+      <td><?= h($ic['stream_title']) ?></td>
+      <td class="<?= $cls ?>" style="font-size:12px;white-space:nowrap"><?= ago($ic['last_checked']) ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin títulos ICY activos.</p>
+  <?php endif; ?>
+
+  <?php if ($preview_artistas): ?>
+  <h2 style="margin-top:28px;font-size:14px">Artistas detectados — preview de chips</h2>
+  <p class="note" style="margin-bottom:12px">
+    Así aparecen en el formulario de alertas.
+    <span style="color:var(--green)">●</span> muy frecuentes &nbsp;
+    <span style="color:var(--accent)">●</span> frecuentes &nbsp;
+    <span style="color:var(--muted)">●</span> ocasionales
+  </p>
+  <div style="display:flex;flex-wrap:wrap;gap:7px;margin-bottom:8px">
+    <?php foreach ($preview_artistas as $a): ?>
+    <span class="icy-chip freq-<?= $a['tier'] ?>" title="<?= $a['n'] ?> apariciones en el historial">
+      <?= h($a['name']) ?> <span class="cn"><?= $a['n'] ?></span>
+    </span>
+    <?php endforeach; ?>
+  </div>
+  <?php endif; ?>
+</div>
+
+<!-- ══ Tab: Crawlers ══════════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-crawlers">
+  <h2 id="crawlers">Crawlers — últimas ejecuciones</h2>
+  <?php if ($crawler_runs): ?>
+  <table>
+    <thead><tr>
+      <th>Crawler</th><th>Inicio</th><th>Duración</th>
+      <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($crawler_runs as $cr): ?>
+    <tr>
+      <td><strong><?= h($cr['crawler']) ?></strong></td>
+      <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($cr['started_at']) ?></td>
+      <td style="white-space:nowrap">
+        <?php if ($cr['secs'] !== null):
+          $s = (int)$cr['secs'];
+          echo $s >= 60 ? floor($s/60).'min '.($s%60).'s' : $s.'s';
+        else: echo '—'; endif; ?>
+      </td>
+      <td><?= $cr['stations_checked'] ?: '—' ?></td>
+      <td class="<?= $cr['changes_detected'] > 0 ? 'pos' : '' ?>"><?= $cr['changes_detected'] ?: '—' ?></td>
+      <td style="color:var(--muted)"><?= $cr['errors'] ?: '—' ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= h($cr['notes'] ?? '') ?></td>
+    </tr>
+    <?php endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">Sin ejecuciones registradas todavía.</p>
+  <?php endif; ?>
+  <p class="note" style="margin-top:8px">
+    "Sin título" = emisoras que en ese momento no devolvieron StreamTitle (offline, silencio, ICY vacío). No son errores del cron.
+  </p>
+</div>
 
 <p style="margin-top:32px;font-size:11px;color:var(--border);text-align:center">
   Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
@@ -836,6 +1093,44 @@ $days_es = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 <script>
 (function () {
+  // ── Tab navigation ──────────────────────────────────────────────────────────
+  var HASH_MAP = {
+    'resumen': 'resumen',
+    'telegram': 'telegram',
+    'encuestas': 'encuestas',
+    'encuestas-detalle': 'encuestas',
+    'shares': 'compartidos',
+    'plays': 'reproducciones',
+    'sugerencias': 'sugerencias',
+    'suscriptores': 'suscriptores',
+    'notificaciones': 'suscriptores',
+    'patrones': 'suscriptores',
+    'icy': 'icy',
+    'crawlers': 'crawlers'
+  };
+
+  function showTab(id) {
+    document.querySelectorAll('.tab-content').forEach(function(el) { el.classList.remove('active'); });
+    document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    var content = document.getElementById('tab-' + id);
+    if (content) content.classList.add('active');
+    var btn = document.querySelector('.tab-btn[data-tab="' + id + '"]');
+    if (btn) btn.classList.add('active');
+    localStorage.setItem('radio_admin_tab', id);
+  }
+
+  var hash = (location.hash || '').replace('#', '');
+  var initialTab = HASH_MAP[hash] || localStorage.getItem('radio_admin_tab') || 'resumen';
+  showTab(initialTab);
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      showTab(btn.dataset.tab);
+      history.replaceState(null, '', location.pathname);
+    });
+  });
+
+  // ── Auto-refresh ────────────────────────────────────────────────────────────
   function esc(s) {
     return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   }

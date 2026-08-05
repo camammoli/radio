@@ -198,6 +198,12 @@ if ($prov) {
   </div>
   <?php endif; ?>
 
+  <?php if (!empty($s['contacto_publico'])): ?>
+  <div style="margin-bottom:8px;font-size:11px;color:var(--muted)">
+    📧 Contacto de la emisora: <?= htmlspecialchars($s['contacto_publico']) ?>
+  </div>
+  <?php endif; ?>
+
   <!-- Reportar caída -->
   <?php
   $reportado = isset($_GET['reportado']);
@@ -209,6 +215,22 @@ if ($prov) {
   </div>
   <?php elseif (isset($_GET['reportar'])): ?>
   <?php
+    // Guardar el reporte (antes se perdía, solo se mandaba el Telegram)
+    try {
+        $db->prepare('INSERT INTO reportes (station_id, mensaje) VALUES (?, ?)')
+           ->execute([(int)$s['id'], 'Reporte de caída desde la ficha pública']);
+    } catch (Exception $e) {
+        try {
+            $db->exec('CREATE TABLE IF NOT EXISTS reportes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                station_id INTEGER REFERENCES stations(id),
+                mensaje TEXT,
+                created_at TEXT DEFAULT CURRENT_TIMESTAMP
+            )');
+            $db->prepare('INSERT INTO reportes (station_id, mensaje) VALUES (?, ?)')
+               ->execute([(int)$s['id'], 'Reporte de caída desde la ficha pública']);
+        } catch (Exception $e2) {}
+    }
     // Notificar a Telegram y redirigir
     if (notify_active($db) && defined('TG_TOKEN') && TG_TOKEN) {
         $msg = '⚠️ Reporte de caída: ' . $s['nombre'] . "\n" . $s['url'];
