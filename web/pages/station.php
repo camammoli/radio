@@ -375,16 +375,16 @@ if ($prov) {
         : '';
     },
 
-    onError: function (rawUrl) {
+    onError: function (rawUrl, nombre, msg) {
       // VLC fallback
       var vlc = document.getElementById('vlc-link');
       if (!vlc) {
         vlc = document.createElement('a');
         vlc.id = 'vlc-link';
         vlc.className = 'rp-vlc';
-        vlc.textContent = '📡 Abrir en VLC';
         document.querySelector('.player-wrap').appendChild(vlc);
       }
+      vlc.textContent = '📡 ' + (msg && msg.indexOf('formato') !== -1 ? 'Tu navegador no soporta este formato — Abrir en VLC' : 'Abrir en VLC');
       vlc.href = 'vlc://' + rawUrl;
       vlc.style.display = 'inline-block';
     },

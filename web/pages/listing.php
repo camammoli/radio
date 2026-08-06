@@ -343,9 +343,9 @@ var player = RadioPlayer({
     }
   },
 
-  onError: function (rawUrl) {
+  onError: function (rawUrl, nombre, msg) {
     if (activeEl) markEl(activeEl, 'rp-error');
-    playerTitle.textContent += ' — no disponible';
+    playerTitle.textContent += ' — ' + (msg || 'no disponible');
     btnVlc.href = 'vlc://' + rawUrl;
     btnVlc.style.display = 'inline';
   },

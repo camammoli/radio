@@ -30,7 +30,7 @@
   'use strict';
 
   var API_BASE  = '/radio/api';
-  var PROXY_URL = '/radio/proxy.php?url=';
+  var PROXY_URL = '/radio/proxy.php?station=';
   var HB_MS     = 30000;   // heartbeat cada 30s
   var NP_MS     = 30000;   // now-playing poll cada 30s
   var TIMEOUT_MS = 12000;  // timeout de carga de stream
@@ -97,7 +97,14 @@
       survStop();
       welcomeStop();
       onNowPlaying(null);
-      onError(url, nombre, 'no disponible en web');
+      // audio.error.code: 3=DECODE, 4=SRC_NOT_SUPPORTED — el navegador bajó el
+      // stream pero no puede decodificarlo (típico con AAC+/HE-AAC en algunos
+      // navegadores). Distinto de un problema de red/conexión.
+      var code = audio.error ? audio.error.code : 0;
+      var msg = (code === 3 || code === 4)
+        ? 'tu navegador no puede reproducir este formato — probá abrirla en VLC'
+        : 'no disponible en web';
+      onError(url, nombre, msg);
     });
 
     audio.addEventListener('pause', function () {
@@ -177,12 +184,14 @@
 
     // ── Play / Stop ───────────────────────────────────────────────────────────
     function resolveUrl(raw) {
-      if (/\.pls(\?|$)/i.test(raw)) return PROXY_URL + encodeURIComponent(raw);
+      // El proxy busca la URL real server-side a partir del slug (nunca
+      // recibe una URL del cliente, para no ser un proxy HTTP abierto).
+      if (/\.pls(\?|$)/i.test(raw)) return PROXY_URL + encodeURIComponent(slug);
       if (/\.m3u(\?|$)/i.test(raw) && !/\.m3u8(\?|$)/i.test(raw))
-        return PROXY_URL + encodeURIComponent(raw);
+        return PROXY_URL + encodeURIComponent(slug);
       // Streams HTTP desde página HTTPS: usar proxy (no upgrade directo, los certs suelen fallar)
       if (location.protocol === 'https:' && raw.indexOf('http://') === 0)
-        return PROXY_URL + encodeURIComponent(raw);
+        return PROXY_URL + encodeURIComponent(slug);
       return raw;
     }
 
