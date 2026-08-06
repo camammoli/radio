@@ -4,6 +4,92 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0684 — 2026-08-06 — Dedup streamtheworld, sesiones huérfanas, catálogo público y cache del Service Worker
+
+### Contexto
+
+Carlos pidió deduplicar emisoras con duplicados de streamtheworld.com (Aspen, Radio Mitre, Rock&Pop, Continental, Disney) — hunt_stations_v2.py dedupea por URL exacta y nunca detectó que un servidor de borde fijo (`14983.live.streamtheworld.com:3690`) y la API de redirección (`playerservices.streamtheworld.com/api/livestream-redirect/...`) son la misma emisora real, porque los servidores de borde van quedando obsoletos con el tiempo sin que nada lo detecte. De ahí se encadenaron varios hallazgos y fixes relacionados en la misma sesión.
+
+### 1) Deduplicación + crawler nuevo
+
+Aplicado a mano en producción: **Aspen** (3 entradas de servidor fijo ocultadas — una bloqueada por el hosting en puerto no estándar, una rechaza acceso directo, una con DNS muerto — se dejó activa `aspen-486`, la de redirección). **Horizonte**: mismo patrón, 1 oculta. **Continental**: las 2 entradas existentes están muertas (DNS no resuelve), ninguna variante de redirección funcional encontrada — quedó sin emisora activa, pendiente. **Disney**: 2 variantes de redirección (`.m3u8` vs `.aac`), se consolidó todo en el slug `disney` con la URL `.aac` (más simple, menor latencia, sin dependencia de hls.js), la otra ocultada liberando su URL (unique constraint).
+
+**`crawlers/dedupe_streamtheworld_v2.py`** (nuevo): agrupa emisoras aprobadas por "callsign" real (extraído tanto de URLs de redirección como de servidor fijo). Si hay una variante de redirección y una o más fijas → oculta las fijas (`approved=0`, reversible). Grupos sin variante de redirección, o con más de una, se reportan para revisión manual — nunca se auto-resuelven. De paso detecta el bug de `nombre` roto (contiene una URL en vez de texto, herencia de un crawler viejo). `--apply --notify` corre vía **`.github/workflows/dedupe-streamtheworld.yml`**, lunes 08:30 AR. Probado en local (dry-run + apply real, coincide con lo hecho a mano) y en una corrida real en GitHub Actions (0 grupos nuevos, como esperado).
+
+### 2) Bug real: sesiones de reproducción que quedan abiertas para siempre
+
+`api/stations.php` tenía su propia limpieza de `listeners` vencidos (`DELETE ... WHERE last_seen < -90s`) que **no cerraba `plays.ended_at` antes de borrar**, a diferencia de `listeners.php` que sí lo hacía. Cualquier sesión cuyo vencimiento fuera detectado primero por esta ruta (muy transitada, se llama por cada visita a una ficha individual) quedaba "reproduciendo" para siempre sin que nada la cierre. Encontrada con datos reales: una sesión de **2 semanas** de antigüedad (`session_id o35wplvnu8imrxenxp6`, `plays.id 795`, desde el 23/07). Cerrada a mano con `ended_at = played_at` (duración desconocida, no se inventa un número). Fix de código: agregado el mismo bloque de cierre que ya tenía `listeners.php`, antes del DELETE.
+
+### 3) Catálogo público más limpio — ocultar caídas de 14+ días
+
+Pendiente documentado desde el 23/07, resuelto ahora. `v_stations` (usada por listado, API, sitemap, M3U) ahora excluye las emisoras con `estado='muerto'` y `last_ok` de hace 14+ días o nulo. `'timeout'` no se oculta — señal más ambigua, puede ser transitorio. Siguen existiendo en la DB y visibles en el panel admin (pestaña Problemas), solo dejan de mostrarse a los visitantes. Resultado: bajó de 1259 a 1190 emisoras visibles públicamente (69 ocultadas), confirmado 1:1 contra la API pública real.
+
+**Cambio de mecanismo de migración de `v_stations`:** el primer intento de este mismo día (agregar solo `contacto_publico` al guard) casi rompe el sitio en producción — la vista nueva también referenciaba `s.destacada`, columna que no existía todavía porque esa migración vivía solo en `admin.php` (solo corre si Carlos está logueado). `listing.php` y `station.php` tiraron 500 real en producción por ~2 minutos hasta el segundo fix. Reemplazado por un mecanismo más robusto: la vista se versiona con un comentario embebido (`v_stations_version:N`) comparado contra `sqlite_master.sql`, se recrea sola cuando cambia. Vive en `_db.php` (no solo en `admin.php`) porque `station.php`/`listing.php` reciben tráfico antes de que se cargue el panel admin — mismo criterio que la lección ya documentada sobre `listeners.php` en TKT-0716.
+
+### 4) Gestión de emisoras: contacto, destacada, observación
+
+Motivado por un caso real: **OK FM Radio** (Florencio Varela, Buenos Aires) escribió directo por el formulario de sugerencias pidiendo estar en el listado — la propia emisora, no un oyente, primera vez que pasa. Carlos la aprobó y pidió armar infraestructura para gestionar este tipo de casos.
+
+Campos nuevos en `stations`: `en_observacion`, `destacada` (booleanos), `contacto_publico` (visible en la ficha pública), `contacto_privado` y `notas_privadas` (solo admin). Tabla `reportes` nueva — el botón "¿la señal está caída? Reportar" en `station.php` antes solo mandaba un Telegram sin dejar rastro, ahora también persiste.
+
+3 pestañas nuevas en `admin.php`, cada una con botón "Editar" inline (`station_meta_row()`, formulario `<details>` con los 5 campos):
+- **Problemas**: ocultas (`approved=0`) + `muerto`/`timeout` + reportadas últimos 14 días
+- **Pendientes de verificación**: aprobadas sin fila en `stream_status` (esperando el primer chequeo del crawler)
+- **Seguimiento**: `en_observacion=1` o con `contacto_privado` cargado
+
+Probado end-to-end: guardado real vía POST, valor persistido y verificado en la DB de producción.
+
+### 5) Bug real: Aspen/Mitre/Los40 "online" pero no reproducen — cache del Service Worker
+
+Carlos reportó 3 emisoras de las más escuchadas del sitio marcadas `estado='ok'` (confirmado con ICY título en vivo) que no reproducían en su navegador — mismo navegador donde antes sí andaban. Hipótesis inicial (códec AAC+/HE-AAC sin soporte en el navegador) descartada por el propio Carlos: en Brave (Chromium, decodifica AAC+ sin problema) "antes andaba y ahora nada", mismo navegador.
+
+Prueba server-side de 4m24s replicando el patrón exacto del navegador (audio sostenido vía proxy + consulta a `nowplaying.php` cada 30s, igual que hace `player.js`) — 8 ciclos, cero degradación. Descartado timeout de hosting/infraestructura.
+
+Causa real, confirmada con la consola real del navegador de Carlos (`proxy.php:1 Failed to load resource: the server responded with a status of 400 ()`): **`sw.js` cachea archivos `.js` con estrategia cache-first** ("son inmutables o versionados" — supuesto que no se cumple para `player.js`, sin hash/versión en el nombre). `CACHE_NAME` no se bumpeaba desde el **01/07** (commit `d70900b`), casi un mes antes de que `proxy.php` cambiara de `?url=` a `?station=` el 30/07 (TKT-0683). Cualquier navegador que ya hubiera visitado el sitio antes del 30/07 quedó sirviendo para siempre, desde caché local, el `player.js` viejo — que sigue llamando a `proxy.php?url=...`, parámetro que el proxy nuevo ni siquiera lee. Resultado: 400 ("Emisora inválida", `station` vacío) para esos visitantes específicos, mientras el crawler y cualquier visitante nuevo veían todo perfecto — coincide exactamente con "empezó justo cuando tocamos el proxy" pese a que el fix del proxy en sí no tenía el bug.
+
+**Fix:** bump `CACHE_NAME` a `radio-ar-v5` (`web/sw.js`). Fuerza a todos los clientes a descartar la caché vieja en el próximo `activate()`. Confirmado por Carlos tras hard refresh: funciona.
+
+**Bonus (mismo hallazgo):** el manejador de error de `player.js` trataba cualquier fallo (red, formato, lo que sea) con el mismo mensaje genérico "no disponible en web", ignorando `audio.error.code`. `listing.php`/`station.php` ni siquiera leían el 3er parámetro (`msg`) que `onError()` ya les pasaba. Ahora `audio.error.code` 3 (DECODE) o 4 (SRC_NOT_SUPPORTED) arma un mensaje distinto ("tu navegador no puede reproducir este formato — probá VLC"), y ambas páginas ya lo muestran. El botón de fallback a VLC ya existía; el mensaje nuevo explica por qué usarlo.
+
+### Archivos afectados
+
+`web/admin.php`, `web/api/_db.php`, `web/api/stations.php`, `web/pages/station.php`, `web/pages/listing.php`, `web/assets/player.js`, `web/sw.js`, `crawlers/dedupe_streamtheworld_v2.py` (nuevo), `.github/workflows/dedupe-streamtheworld.yml` (nuevo).
+
+### Estado
+
+Todo commiteado y pusheado a `camammoli/radio` (commits `9ceca56`, `0075ba3`, `a920e4a`, `06db3e6`). Verificado en producción en cada paso. Backups de la DB pre-cambio en `~/Escritorio/` (varios timestamps del 05 y 06/08). Pendiente real: encontrar una URL funcional para Continental.
+
+---
+
+## TKT-0683 — 2026-07-30 — fix: SSRF y proxy HTTP abierto en proxy.php, nowplaying.php y sugerir.php
+
+### Contexto
+
+Auditoría de bugs pedida por Carlos (código + métricas en vivo del panel admin). Encontró que `proxy.php` aceptaba cualquier URL del visitante (`?url=`) sin whitelist — funcionaba como proxy HTTP abierto hacia cualquier destino de internet, con protección SSRF débil (chequeo por texto sobre el hostname, bypasseable con un redirect 302 externo hacia `127.0.0.1` gracias a `FOLLOWLOCATION` activo, o con DNS rebinding). `web/api/nowplaying.php` tenía el mismo problema en su rama legacy `?url=` (compatibilidad v1), sin ningún filtro. `web/nowplaying.php` (archivo suelto en la raíz, dead code de v1 sin ninguna referencia en el código actual) tenía el mismo hueco, también sin filtro.
+
+### Fix
+
+- **`web/proxy.php`**: en vez de recibir `?url=`, ahora recibe `?station=SLUG` y busca la URL real en la DB server-side (`SELECT url FROM stations WHERE slug=? AND approved=1`). El visitante ya no controla qué URL se fetchea. Se agregó revalidación de la URL resuelta al parsear playlists `.pls`/`.m3u` (antes esa URL, que viene de contenido externo, no se revalidaba después de la resolución).
+- **`web/assets/player.js`**: `PROXY_URL` y `resolveUrl()` actualizados para pasar el slug de la emisora en vez de la URL cruda.
+- **`web/api/nowplaying.php`**: se eliminó por completo la rama `?url=` legacy. Solo acepta `?slug=` de una emisora existente en la DB.
+- **`web/nowplaying.php`**: eliminado (`git rm`). Era dead code v1 sin ninguna referencia, sin filtro SSRF alguno.
+- **`web/_ssrf_guard.php`** (nuevo): `radio_url_is_safe($url)` — resuelve el DNS del host y valida la(s) IP(s) real(es) contra rangos privados/loopback/link-local (`FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE`, incluye `169.254.0.0/16`). Reemplaza el chequeo anterior por texto sobre el hostname, que no protegía contra DNS rebinding.
+- **`web/sugerir.php::check_stream()`**: sigue necesitando aceptar una URL arbitraria (es el formulario para sugerir una emisora nueva). Ahora usa `radio_url_is_safe()` en cada hop y sigue los redirects a mano (`FOLLOWLOCATION => false` + loop revalidando cada `Location` antes de seguirlo, máx. 5 saltos) en vez de dejar que curl los siga solo sin revalidar.
+
+### Deploy y verificación
+
+Backup completo pre-cambio (repo local + copia descargada de producción) en `~/Escritorio/Backups/radio_ssrf_fix_20260730/`. Deploy a `/radio/` vía lftp con patrón atómico (`put ... .new` + `mv`). Verificado en vivo contra producción:
+- `nowplaying.php` (legacy) → 404 (eliminado)
+- `proxy.php?url=...` y `api/nowplaying?url=...` → 400 (ya no aceptan URL arbitraria)
+- `proxy.php?station=<slug real>` → 200, stream de audio AAC real verificado end-to-end (106KB descargados, formato confirmado)
+- Página de emisora y listado principal → 200 sin cambios
+
+### Pendiente
+
+Cambios sin commitear todavía en el repo local (a la espera de que seas vos quien pida el commit).
+
+---
+
 ## TKT-0734 — 2026-07-09 — fix+feat: v3.0.0 — fix crawler workflows + suscriptores + alertas ICY
 
 ### Fix: lftp `|| true` dentro de heredoc (85% de failures desde 07/07)
