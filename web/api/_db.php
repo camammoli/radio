@@ -26,23 +26,21 @@ function radio_db(): PDO {
     $pdo->exec('PRAGMA foreign_keys = ON');
     $pdo->exec('PRAGMA busy_timeout = 3000');
 
-    // v_stations necesita conocer contacto_publico para poder mostrarlo en la
-    // ficha pública — la migración vive acá (no solo en admin.php) porque
-    // station.php puede recibir tráfico antes de que se cargue el panel admin.
-    try {
-        $pdo->query('SELECT contacto_publico, destacada FROM v_stations LIMIT 0');
-    } catch (Exception $e) {
-        try { $pdo->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT'); } catch (Exception $e2) {}
-        try { $pdo->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0'); } catch (Exception $e2) {}
-        $pdo->exec('DROP VIEW IF EXISTS v_stations');
-        $pdo->exec('
+    // v_stations se versiona con un comentario (v3, v4, ...) — cuando cambia la
+    // definición acá abajo, se compara contra lo guardado en sqlite_master y se
+    // recrea sola. La migración vive en _db.php (no solo en admin.php) porque
+    // station.php/listing.php pueden recibir tráfico antes de que se cargue el
+    // panel admin.
+    $v_stations_version = 4; // v4: oculta del público las muertas hace 14+ días
+    $v_stations_sql = "
             CREATE VIEW v_stations AS
+            -- v_stations_version:$v_stations_version
             SELECT
                 s.id, s.n, s.slug, s.nombre, s.url, s.provincia, s.tags,
                 s.codec, s.bitrate, s.homepage, s.logo, s.source,
                 s.rb_uuid, s.rb_votes, s.rb_clicks,
                 s.contacto_publico, s.destacada,
-                COALESCE(ss.estado, "unknown")          AS estado,
+                COALESCE(ss.estado, \"unknown\")          AS estado,
                 ss.http_code, ss.response_ms,
                 ss.consecutive_failures,
                 ss.last_checked, ss.last_ok,
@@ -57,7 +55,21 @@ function radio_db(): PDO {
                 SELECT station_id, COUNT(*) AS total_plays FROM plays GROUP BY station_id
             ) p ON p.station_id = s.id
             WHERE s.approved = 1
-        ');
+              -- Oculta del listado público las que llevan 14+ días muertas
+              -- (siguen en la DB y visibles en el panel admin, solo no se
+              -- muestran a los visitantes). 'timeout' no se oculta: es una
+              -- señal más ambigua que 'muerto', puede ser algo transitorio.
+              AND NOT (
+                    ss.estado = 'muerto'
+                    AND (ss.last_ok IS NULL OR ss.last_ok < datetime('now','-14 days'))
+              )
+        ";
+    $current_sql = $pdo->query("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_stations'")->fetchColumn();
+    if (strpos((string)$current_sql, "v_stations_version:$v_stations_version") === false) {
+        try { $pdo->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT'); } catch (Exception $e2) {}
+        try { $pdo->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0'); } catch (Exception $e2) {}
+        $pdo->exec('DROP VIEW IF EXISTS v_stations');
+        $pdo->exec($v_stations_sql);
     }
 
     return $pdo;
