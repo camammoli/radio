@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radio-ar-v4';
+const CACHE_NAME = 'radio-ar-v5';
 const PRECACHE   = ['/radio/manifest.json'];
 const ASSET_RE   = /\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|gif)(\?|$)/i;
 
