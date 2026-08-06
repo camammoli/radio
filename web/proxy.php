@@ -2,34 +2,37 @@
 /**
  * proxy.php — resuelve y pipa streams de audio para el player web
  *
+ * Recibe el slug de una emisora ya existente en la DB (nunca una URL
+ * arbitraria del visitante) — antes aceptaba ?url= directo, lo que lo
+ * convertía en un proxy HTTP abierto hacia cualquier destino. La URL real
+ * se busca server-side a partir del slug.
+ *
  * Problemas que resuelve:
  *  - HTTP streams en página HTTPS (mixed content bloqueado por el browser)
  *  - .pls / .m3u playlists que el elemento <audio> no puede parsear
  *
  * Uso desde JS:
- *   /radio/proxy.php?url=http%3A%2F%2F...
- *   /radio/proxy.php?url=http%3A%2F%2F...stream.pls
- *   /radio/proxy.php?url=https%3A%2F%2F...listen.m3u%3Fradio%3D123
+ *   /radio/proxy.php?station=SLUG
  */
 
 require_once __DIR__ . '/log.php';
+require_once __DIR__ . '/_ssrf_guard.php';
+require_once __DIR__ . '/api/_db.php';
 
-$url = rawurldecode($_GET['url'] ?? '');
-
-// ── Validación básica ─────────────────────────────────────────────────────────
-if (!preg_match('#^https?://#i', $url)) {
+$slug = trim($_GET['station'] ?? '');
+if ($slug === '' || !preg_match('/^[a-z0-9-]{1,120}$/', $slug)) {
     http_response_code(400);
-    exit('URL inválida');
+    exit('Emisora inválida');
 }
 
-// Protección SSRF: bloquear redes privadas y loopback
-$host = parse_url($url, PHP_URL_HOST);
-if (!$host || preg_match(
-    '#^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1$|0\.0\.0\.0)#i',
-    $host
-)) {
-    http_response_code(403);
-    exit('Acceso denegado');
+$db  = radio_db();
+$stm = $db->prepare('SELECT url FROM stations WHERE slug = ? AND approved = 1 LIMIT 1');
+$stm->execute([$slug]);
+$url = $stm->fetchColumn();
+
+if (!$url || !radio_url_is_safe($url)) {
+    http_response_code(404);
+    exit('Emisora no encontrada');
 }
 
 // ── Resolución de playlists ───────────────────────────────────────────────────
@@ -62,7 +65,7 @@ if ($isPls || $isM3u) {
         }
     }
 
-    if (!$resolved) {
+    if (!$resolved || !radio_url_is_safe($resolved)) {
         http_response_code(502);
         exit('Playlist vacía o formato desconocido');
     }

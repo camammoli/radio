@@ -25,6 +25,36 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     last_notified TEXT
 )'); } catch (Exception $e) {}
 
+// Top artistas desde icy_history (para chips de selección)
+$noise_artistas = ['classic hits','variados','mix','desconocido','various','unknown',
+                   'fm del mar','sport billy','cop centro','symploké','symploke',
+                   'el hacedor iglesia','sarah nimmo','variado'];
+$artistas_raw = $db->query("
+    SELECT trim(substr(title, 1, instr(title,' - ')-1)) AS artista, COUNT(*) AS n
+    FROM icy_history
+    WHERE title LIKE '% - %'
+      AND length(trim(substr(title, 1, instr(title,' - ')-1))) BETWEEN 2 AND 45
+    GROUP BY lower(trim(substr(title, 1, instr(title,' - ')-1)))
+    HAVING n >= 2
+    ORDER BY n DESC
+    LIMIT 80
+")->fetchAll(PDO::FETCH_ASSOC);
+$top_artistas = [];
+if ($artistas_raw) {
+    $max_n = max(array_column($artistas_raw, 'n'));
+    foreach ($artistas_raw as $r) {
+        $low = strtolower($r['artista']);
+        if (preg_match('/\bfm\b/i', $r['artista'])) continue;
+        if (preg_match('/\b\d{4}\b/', $r['artista']))  continue;
+        if (in_array($low, $noise_artistas))            continue;
+        $norm  = mb_convert_case($r['artista'], MB_CASE_TITLE, 'UTF-8');
+        $ratio = $r['n'] / $max_n;
+        $tier  = $ratio >= 0.4 ? 'hot' : ($ratio >= 0.15 ? 'warm' : 'cool');
+        $top_artistas[] = ['name' => $norm, 'n' => (int)$r['n'], 'tier' => $tier];
+        if (count($top_artistas) >= 40) break;
+    }
+}
+
 // Géneros disponibles (top tags de la DB)
 $top_tags = $db->query("
     SELECT tags FROM stations WHERE approved=1 AND tags IS NOT NULL AND tags != '[]' LIMIT 500
@@ -81,6 +111,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
         $err = 'Token inválido.'; $mode = 'register';
     } else {
         $prefs = [];
+        if (!empty($_POST['artist_chips']) && is_array($_POST['artist_chips'])) {
+            foreach ($_POST['artist_chips'] as $k) {
+                $k = trim($k);
+                if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'artist', 'value' => $k];
+            }
+        }
         if (!empty($_POST['keywords_artist'])) {
             foreach (preg_split('/[\n,]+/', $_POST['keywords_artist']) as $k) {
                 $k = trim($k);
@@ -99,6 +135,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
                 if ($g) $prefs[] = ['type' => 'genre', 'value' => $g];
             }
         }
+        // Deduplicar por tipo+valor (por si el chip y el textarea tienen lo mismo)
+        $seen_prefs = []; $prefs_ok = [];
+        foreach ($prefs as $p) {
+            $key = ($p['type'] ?? '') . ':' . strtolower($p['value'] ?? '');
+            if (!isset($seen_prefs[$key])) { $seen_prefs[$key] = true; $prefs_ok[] = $p; }
+        }
+        $prefs = $prefs_ok;
         if (empty($prefs)) {
             $err = 'Agregá al menos un artista, programa o género.';
         } else {
@@ -163,13 +206,20 @@ if (isset($_GET['activar']) && strlen($_GET['activar']) === 32) {
     }
 }
 
-// Acción: nueva suscripción POST
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// Acción: nueva suscripción POST (NO para action=editar ni action=send_link)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''), ['editar', 'send_link'])) {
     $type  = in_array($_POST['type'] ?? '', ['telegram', 'email']) ? $_POST['type'] : '';
     $value = trim($_POST['value'] ?? '');
     $prefs = [];
 
-    // Artistas
+    // Artistas desde chips seleccionados
+    if (!empty($_POST['artist_chips']) && is_array($_POST['artist_chips'])) {
+        foreach ($_POST['artist_chips'] as $k) {
+            $k = trim($k);
+            if ($k && mb_strlen($k) <= 60) $prefs[] = ['type' => 'artist', 'value' => $k];
+        }
+    }
+    // Artistas desde campo libre
     if (!empty($_POST['keywords_artist'])) {
         foreach (preg_split('/[\n,]+/', $_POST['keywords_artist']) as $k) {
             $k = trim($k);
@@ -192,6 +242,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Deduplicar por tipo+valor
+    $seen_prefs = []; $prefs_ok = [];
+    foreach ($prefs as $p) {
+        $key = ($p['type'] ?? '') . ':' . strtolower($p['value'] ?? '');
+        if (!isset($seen_prefs[$key])) { $seen_prefs[$key] = true; $prefs_ok[] = $p; }
+    }
+    $prefs = $prefs_ok;
+
     if (!$type) {
         $err = 'Seleccioná un método de contacto.';
     } elseif (!$value) {
@@ -204,7 +262,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $err = 'Agregá al menos un artista, programa o género.';
     } else {
         // Verificar si ya existe
-        $exists = $db->prepare("SELECT id, active, token FROM subscribers WHERE contact_type=? AND contact_value=? LIMIT 1");
+        $exists = $db->prepare("SELECT id, active, token FROM subscribers WHERE contact_type=? AND lower(contact_value)=lower(?) LIMIT 1");
         $exists->execute([$type, $value]);
         $existing = $exists->fetch(PDO::FETCH_ASSOC);
 
@@ -304,6 +362,9 @@ textarea{resize:vertical;min-height:80px}
 .genre-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 .genre-chip{cursor:pointer;padding:6px 12px;border-radius:20px;border:1px solid var(--border);font-size:13px;color:var(--muted);background:var(--bg);transition:all .15s}
 .genre-chip.sel{background:var(--accent);color:#fff;border-color:var(--accent)}
+.genre-chip.freq-hot:not(.sel){border-color:rgba(34,197,94,.5);color:var(--green)}
+.genre-chip.freq-warm:not(.sel){border-color:rgba(59,130,246,.45);color:var(--accent)}
+.genre-chip.freq-cool:not(.sel){color:var(--muted)}
 .btn{display:block;width:100%;padding:13px;border:none;border-radius:8px;background:var(--accent);color:#fff;font-size:15px;font-weight:700;cursor:pointer;transition:background .15s}
 .btn:hover{background:#2563eb}
 .alert-ok{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:16px;color:var(--green);font-size:14px;margin-bottom:16px}
@@ -388,6 +449,28 @@ a{color:var(--accent)}
       <input type="hidden" name="token" value="<?= htmlspecialchars($manage_sub['token']) ?>">
 
       <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">🎤 Artistas o música</label>
+
+      <?php if ($top_artistas): ?>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Artistas detectados en el aire — tocá para seleccionar:
+      </p>
+      <div class="genre-grid" id="artist-chip-grid">
+        <?php
+        $existing_artist_vals = array_map('strtolower', array_map(fn($p) => $p['value'],
+            array_filter($existing_prefs, fn($p) => ($p['type'] ?? '') === 'artist')));
+        foreach ($top_artistas as $a):
+            $sel_a = in_array(strtolower($a['name']), $existing_artist_vals);
+        ?>
+        <div class="genre-chip freq-<?= $a['tier'] ?> <?= $sel_a ? 'sel' : '' ?>" data-val="<?= htmlspecialchars($a['name']) ?>" title="<?= $a['n'] ?> veces en el aire"><?= htmlspecialchars($a['name']) ?></div>
+        <?php endforeach; ?>
+      </div>
+      <div id="artist-chip-hidden"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:14px">
+        ¿No está tu artista? Escribilo abajo.
+      </p>
+      <?php endif; ?>
+
+      <label style="font-size:13px;color:var(--muted);margin-bottom:4px">Otros artistas / canciones específicas</label>
       <textarea name="keywords_artist" placeholder="Michael Jackson&#10;Gustavo Cerati"><?= htmlspecialchars($existing_artists) ?></textarea>
       <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">Avisa cuando haya <strong>2 o más temas</strong> en 30 minutos.</p>
 
@@ -493,6 +576,9 @@ a{color:var(--accent)}
         <label for="val-em">Correo electrónico</label>
         <input type="email" id="val-em" placeholder="tu@correo.com"
                value="<?= htmlspecialchars(($_POST['type'] ?? '') === 'email' ? ($_POST['value'] ?? '') : '') ?>">
+        <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:14px">
+          Te vamos a mandar un email de confirmación. Hacé clic en el link para activar las alertas.
+        </p>
       </div>
     </div>
 
@@ -505,6 +591,23 @@ a{color:var(--accent)}
       </div>
 
       <label style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:6px">🎤 Artistas o música</label>
+
+      <?php if ($top_artistas): ?>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:8px">
+        Artistas detectados en el aire las últimas semanas — tocá para seleccionar:
+      </p>
+      <div class="genre-grid" id="artist-chip-grid">
+        <?php foreach ($top_artistas as $a): ?>
+        <div class="genre-chip freq-<?= $a['tier'] ?>" data-val="<?= htmlspecialchars($a['name']) ?>" title="<?= $a['n'] ?> veces en el aire"><?= htmlspecialchars($a['name']) ?></div>
+        <?php endforeach; ?>
+      </div>
+      <div id="artist-chip-hidden"></div>
+      <p style="font-size:12px;color:var(--muted);margin-top:4px;margin-bottom:14px">
+        ¿No está tu artista? Escribilo abajo.
+      </p>
+      <?php endif; ?>
+
+      <label style="font-size:13px;color:var(--muted);margin-bottom:4px">Otros artistas / canciones específicas</label>
       <textarea name="keywords_artist" placeholder="Michael Jackson&#10;Gustavo Cerati&#10;Soda Stereo"><?= htmlspecialchars($_POST['keywords_artist'] ?? '') ?></textarea>
       <p style="font-size:12px;color:var(--muted);margin-top:-10px;margin-bottom:18px">
         Te avisamos cuando una emisora lleve <strong>2 o más temas</strong> del artista en 30 minutos — así filtramos el tema suelto ocasional.
@@ -584,6 +687,25 @@ function updateGenreHidden(){
   });
 }
 updateGenreHidden();
+
+// Chips de artistas
+document.querySelectorAll('#artist-chip-grid .genre-chip').forEach(function(chip){
+  chip.addEventListener('click', function(){
+    chip.classList.toggle('sel');
+    updateArtistChipHidden();
+  });
+});
+function updateArtistChipHidden(){
+  var container = document.getElementById('artist-chip-hidden');
+  if (!container) return;
+  container.innerHTML = '';
+  document.querySelectorAll('#artist-chip-grid .genre-chip.sel').forEach(function(c){
+    var inp = document.createElement('input');
+    inp.type='hidden'; inp.name='artist_chips[]'; inp.value=c.dataset.val;
+    container.appendChild(inp);
+  });
+}
+updateArtistChipHidden();
 </script>
 </body>
 </html>

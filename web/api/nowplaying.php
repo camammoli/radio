@@ -5,7 +5,10 @@
  * 1. Sirve desde icy_cache (DB) si fue chequeado en los últimos 60s.
  * 2. Si está desactualizado, fetcha el stream ICY en tiempo real y actualiza la caché.
  *
- * También acepta ?url=URL directo (para compatibilidad con v1 nowplaying.php).
+ * Solo acepta ?slug= de una emisora existente en la DB — el viejo ?url=
+ * directo (compatibilidad v1) se sacó porque le permitía a cualquier
+ * visitante hacer que el servidor conectara a la URL que quisiera, sin
+ * ningún filtro (SSRF).
  * Respuesta: {ok, title, cached, checked_at}
  */
 
@@ -17,9 +20,9 @@ api_method('GET');
 
 $db   = radio_db();
 $slug = str_param('slug', 100);
-$url  = str_param('url', 500);   // compatibilidad v1
+$url  = '';
 
-// Resolver URL desde slug o usarla directamente
+// Resolver URL desde slug
 $station_id = null;
 if ($slug !== '') {
     $r = $db->prepare('SELECT id, url FROM stations WHERE slug = ? LIMIT 1');
@@ -44,7 +47,7 @@ if (isset($_GET['batch'])) {
     api_response($rows ?: new stdClass());
 }
 
-if ($url === '') api_error('slug o url requerido', 400);
+if ($url === '') api_error('slug requerido o inexistente', 400);
 
 // ── Leer caché ────────────────────────────────────────────────────────────────
 

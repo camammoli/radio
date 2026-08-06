@@ -1753,8 +1753,6 @@ https://streamall.alsolnet.com/fmklimax
 [#595] La Colifata
 http://streamall.alsolnet.com:443/lacolifata
 
-[#596] Radio 3
-https://media.nexxisgroup.com.ar:8851/stream.mp3
 
 [#597] Pasión
 http://streamall.alsolnet.com:8080/cadenapasion

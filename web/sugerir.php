@@ -5,6 +5,7 @@
 
 if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/api/_db.php';
+require_once __DIR__ . '/_ssrf_guard.php';
 
 if (!defined('TG_TOKEN'))   define('TG_TOKEN', '');
 if (!defined('TG_CHAT_ID')) define('TG_CHAT_ID', '');
@@ -34,55 +35,66 @@ function _sugerir_slug(string $nombre, string $provincia, PDO $db): string {
     return $text . '-' . substr(md5(microtime(true)), 0, 4);
 }
 
-function check_stream(string $url): array {
-    // Bloquear SSRF
-    $host = parse_url($url, PHP_URL_HOST);
-    if (!$host || preg_match('#^(localhost|127\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.|192\.168\.|::1$|0\.0\.0\.0)#i', $host)) {
-        return ['ok' => false, 'msg' => 'URL no permitida'];
-    }
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_NOBODY          => true,
-        CURLOPT_FOLLOWLOCATION  => true,
-        CURLOPT_MAXREDIRS       => 3,
-        CURLOPT_CONNECTTIMEOUT  => 7,
-        CURLOPT_TIMEOUT         => 10,
-        CURLOPT_USERAGENT       => 'Mozilla/5.0 (compatible; radio-check/1.0)',
-        CURLOPT_RETURNTRANSFER  => true,
-        CURLOPT_SSL_VERIFYPEER  => false,
-        CURLOPT_HTTPHEADER      => ['Icy-MetaData: 0'],
-    ]);
-    $code = 0;
-    $content_type = '';
-    curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $content_type = strtolower(curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '');
-    $err = curl_error($ch);
-    curl_close($ch);
+function check_stream(string $url, int $maxHops = 5): array {
+    for ($hop = 0; $hop < $maxHops; $hop++) {
+        // Bloquear SSRF — resuelve DNS y valida la IP real, no el texto del
+        // host (evita bypass por DNS rebinding y por redirects hacia IP
+        // privada, ya que acá NO se usa FOLLOWLOCATION automático).
+        if (!radio_url_is_safe($url)) {
+            return ['ok' => false, 'msg' => 'URL no permitida'];
+        }
 
-    if ($code === 0 || $err) {
-        // Podría ser un stream que no responde a HEAD — intentar GET parcial
-        $ch2 = curl_init($url);
-        curl_setopt_array($ch2, [
-            CURLOPT_FOLLOWLOCATION  => true,
-            CURLOPT_MAXREDIRS       => 3,
+        $ch = curl_init($url);
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY          => true,
+            CURLOPT_FOLLOWLOCATION  => false,
             CURLOPT_CONNECTTIMEOUT  => 7,
             CURLOPT_TIMEOUT         => 10,
-            CURLOPT_USERAGENT       => 'Mozilla/5.0',
+            CURLOPT_USERAGENT       => 'Mozilla/5.0 (compatible; radio-check/1.0)',
             CURLOPT_RETURNTRANSFER  => true,
             CURLOPT_SSL_VERIFYPEER  => false,
-            CURLOPT_RANGE           => '0-1023',
-            CURLOPT_WRITEFUNCTION   => function($ch, $d){ return strlen($d); },
+            CURLOPT_HTTPHEADER      => ['Icy-MetaData: 0'],
         ]);
-        curl_exec($ch2);
-        $code = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
-        $content_type = strtolower(curl_getinfo($ch2, CURLINFO_CONTENT_TYPE) ?? '');
-        curl_close($ch2);
+        curl_exec($ch);
+        $code         = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $content_type = strtolower(curl_getinfo($ch, CURLINFO_CONTENT_TYPE) ?? '');
+        $location     = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+        $err          = curl_error($ch);
+        curl_close($ch);
+
+        if ($code === 0 || $err) {
+            // Podría ser un stream que no responde a HEAD — intentar GET parcial
+            $ch2 = curl_init($url);
+            curl_setopt_array($ch2, [
+                CURLOPT_FOLLOWLOCATION  => false,
+                CURLOPT_CONNECTTIMEOUT  => 7,
+                CURLOPT_TIMEOUT         => 10,
+                CURLOPT_USERAGENT       => 'Mozilla/5.0',
+                CURLOPT_RETURNTRANSFER  => true,
+                CURLOPT_SSL_VERIFYPEER  => false,
+                CURLOPT_RANGE           => '0-1023',
+                CURLOPT_WRITEFUNCTION   => function($ch, $d){ return strlen($d); },
+            ]);
+            curl_exec($ch2);
+            $code         = curl_getinfo($ch2, CURLINFO_HTTP_CODE);
+            $content_type = strtolower(curl_getinfo($ch2, CURLINFO_CONTENT_TYPE) ?? '');
+            $location     = curl_getinfo($ch2, CURLINFO_REDIRECT_URL);
+            curl_close($ch2);
+        }
+
+        // Redirect: revalidar el destino antes de seguirlo (no confiar en
+        // que un stream ya aprobado como "seguro" siga siéndolo tras un 3xx)
+        if ($code >= 300 && $code < 400 && $location) {
+            $url = $location;
+            continue;
+        }
+
+        $ok = ($code >= 200 && $code < 400);
+        $is_audio = str_contains($content_type, 'audio') || str_contains($content_type, 'ogg') || str_contains($content_type, 'mpegurl');
+        return ['ok' => $ok, 'code' => $code, 'audio' => $is_audio, 'msg' => $ok ? 'OK' : "HTTP $code"];
     }
 
-    $ok = ($code >= 200 && $code < 400);
-    $is_audio = str_contains($content_type, 'audio') || str_contains($content_type, 'ogg') || str_contains($content_type, 'mpegurl');
-    return ['ok' => $ok, 'code' => $code, 'audio' => $is_audio, 'msg' => $ok ? 'OK' : "HTTP $code"];
+    return ['ok' => false, 'msg' => 'Demasiados redirects'];
 }
 
 $result = null;

@@ -1,52 +1,117 @@
 <?php
 /**
- * estadisticas.php — evolución del estado de los streams a lo largo del tiempo
+ * estadisticas.php — evolución del estado de los streams · Radio Argentina v2
+ * Lee desde SQLite (stream_status + stream_history) — no usa status_history.json
  */
 
-$history_file = __DIR__ . '/status_history.json';
-$history = [];
+if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/api/_db.php';
 
-if (file_exists($history_file)) {
-    $raw = file_get_contents($history_file);
-    $data = json_decode($raw, true);
-    if (is_array($data)) $history = $data;
-}
+$db = radio_db();
+
+// Índice de performance (solo corre una vez)
+$db->exec("CREATE INDEX IF NOT EXISTS idx_history_date ON stream_history(checked_at)");
 
 // Filtros disponibles: 7d, 30d, 90d
 $rango = in_array($_GET['rango'] ?? '', ['7d','30d','90d']) ? $_GET['rango'] : '7d';
-$dias = ['7d'=>7, '30d'=>30, '90d'=>90][$rango];
+$dias  = ['7d'=>7, '30d'=>30, '90d'=>90][$rango];
 
-// Filtrar por rango seleccionado
-$desde = strtotime("-{$dias} days");
-$filtered = array_values(array_filter($history, function($e) use ($desde) {
-    return strtotime($e['ts'] . ' UTC') >= $desde;
-}));
+// ── Estado actual (stream_status, uno por estación) ──────────────────────────
+$actual = $db->query("
+    SELECT
+        SUM(CASE WHEN estado='ok'      THEN 1 ELSE 0 END) AS ok,
+        SUM(CASE WHEN estado='muerto'  THEN 1 ELSE 0 END) AS muertos,
+        SUM(CASE WHEN estado='timeout' THEN 1 ELSE 0 END) AS timeout,
+        COUNT(*) AS total,
+        MAX(last_checked) AS ts
+    FROM stream_status
+")->fetch(PDO::FETCH_ASSOC);
 
-// Para chart.js: calcular cuántos puntos mostrar (max 120 para no saturar)
-$n = count($filtered);
+$ultimo = $actual && $actual['total'] > 0 ? [
+    'ts'      => $actual['ts'] ?? null,
+    'ok'      => (int)$actual['ok'],
+    'muertos' => (int)$actual['muertos'],
+    'timeout' => (int)$actual['timeout'],
+    'total'   => (int)$actual['total'],
+] : null;
+
+$ts_last = $ultimo && $ultimo['ts']
+    ? (new DateTime($ultimo['ts'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))->format('d/m/Y H:i')
+    : '—';
+
+// ── Historial diario desde stream_history (91 días para comparativas + chart) ─
+// Por cada día, toma el último estado de cada estación (ROW_NUMBER window function)
+$history_raw = $db->query("
+    WITH latest AS (
+        SELECT station_id, estado, date(checked_at) AS day,
+               ROW_NUMBER() OVER (
+                   PARTITION BY station_id, date(checked_at)
+                   ORDER BY checked_at DESC
+               ) AS rn
+        FROM stream_history
+        WHERE checked_at >= date('now', '-91 days')
+    )
+    SELECT day,
+           SUM(CASE WHEN estado='ok'      THEN 1 ELSE 0 END) AS ok,
+           SUM(CASE WHEN estado='muerto'  THEN 1 ELSE 0 END) AS muertos,
+           SUM(CASE WHEN estado='timeout' THEN 1 ELSE 0 END) AS timeout,
+           COUNT(*) AS total
+    FROM latest WHERE rn = 1
+    GROUP BY day
+    ORDER BY day
+")->fetchAll(PDO::FETCH_ASSOC);
+
+// Indexar por fecha para lookups de comparativa
+$history_by_day = [];
+foreach ($history_raw as $r) {
+    $history_by_day[$r['day']] = [
+        'ts'      => $r['day'],
+        'ok'      => (int)$r['ok'],
+        'muertos' => (int)$r['muertos'],
+        'timeout' => (int)$r['timeout'],
+        'total'   => (int)$r['total'],
+    ];
+}
+
+// ── Comparativas: buscar el día más cercano si el exacto no existe ────────────
+function closest_day(array $map, string $target): ?array {
+    if (isset($map[$target])) return $map[$target];
+    // buscar el día más próximo dentro de ±2 días
+    for ($d = 1; $d <= 2; $d++) {
+        $prev = date('Y-m-d', strtotime($target . " -$d days"));
+        $next = date('Y-m-d', strtotime($target . " +$d days"));
+        if (isset($map[$prev])) return $map[$prev];
+        if (isset($map[$next])) return $map[$next];
+    }
+    return null;
+}
+
+$hace24h = closest_day($history_by_day, date('Y-m-d', strtotime('-1 day')));
+$hace7d  = closest_day($history_by_day, date('Y-m-d', strtotime('-7 days')));
+$hace30d = closest_day($history_by_day, date('Y-m-d', strtotime('-30 days')));
+
+// ── Filtrar rango seleccionado para el chart ──────────────────────────────────
+$desde   = date('Y-m-d', strtotime("-{$dias} days"));
+$filtered = array_values(array_filter($history_by_day, fn($r) => $r['ts'] >= $desde));
+
+// Reducir a máx 120 puntos para no saturar Chart.js
+$n    = count($filtered);
 $step = max(1, (int)ceil($n / 120));
 $chart_data = [];
 for ($i = 0; $i < $n; $i += $step) $chart_data[] = $filtered[$i];
 
-// Comparativa: último vs N períodos atrás
-$ultimo   = $history ? end($history) : null;
-$hace24h  = null; $hace7d = null; $hace30d = null;
-foreach ($history as $e) {
-    $ts = strtotime($e['ts'] . ' UTC');
-    if (!$hace24h && $ts >= strtotime('-25 hours') && $ts < strtotime('-23 hours')) $hace24h = $e;
-    if (!$hace7d  && $ts >= strtotime('-7 days -1 hour') && $ts < strtotime('-6 days 23 hours')) $hace7d = $e;
-    if (!$hace30d && $ts >= strtotime('-30 days -1 hour') && $ts < strtotime('-29 days 23 hours')) $hace30d = $e;
+// Si no hay historial pero hay estado actual, mostrar un solo punto de hoy
+if (empty($chart_data) && $ultimo) {
+    $chart_data[] = array_merge($ultimo, ['ts' => date('Y-m-d')]);
 }
 
 function delta(int $a, ?array $ref, string $key): string {
     if (!$ref) return '';
-    $d = $a - ($ref[$key] ?? $a);
+    $d = $a - (int)($ref[$key] ?? $a);
     if ($d === 0) return '<span style="color:#6b7280">±0</span>';
     $color = ($key === 'ok') ? ($d > 0 ? '#22c55e' : '#ef4444') : ($d > 0 ? '#ef4444' : '#22c55e');
     return sprintf('<span style="color:%s">%+d</span>', $color, $d);
 }
-
-$ts_last = $ultimo ? (new DateTime($ultimo['ts'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))->format('d/m/Y H:i') : '—';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -91,6 +156,7 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
 </style>
 </head>
 <body>
+<script>if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('light');</script>
 
 <header>
   <h1>📊 Estadísticas · Radio Argentina</h1>
@@ -113,10 +179,10 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
   <div class="comparativa">
     <?php
     $cols = [
-      ['label' => 'Ahora', 'data' => $ultimo],
-      ['label' => 'Hace 24 hs', 'data' => $hace24h],
+      ['label' => 'Ahora',       'data' => $ultimo],
+      ['label' => 'Hace 24 hs',  'data' => $hace24h],
       ['label' => 'Hace 7 días', 'data' => $hace7d],
-      ['label' => 'Hace 30 días', 'data' => $hace30d],
+      ['label' => 'Hace 30 días','data' => $hace30d],
     ];
     foreach ($cols as $col):
       $d = $col['data'];
@@ -128,7 +194,7 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
         <div class="cmp-row"><span class="dot-ok">● Activas</span><span class="cmp-val"><?= $d['ok'] ?> <?= $col['label'] !== 'Ahora' ? delta($ultimo['ok'], $d, 'ok') : '' ?></span></div>
         <div class="cmp-row"><span class="dot-muerto">● Caídas</span><span class="cmp-val"><?= $d['muertos'] ?> <?= $col['label'] !== 'Ahora' ? delta($ultimo['muertos'], $d, 'muertos') : '' ?></span></div>
         <div class="cmp-row"><span class="dot-timeout">● Timeout</span><span class="cmp-val"><?= $d['timeout'] ?> <?= $col['label'] !== 'Ahora' ? delta($ultimo['timeout'], $d, 'timeout') : '' ?></span></div>
-        <div class="cmp-row" style="font-size:11px;color:var(--muted);margin-top:4px"><?= (new DateTime($d['ts'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))->format('d/m H:i') ?></div>
+        <div class="cmp-row" style="font-size:11px;color:var(--muted);margin-top:4px"><?= $d['ts'] ?></div>
       <?php else: ?>
         <div style="color:var(--muted);font-size:13px">Sin datos</div>
       <?php endif; ?>
@@ -159,8 +225,8 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
 <div class="section">
   <h2>Últimos snapshots</h2>
   <?php
-  $tabla_data = array_reverse(array_slice($history, -30));
-  if (!$tabla_data): ?>
+  $tabla_data = array_reverse(array_slice(array_values($history_by_day), -30));
+  if (!$tabla_data && !$ultimo): ?>
     <p class="sin-datos">Sin datos todavía.</p>
   <?php else: ?>
   <table class="tabla">
@@ -174,11 +240,22 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
       </tr>
     </thead>
     <tbody>
-    <?php foreach ($tabla_data as $e):
-      $dt = (new DateTime($e['ts'], new DateTimeZone('UTC')))->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))->format('d/m/Y H:i');
+    <?php
+    // Insertar estado actual como primera fila si es de hoy y no está en el historial
+    $today = date('Y-m-d');
+    if ($ultimo && !isset($history_by_day[$today])):
     ?>
       <tr>
-        <td><?= $dt ?></td>
+        <td><?= $ts_last ?> <span style="color:var(--accent);font-size:11px">• ahora</span></td>
+        <td><?= $ultimo['total'] ?></td>
+        <td class="badge-ok"><?= $ultimo['ok'] ?></td>
+        <td class="badge-muerto"><?= $ultimo['muertos'] ?></td>
+        <td class="badge-timeout"><?= $ultimo['timeout'] ?></td>
+      </tr>
+    <?php endif; ?>
+    <?php foreach ($tabla_data as $e): ?>
+      <tr>
+        <td><?= $e['ts'] ?></td>
         <td><?= $e['total'] ?></td>
         <td class="badge-ok"><?= $e['ok'] ?></td>
         <td class="badge-muerto"><?= $e['muertos'] ?></td>
@@ -194,16 +271,12 @@ body.light .tabla tr:hover td{background:rgba(0,0,0,.02)}
 
 <?php if (count($chart_data) >= 2): ?>
 <script>
-var labels = <?= json_encode(array_map(function($e) {
-    return (new DateTime($e['ts'], new DateTimeZone('UTC')))
-        ->setTimezone(new DateTimeZone('America/Argentina/Mendoza'))
-        ->format('d/m H:i');
-}, $chart_data)) ?>;
+var labels      = <?= json_encode(array_column($chart_data, 'ts')) ?>;
 var dataOk      = <?= json_encode(array_column($chart_data, 'ok')) ?>;
 var dataMuertos = <?= json_encode(array_column($chart_data, 'muertos')) ?>;
 var dataTimeout = <?= json_encode(array_column($chart_data, 'timeout')) ?>;
 
-var isDark = !document.body.classList.contains('light');
+var isDark    = !document.body.classList.contains('light');
 var gridColor = isDark ? 'rgba(255,255,255,.08)' : 'rgba(0,0,0,.08)';
 var textColor = isDark ? '#9ca3af' : '#6b7280';
 
