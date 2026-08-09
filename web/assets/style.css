@@ -379,6 +379,34 @@ body.light #support-toast { background: #ffffffee; color: #374151; border-color:
 body.light #support-toast button { color: #9ca3af; }
 body.light #support-toast button:hover { color: #374151; }
 
+/* ── Banner núcleo fiel ──────────────────────────────────────────────────── */
+
+#loyal-banner {
+  position: fixed; bottom: 16px; right: 16px; left: 16px;
+  max-width: 380px; margin-left: auto;
+  background: #1f2937ee; border: 1px solid #374151; border-left: 3px solid #fbbf24;
+  border-radius: 10px; padding: 16px 40px 16px 18px;
+  font-size: 13px; color: #d1d5db; line-height: 1.55; z-index: 210;
+  opacity: 1; transition: opacity .6s ease;
+}
+#loyal-banner.hide { opacity: 0; pointer-events: none; }
+#loyal-banner strong { color: #fbbf24; }
+#loyal-banner .loyal-actions { margin-top: 12px; display: flex; gap: 14px; align-items: center; }
+#loyal-banner .loyal-actions a { color: #fbbf24; text-decoration: none; font-weight: 600; }
+#loyal-banner .loyal-actions a:hover { text-decoration: underline; }
+#loyal-banner .loyal-actions button {
+  background: none; border: none; color: #9ca3af; font-size: 13px; cursor: pointer; padding: 0;
+}
+#loyal-banner .loyal-actions button:hover { color: #d1d5db; }
+#loyal-banner > button.loyal-close {
+  position: absolute; top: 8px; right: 10px;
+  background: none; border: none; color: #6b7280;
+  font-size: 13px; cursor: pointer; padding: 2px;
+}
+body.light #loyal-banner { background: #ffffffee; color: #374151; border-color: #d1d5db; }
+body.light #loyal-banner .loyal-actions button { color: #9ca3af; }
+body.light #loyal-banner .loyal-actions button:hover { color: #374151; }
+
 /* ── Página de emisora individual ────────────────────────────────────────── */
 
 .station-page {

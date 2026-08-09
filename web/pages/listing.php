@@ -22,6 +22,12 @@ $stations = $db->query(
 
 $total = count($stations);
 
+// ── Núcleo fiel: visitante con 8+ días distintos de escucha en el historial ──
+$visitor_hash = ip_hash(client_ip());
+$stmt_fiel = $db->prepare("SELECT COUNT(DISTINCT date(played_at)) FROM plays WHERE ip_hash = ?");
+$stmt_fiel->execute([$visitor_hash]);
+$es_nucleo_fiel = ((int)$stmt_fiel->fetchColumn()) >= 8;
+
 // ── Géneros (top 14 tags con ≥3 emisoras) ────────────────────────────────────
 
 $tag_counts = [];
@@ -237,6 +243,21 @@ $ld_itemlist = [
   ¿Te gusta Radio Argentina? <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">☕ Invitame un café</a>
   <button onclick="this.closest('#support-toast').classList.add('hide')">✕</button>
 </div>
+
+<?php if ($es_nucleo_fiel): ?>
+<!-- Banner núcleo fiel -->
+<div id="loyal-banner" style="display:none">
+  <button class="loyal-close" onclick="document.getElementById('loyal-banner').classList.add('hide')">✕</button>
+  <div>"Che, che, che, esperá..." → <strong>Sos de los que más nos escucha 💎</strong></div>
+  <p style="margin-top:8px">
+    Venís seguido (tranqui, no te estamos siguiendo). Este proyecto lo levanto y lo mantengo solo, sin publicidad, sin joder con los datos y 100% gratis. Lo sostengo a pulmón, pero sin una mano externa se hace cuesta arriba sumar cosas nuevas y, a la larga, se complica mantener lo que ya está andando. Si te resulta útil, ¿me tirás una soga con un cafecito? Cualquier colaboración ayuda un montón.
+  </p>
+  <div class="loyal-actions">
+    <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">☕ Invitame un café</a>
+    <button onclick="document.getElementById('loyal-banner').classList.add('hide')">Ahora no</button>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
 <script src="<?= $__base ?>/assets/theme.js"></script>
@@ -478,6 +499,60 @@ qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrMod
       player._onStateHooks.push(onState);
     } else {
       // Fallback: observar clase rp-active en el listado
+      var obs = new MutationObserver(function () {
+        var active = !!document.querySelector('.rp-active');
+        onState(active ? 'playing' : 'idle');
+      });
+      obs.observe(document.getElementById('lista'), { attributes: true, subtree: true, attributeFilter: ['class'] });
+    }
+  }, 500);
+}());
+
+// ── Banner núcleo fiel — aparece tras 2 min de reproducción activa ──────────
+// El elemento #loyal-banner solo existe en el DOM si el servidor ya determinó
+// (por historial real de plays) que esta IP es del núcleo fiel — acá solo
+// falta decidir CUÁNDO mostrarlo, no A QUIÉN.
+(function () {
+  var banner = document.getElementById('loyal-banner');
+  if (!banner) return;
+
+  var THRESHOLD_MS = 2 * 60 * 1000;
+  var COOLDOWN_DAYS = 30;
+  var key = 'loyal_banner_last';
+  var lastShown = parseInt(localStorage.getItem(key) || '0', 10);
+  if (Date.now() - lastShown < COOLDOWN_DAYS * 86400 * 1000) return;
+
+  var playStart = null;
+  var accumulated = 0;
+  var timer = null;
+
+  function onState(state) {
+    if (state === 'playing') {
+      playStart = Date.now();
+      timer = setInterval(check, 10000);
+    } else {
+      if (playStart) accumulated += Date.now() - playStart;
+      playStart = null;
+      clearInterval(timer);
+    }
+  }
+  function check() {
+    var total = accumulated + (playStart ? Date.now() - playStart : 0);
+    if (total >= THRESHOLD_MS) {
+      clearInterval(timer);
+      showBanner();
+    }
+  }
+  function showBanner() {
+    if (banner.classList.contains('hide')) return;
+    banner.style.display = 'block';
+    localStorage.setItem(key, String(Date.now()));
+  }
+
+  setTimeout(function () {
+    if (typeof player !== 'undefined' && player._onStateHooks) {
+      player._onStateHooks.push(onState);
+    } else {
       var obs = new MutationObserver(function () {
         var active = !!document.querySelector('.rp-active');
         onState(active ? 'playing' : 'idle');

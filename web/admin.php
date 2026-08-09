@@ -92,6 +92,7 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS reportes (
     mensaje TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 )'); } catch (Exception $e) {}
+try { $db->exec('CREATE INDEX IF NOT EXISTS idx_plays_iphash ON plays(ip_hash)'); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -174,7 +175,8 @@ if (isset($_GET['ajax'])) {
                         CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
                              WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
                              ELSE NULL END AS duration_secs,
-                        CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
+                        CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
+                        (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos
                  FROM plays p
                  LEFT JOIN stations s ON s.id=p.station_id
                  LEFT JOIN listeners l ON l.sid=p.session_id
@@ -328,7 +330,8 @@ $plays_recientes = $db->query(
                 THEN ROUND((julianday('now')       - julianday(p.played_at)) * 86400)
               ELSE NULL
             END AS duration_secs,
-            CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active
+            CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
+            (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos
      FROM plays p
      LEFT JOIN stations s ON s.id = p.station_id
      LEFT JOIN listeners l ON l.sid = p.session_id
@@ -423,6 +426,17 @@ function ago(?string $dt): string {
     if ($diff < 3600)  return 'hace ' . floor($diff/60) . 'min';
     if ($diff < 86400) return 'hace ' . floor($diff/3600) . 'h';
     return 'hace ' . floor($diff/86400) . 'd';
+}
+
+// Categoría de visitante según días distintos activos en el historial de plays.
+// Umbral: 1 día=ocasional, 2-3=recurrente leve, 4-7=frecuente, 8+=núcleo fiel.
+function visitor_badge($dias): string {
+    if ($dias === null) return '';
+    $dias = (int)$dias;
+    if ($dias >= 8) return '<span title="Núcleo fiel (8+ días)">💎</span>';
+    if ($dias >= 4) return '<span title="Frecuente (4-7 días)">⭐</span>';
+    if ($dias >= 2) return '<span title="Recurrente (2-3 días)">🔁</span>';
+    return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
 }
 
 // Fila de emisora con formulario de edición (contacto/observación/destacada/notas),
@@ -741,7 +755,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   ?>
   <table>
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th>IP hash</th><th>Sesión</th>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th>IP hash</th><th>Sesión</th>
     </tr></thead>
     <tbody id="plays-body">
     <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
@@ -756,6 +770,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
         <?php endif; ?>
       </td>
       <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
+      <td style="font-size:14px;text-align:center"><?= visitor_badge($pl['dias_activos'] ?? null) ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
     </tr>
@@ -1142,6 +1157,15 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
   }
 
+  function visitorBadge(dias) {
+    if (dias == null) return '';
+    dias = parseInt(dias, 10);
+    if (dias >= 8) return '<span title="Núcleo fiel (8+ días)">💎</span>';
+    if (dias >= 4) return '<span title="Frecuente (4-7 días)">⭐</span>';
+    if (dias >= 2) return '<span title="Recurrente (2-3 días)">🔁</span>';
+    return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
+  }
+
   var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR'};
 
   function upd(id, val) {
@@ -1181,6 +1205,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td>' + nom + '</td>'
               + '<td style="font-size:12px;white-space:nowrap">' + dur + '</td>'
               + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
+              + '<td style="font-size:14px;text-align:center">' + visitorBadge(p.dias_activos) + '</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
               + '</tr>';
