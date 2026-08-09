@@ -471,8 +471,12 @@ qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrMod
 
   function onState(state) {
     if (state === 'playing') {
-      playStart = Date.now();
-      timer = setInterval(check, 10000);
+      // Ojo: el <audio> dispara 'playing' de nuevo tras cada buffering breve,
+      // no solo al arrancar — si ya estábamos contando, no reiniciar.
+      if (!playStart) {
+        playStart = Date.now();
+        timer = setInterval(check, 10000);
+      }
     } else {
       if (playStart) accumulated += Date.now() - playStart;
       playStart = null;
@@ -528,8 +532,12 @@ qrModal.addEventListener('click', function (e) { if (e.target === qrModal) qrMod
 
   function onState(state) {
     if (state === 'playing') {
-      playStart = Date.now();
-      timer = setInterval(check, 10000);
+      // Ojo: el <audio> dispara 'playing' de nuevo tras cada buffering breve,
+      // no solo al arrancar — si ya estábamos contando, no reiniciar.
+      if (!playStart) {
+        playStart = Date.now();
+        timer = setInterval(check, 10000);
+      }
     } else {
       if (playStart) accumulated += Date.now() - playStart;
       playStart = null;

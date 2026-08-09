@@ -4,6 +4,36 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0685 — 2026-08-09 — Banner núcleo fiel, fix del contador de reproducción y regresión del Service Worker cortando streams
+
+### Contexto
+
+Se implementó el banner "núcleo fiel" (visitante con 8+ días distintos de escucha) propuesto y aprobado en TKT-0684: pide colaboración vía cafecito.app, aparece tras 2 minutos de reproducción acumulada, cooldown de 30 días. En paralelo, badges de categoría de oyente (🆕/🔁/⭐/💎) en el panel admin, calculados con la misma métrica.
+
+Al probarlo con Carlos en vivo aparecieron dos problemas reales, encadenados.
+
+### 1) El banner nunca aparecía — bug en el contador de reproducción acumulada
+
+`onState('playing')` reiniciaba `playStart = Date.now()` cada vez que se llamaba, sin chequear si ya se estaba contando. El evento nativo `'playing'` del `<audio>` se dispara de nuevo después de cualquier buffering breve (normal en streaming, más aún en redes móviles), no solo al arrancar — con una sola interrupción de buffering en el medio, el cronómetro nunca llegaba a acumular 2 minutos seguidos. El mismo bug (copiado) afectaba al toast de apoyo (`#support-toast`) ya existente. Fix: solo arrancar `playStart`/`timer` si `!playStart`. Aplicado a ambos bloques en `web/pages/listing.php`.
+
+### 2) Bug real, más grave: streams cortándose cada ~5 minutos — regresión en `sw.js`
+
+Reportado por Carlos escuchando Aspen desde el celular: cortes consistentes cada ~5 minutos, algo que "antes no pasaba nunca" (horas de escucha continua previa sin problema). Hipótesis inicial (timeout de ejecución del hosting) descartada: `error_log` no registraba nada cerca del momento de los cortes pese a estar reproduciendo en vivo, y el bloque de código que pipea el stream en `proxy.php` no cambió ni un carácter en el fix de seguridad del 30/07 (TKT-0683) — solo cambió la validación de la URL antes de llegar a ese bloque.
+
+Causa real encontrada revisando el historial completo de `sw.js`: las versiones v1/v2 tenían una lista explícita de rutas excluidas del Service Worker (`proxy.php`, `nowplaying.php`, `listeners.php`, `survey.php`, `log.php`). El commit `57b3204` ("fix: SW cacheaba los pings a /api/listeners") reemplazó esa lista completa por un único chequeo de prefijo `/radio/api/` — y `proxy.php` vive fuera de `/radio/api/`, así que quedó sin excluir desde ese commit (varios días antes del fix de seguridad del proxy, coincide con la sensación de Carlos de que el problema "empezó con el proxy" sin ser realmente ese código). Desde entonces el Service Worker intercepta la respuesta infinita del stream de audio y la clona para intentar guardarla en caché (`cache.put`) — operación que no tiene sentido para un recurso que no termina nunca mientras se escucha, y corta la conexión periódicamente.
+
+**Fix:** `web/sw.js` — nueva regex `NOCACHE_RE` que excluye explícitamente `/radio/(proxy|nowplaying|listeners|survey|log).php` del manejador `fetch`, además del prefijo `/radio/api/` ya existente. `CACHE_NAME` bumpeado a `radio-ar-v6` para forzar la purga de cualquier entrada de `proxy.php` ya cacheada en navegadores de usuarios.
+
+### Archivos afectados
+
+`web/pages/listing.php`, `web/sw.js`.
+
+### Estado
+
+Deployado por FTP y verificado en producción. Pendiente confirmación de Carlos tras el próximo hard-refresh en el celular (Service Worker no se actualiza instantáneo, requiere cerrar y reabrir la app/pestaña).
+
+---
+
 ## TKT-0684 — 2026-08-06 — Dedup streamtheworld, sesiones huérfanas, catálogo público y cache del Service Worker
 
 ### Contexto

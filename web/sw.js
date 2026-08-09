@@ -1,6 +1,9 @@
-const CACHE_NAME = 'radio-ar-v5';
+const CACHE_NAME = 'radio-ar-v6';
 const PRECACHE   = ['/radio/manifest.json'];
 const ASSET_RE   = /\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|gif)(\?|$)/i;
+// Streams/tracking: nunca interceptar ni cachear — proxy.php es una respuesta
+// infinita mientras se escucha, cachearla corta la conexión periódicamente.
+const NOCACHE_RE = /\/radio\/(proxy|nowplaying|listeners|survey|log)\.php/;
 
 self.addEventListener('install', function(e) {
   self.skipWaiting();
@@ -21,6 +24,7 @@ self.addEventListener('fetch', function(e) {
   var url = new URL(e.request.url);
   if (!url.pathname.startsWith('/radio/')) return;
   if (url.pathname.startsWith('/radio/api/')) return;  // API: nunca cachear
+  if (NOCACHE_RE.test(url.pathname)) return;            // streaming/tracking: nunca interceptar
 
   if (ASSET_RE.test(url.pathname)) {
     // Assets estáticos: cache-first (son inmutables o versionados)
