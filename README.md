@@ -6,21 +6,23 @@ Escuchar ~1200 radios argentinas desde la terminal, o desde el navegador sin ins
 
 ---
 
-## Terminal — radio.sh
+## Terminal — radio2.sh
+
+Consume la API REST v2 en tiempo real (oyentes activos, ICY now-playing).
 
 ### Uso básico
 
 ```bash
-./radio.sh <búsqueda> [reproductor]
+./radio2.sh <búsqueda> [reproductor]
 ```
 
 `búsqueda` puede ser parte del nombre, frecuencia, provincia o cualquier texto que aparezca en el nombre de la emisora.
 
 ```bash
-./radio.sh mendoza          # busca "mendoza" en el nombre
-./radio.sh "99.1"           # por frecuencia
-./radio.sh "cadena 3"       # nombre completo o parcial
-./radio.sh nacional         # cualquier palabra del nombre
+./radio2.sh mendoza          # busca "mendoza" en el nombre
+./radio2.sh "99.1"           # por frecuencia
+./radio2.sh "cadena 3"       # nombre completo o parcial
+./radio2.sh nacional         # cualquier palabra del nombre
 ```
 
 ### Reproductores
@@ -33,25 +35,16 @@ Escuchar ~1200 radios argentinas desde la terminal, o desde el navegador sin ins
 | `p` | mpv |
 
 ```bash
-./radio.sh "cadena 3"       # mplayer (default)
-./radio.sh "cadena 3" v     # VLC
-./radio.sh "cadena 3" p     # mpv
+./radio2.sh "cadena 3"       # mplayer (default)
+./radio2.sh "cadena 3" v     # VLC
+./radio2.sh "cadena 3" p     # mpv
 ```
 
 ### Alias recomendado
 
 ```bash
 # ~/.bashrc o ~/.zshrc
-alias radio='~/Scripts/radio/radio.sh'
-```
-
-### radio2.sh — CLI con API v2
-
-`radio2.sh` consume la API REST y muestra oyentes en tiempo real e ICY now-playing:
-
-```bash
-./radio2.sh mendoza         # busca y reproduce
-./radio2.sh "cadena 3" v    # mismos parámetros que radio.sh
+alias radio='~/Scripts/radio/radio2.sh'
 ```
 
 ## Requisitos CLI
