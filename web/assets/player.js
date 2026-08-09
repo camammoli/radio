@@ -34,6 +34,8 @@
   var HB_MS     = 30000;   // heartbeat cada 30s
   var NP_MS     = 30000;   // now-playing poll cada 30s
   var TIMEOUT_MS = 12000;  // timeout de carga de stream
+  var STALL_MS      = 15000; // sin avance de reproducción -> asumir corte silencioso
+  var MAX_RECONNECT = 6;     // reintentos de reconexión silenciosa antes de mostrar error
   var SURVEY_SECS   = 180;   // 3 minutos para mostrar encuesta
   var WELCOME_SECS  = 90;    // 90s para mostrar toast de bienvenida v2
   var WELCOME_KEY   = 'radio_welcome_v2';
@@ -65,6 +67,9 @@
     var survShown  = false;
     var welcomeTimer = 0;
     var destroyed  = false;
+    var watchdogTimer     = 0;
+    var lastProgress      = 0;
+    var reconnectAttempts = 0;
 
     // SID persistido en sessionStorage: un SID por pestaña del navegador
     var sid = sessionStorage.getItem('radio_sid_v2');
@@ -82,6 +87,16 @@
       survStart();
       welcomeStart();
       setupMediaSession();
+      lastProgress = Date.now();
+      watchdogStart();
+    });
+
+    // Cortes silenciosos (timeout de proxy/hosting en el medio de la reproducción):
+    // el navegador no siempre dispara 'error', a veces el stream simplemente deja
+    // de avanzar sin avisar. Si no hay progreso real por STALL_MS, reconectar solo.
+    audio.addEventListener('timeupdate', function () {
+      lastProgress = Date.now();
+      reconnectAttempts = 0;
     });
 
     audio.addEventListener('waiting', function () {
@@ -90,7 +105,22 @@
 
     audio.addEventListener('error', function () {
       if (destroyed) return;
+      var code = audio.error ? audio.error.code : 0;
+
+      // code 1=ABORTED, 2=NETWORK — si ya veníamos reproduciendo bien, es el
+      // mismo tipo de corte silencioso que cubre el watchdog: reconectar solo
+      // en vez de mostrarle un error al usuario por un corte momentáneo.
+      var wasPlaying = state === 'playing' || state === 'buffering';
+      if (wasPlaying && code !== 3 && code !== 4 && reconnectAttempts < MAX_RECONNECT) {
+        reconnectAttempts++;
+        audio.src = resolveUrl(url);
+        audio.play().catch(function () {});
+        lastProgress = Date.now();
+        return;
+      }
+
       clearTimeout(loadTimer);
+      watchdogStop();
       setState('error');
       lStop(true);
       npStop();
@@ -100,7 +130,6 @@
       // audio.error.code: 3=DECODE, 4=SRC_NOT_SUPPORTED — el navegador bajó el
       // stream pero no puede decodificarlo (típico con AAC+/HE-AAC en algunos
       // navegadores). Distinto de un problema de red/conexión.
-      var code = audio.error ? audio.error.code : 0;
       var msg = (code === 3 || code === 4)
         ? 'tu navegador no puede reproducir este formato — probá abrirla en VLC'
         : 'no disponible en web';
@@ -255,6 +284,7 @@
 
     function stop() {
       clearTimeout(loadTimer);
+      watchdogStop();
       if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
       audio.pause();
       audio.src = '';
@@ -264,6 +294,37 @@
       survStop();
       welcomeStop();
       onNowPlaying(null);
+    }
+
+    // ── Watchdog de cortes silenciosos ──────────────────────────────────────────
+    function watchdogStart() {
+      reconnectAttempts = 0;
+      clearInterval(watchdogTimer);
+      watchdogTimer = setInterval(watchdogCheck, 5000);
+    }
+
+    function watchdogStop() {
+      clearInterval(watchdogTimer);
+      watchdogTimer = 0;
+    }
+
+    function watchdogCheck() {
+      if (destroyed || state !== 'playing') return;
+      if (Date.now() - lastProgress < STALL_MS) return;
+
+      if (reconnectAttempts >= MAX_RECONNECT) {
+        watchdogStop();
+        setState('error');
+        onError(url, nombre, 'se perdió la conexión');
+        return;
+      }
+      reconnectAttempts++;
+      // Reconexión silenciosa: no pasar por setState('error'), el usuario no
+      // necesita enterarse de que hubo un corte si se resuelve solo.
+      audio.pause();
+      audio.src = resolveUrl(url);
+      audio.play().catch(function () {});
+      lastProgress = Date.now();
     }
 
     function toggle() {
@@ -277,6 +338,7 @@
     // Cambiar emisora sin recargar la página (para el listado) y arrancar reproducción
     function setStation(newSlug, newUrl, newNombre, newLogo) {
       clearTimeout(loadTimer);
+      watchdogStop();
       if (hlsInst) { hlsInst.destroy(); hlsInst = null; }
       audio.pause();
       audio.src = '';

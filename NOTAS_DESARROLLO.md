@@ -24,13 +24,26 @@ Causa real encontrada revisando el historial completo de `sw.js`: las versiones 
 
 **Fix:** `web/sw.js` — nueva regex `NOCACHE_RE` que excluye explícitamente `/radio/(proxy|nowplaying|listeners|survey|log).php` del manejador `fetch`, además del prefijo `/radio/api/` ya existente. `CACHE_NAME` bumpeado a `radio-ar-v6` para forzar la purga de cualquier entrada de `proxy.php` ya cacheada en navegadores de usuarios.
 
+### 3) El corte de ~5 min seguía pasando incluso con `radio-ar-v6` confirmado activo
+
+Carlos verificó en DevTools (Application → Service Workers) que `radio-ar-v6` ya estaba activo y el corte seguía ocurriendo cada ~5 minutos, con la request a `proxy.php` completando en 200 OK (no un error HTTP). Esto descarta al Service Worker como única causa. Se revisaron todos los commits del 07 al 09/08 y ninguno toca `proxy.php`, `sw.js` (antes del fix de este mismo ticket) ni nada relacionado a streaming — tampoco hay corridas de GitHub Actions fuera de lo rutinario (`Verificar streams v2`, cada ~6h, todas exitosas). No se encontró una causa de código para el cambio de comportamiento que Carlos reporta ("ayer no pasaba").
+
+Con un 200 limpio y un intervalo tan regular, la hipótesis más plausible es un timeout de idle/duración máxima a nivel de infraestructura del hosting (proxy inverso Apache/LiteSpeed delante de PHP, típicamente 300s por default) — fuera de nuestro control y sin visibilidad para confirmarlo con certeza.
+
+**Mitigación implementada (`web/assets/player.js`):** un watchdog que detecta cortes silenciosos y reconecta solo, sin mostrarle nada al usuario:
+- Nuevo listener `timeupdate` que registra la última vez que hubo progreso real de reproducción.
+- `watchdogCheck()` corre cada 5s mientras `state === 'playing'`; si pasan 15s (`STALL_MS`) sin progreso, reconecta (recrea `audio.src` vía `resolveUrl()` y llama `audio.play()`) sin pasar por `setState('error')`.
+- El handler de `audio.error` también reconecta en silencio para códigos 1 (ABORTED) y 2 (NETWORK) si ya se venía reproduciendo bien — los códigos 3/4 (DECODE/SRC_NOT_SUPPORTED, problema real de formato) siguen mostrando el error de siempre.
+- Tope de `MAX_RECONNECT = 6` intentos antes de rendirse y mostrar el error real; se resetea a 0 en cuanto vuelve a haber progreso real (`timeupdate`).
+- `player.js` es un asset estático cacheado cache-first por el Service Worker — `CACHE_NAME` bumpeado a `radio-ar-v7` en el mismo deploy para que el fix llegue a navegadores que ya visitaron el sitio (misma lección de TKT-0684 punto 5).
+
 ### Archivos afectados
 
-`web/pages/listing.php`, `web/sw.js`.
+`web/pages/listing.php`, `web/sw.js`, `web/assets/player.js`.
 
 ### Estado
 
-Deployado por FTP y verificado en producción. Pendiente confirmación de Carlos tras el próximo hard-refresh en el celular (Service Worker no se actualiza instantáneo, requiere cerrar y reabrir la app/pestaña).
+Deployado por FTP y verificado en producción (`radio-ar-v7`, watchdog presente en el archivo servido). Pendiente confirmación de Carlos de que los cortes ya no se notan. Causa raíz de fondo (posible timeout de infraestructura del hosting) no confirmada con certeza — la mitigación resuelve el síntoma, no necesariamente la causa.
 
 ---
 
