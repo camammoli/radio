@@ -4,6 +4,44 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0686 — 2026-08-13 — v4.0.0: fix real de cortes en Aspen (HTTPS directo), banners consolidados
+
+### Contexto
+
+Carlos midió con cronómetro cortes reales de audio escuchando Aspen (~5min de intervalo) y notó que la MISMA url escuchada directo con VLC (sin pasar por nuestro `proxy.php`) nunca se corta — descartando al origen del stream y señalando a nuestro hosting como causa. Aprovechando la sesión, también pidió sacar varios banners/toasts que se habían acumulado (v3-alertas, cafecito viejo, núcleo fiel con el texto "che che che" que nunca le apareció) y reordenar la bienvenida/encuestas para no saturar al visitante nuevo con 4 pedidos a la vez.
+
+### 1) Fix de fondo: redirección HTTPS directa en proxy.php
+
+`proxy.php` pipeaba TODO el audio a través de PHP+cURL, sin importar el protocolo. El hosting compartido corta las respuestas largas de PHP a los ~300s (confirmado indirectamente: el mismo stream sin pasar por PHP no se corta nunca). Fix: si la URL de la emisora (directa o resuelta de una playlist `.pls`/`.m3u`) es HTTPS, `proxy.php` ahora hace `header('Location: ...')` y el browser se conecta directo al origen — ya no depende de que PHP sostenga la conexión. Se sacó también la duplicación de este mismo chequeo que ya existía solo para el caso de playlists resueltas.
+
+### 2) Hallazgo en el camino: el fix de HTTPS no alcanzaba a Aspen tal cual estaba
+
+Verificando en producción, `aspen-486` seguía sin redirigir — su URL guardada en la DB era `http://playerservices.streamtheworld.com/api/livestream-redirect/ASPENAAC_SC` (HTTP), que streamtheworld resuelve internamente a un edge server también HTTP (`http://27573.live.streamtheworld.com:80/ASPENAAC_SC`). Probando el MISMO path con el esquema `https://` en vez de `http://`, streamtheworld sí resuelve a un edge HTTPS real (`https://26493.live.streamtheworld.com:443/ASPENAAC_SC`) — la API de streamtheworld soporta ambos esquemas, pero la URL guardada en nuestra DB usaba el viejo.
+
+Se relevaron las 5 emisoras con URL `http://` de streamtheworld: 2 usan el patrón de API de redirección (`aspen-486`, `radio-mitre-argentina`) — ambas confirmadas con variante HTTPS funcional. Las otras 3 (`arpeggio`, `fm-cordoba-297`, `like`) son servidores de borde FIJOS (no la API de redirección) — probadas explícitamente, ninguna tiene listener TLS en ese host:puerto (conexión rechazada), así que se dejaron como estaban (siguen proxiadas vía PHP, sin fix posible sin encontrarles una URL alternativa — mismo tipo de trabajo que ya hace `dedupe_streamtheworld_v2.py`).
+
+**Fix de datos aplicado** (no de código): se actualizó `stations.url` de `aspen-486` y `radio-mitre-argentina` a la variante `https://` del mismo path. Hecho vía script PHP temporal subido por FTP, ejecutado una vez contra la DB en vivo vía PDO (WAL, mismo mecanismo que usa la app — evita el riesgo de descargar/resubir la DB completa mientras recibe tráfico real, que fue la causa de corrupciones anteriores documentadas en este archivo), y borrado del servidor inmediatamente después de correr. Verificado end-to-end: `proxy.php?station=aspen-486` → 302 → 302 (streamtheworld) → 200 audio HTTPS real, sin pasar por nuestro servidor en ningún tramo.
+
+Aspen y Radio Mitre son las emisoras más escuchadas del sitio (ver métricas TKT-0684), así que este fix cubre el caso de mayor impacto real aunque no sea el 100% de las emisoras con URLs `http://` de streamtheworld.
+
+### 3) Banners consolidados
+
+Sacados completamente (HTML + JS + CSS): banner "v3 — Activar alertas" (`#banner-v3`), banner núcleo fiel con el texto "Che, che, che, esperá..." (`#loyal-banner`, y la query `$es_nucleo_fiel` que solo se usaba ahí). El toast cafecito (`#support-toast`, 5min de escucha real + cooldown 7 días) queda como único pedido de café del sitio — no se tocó.
+
+Toast de bienvenida (`player.js`, `showWelcome()`) reescrito: ahora es solo informativo (novedades v4 + privacidad + CTA), sin encuesta ni pedido de café adentro — antes hacía las 3 cosas a la vez. `WELCOME_KEY` bumpeado a `radio_welcome_v4` para que se muestre una vez a TODOS desde ahora, incluso a quien ya había visto la versión vieja.
+
+La encuesta "¿qué te parece el sitio?" + "¿desde dónde escuchás?" que antes vivía dentro del toast de bienvenida ahora es un componente propio (`showSiteSurvey()`, key `radio_site_survey_v1`), dispara a los 150s de escucha real — antes de la encuesta de emisora (existente, sin cambios, dispara a los 180s). Así ningún visitante nuevo ve más de un popup a la vez: bienvenida (90s) → encuesta de sitio (150s) → encuesta de emisora (180s) → café (300s), todos espaciados.
+
+### Archivos afectados
+
+`web/proxy.php`, `web/pages/listing.php`, `web/assets/player.js`, `web/assets/style.css`, `web/admin.php`, `web/suscribirse.php`, `web/estadisticas.php`, `web/sw.js` (CACHE_NAME → `radio-ar-v9`). Fix de datos aplicado directo en producción (no versionado en git, es contenido de DB no de código).
+
+### Estado
+
+Deployado por FTP y verificado en producción. Commit `f84c91a`, tag `v4.0.0`. Tag de checkpoint pre-cambios: `pre-v4-2026-08-13` (apunta al commit `ca0547f`, que también incluye un fix de reconexión en el evento `pause` del navegador que ya estaba deployado sin commitear de una sesión anterior — TKT-0685 continuación, ver commit `ca0547f`).
+
+---
+
 ## TKT-0685 — 2026-08-09 — Banner núcleo fiel, fix del contador de reproducción y regresión del Service Worker cortando streams
 
 ### Contexto
