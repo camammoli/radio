@@ -1,6 +1,6 @@
 <?php
 /**
- * estadisticas.php — evolución del estado de los streams · Radio Argentina v2
+ * estadisticas.php — evolución del estado de los streams · Radio Argentina v4
  * Lee desde SQLite (stream_status + stream_history) — no usa status_history.json
  */
 

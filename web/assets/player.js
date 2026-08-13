@@ -1,5 +1,5 @@
 /**
- * RadioPlayer — componente de audio unificado para Radio Argentina v2.
+ * RadioPlayer — componente de audio unificado para Radio Argentina v4.
  *
  * Uso:
  *   var p = RadioPlayer({
@@ -36,9 +36,11 @@
   var TIMEOUT_MS = 12000;  // timeout de carga de stream
   var STALL_MS      = 15000; // sin avance de reproducción -> asumir corte silencioso
   var MAX_RECONNECT = 6;     // reintentos de reconexión silenciosa antes de mostrar error
-  var SURVEY_SECS   = 180;   // 3 minutos para mostrar encuesta
-  var WELCOME_SECS  = 90;    // 90s para mostrar toast de bienvenida v2
-  var WELCOME_KEY   = 'radio_welcome_v2';
+  var SURVEY_SECS   = 180;   // 3 minutos para mostrar encuesta de emisora
+  var WELCOME_SECS  = 90;    // 90s para mostrar toast de bienvenida (solo info)
+  var WELCOME_KEY   = 'radio_welcome_v4';
+  var SITE_SURVEY_SECS = 150; // 2:30 — antes de la encuesta de emisora (3min)
+  var SITE_SURVEY_KEY  = 'radio_site_survey_v1';
 
   function RadioPlayer(opts) {
     // ── Config ──────────────────────────────────────────────────────────────
@@ -66,6 +68,7 @@
     var survSecs   = 0;
     var survShown  = false;
     var welcomeTimer = 0;
+    var siteSurveyTimer = 0;
     var destroyed  = false;
     var watchdogTimer     = 0;
     var lastProgress      = 0;
@@ -86,6 +89,7 @@
       npStart();
       survStart();
       welcomeStart();
+      siteSurveyStart();
       setupMediaSession();
       lastProgress = Date.now();
       watchdogStart();
@@ -126,6 +130,7 @@
       npStop();
       survStop();
       welcomeStop();
+      siteSurveyStop();
       onNowPlaying(null);
       // audio.error.code: 3=DECODE, 4=SRC_NOT_SUPPORTED — el navegador bajó el
       // stream pero no puede decodificarlo (típico con AAC+/HE-AAC en algunos
@@ -315,6 +320,7 @@
       npStop();
       survStop();
       welcomeStop();
+      siteSurveyStop();
       onNowPlaying(null);
     }
 
@@ -598,7 +604,7 @@
       toast.querySelector('.rp-survey-close').addEventListener('click', function () { dismiss(7); });
     }
 
-    // ── Toast bienvenida v2 ───────────────────────────────────────────────────
+    // ── Toast bienvenida v4 — solo novedades, sin encuesta ni pedido de café ──
     function welcomeStart() {
       if (localStorage.getItem(WELCOME_KEY)) return;
       clearTimeout(welcomeTimer);
@@ -616,34 +622,72 @@
       toast.className = 'rp-welcome';
       toast.innerHTML =
         '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
-        '<h3>&#x1F3B5; &#xA1;El sitio se renov&#xF3;!</h3>' +
+        '<h3>&#x1F3B5; &#xA1;Nueva versi&#xF3;n (v4)!</h3>' +
         '<ul>' +
-          '<li>Ves qu&#xE9; canci&#xF3;n est&#xE1; sonando en cada emisora</li>' +
+          '<li>Mostramos qu&#xE9; canci&#xF3;n suena en cada radio</li>' +
           '<li>Player con control de volumen</li>' +
-          '<li>Carga mucho m&#xE1;s r&#xE1;pido que antes</li>' +
-          '<li>M&#xE1;s de 1.200 radios argentinas, todas verificadas</li>' +
+          '<li>Avisos por Telegram o email cuando suene tu artista favorito</li>' +
+          '<li>Arreglamos cortes de audio en varias emisoras</li>' +
+          '<li>M&#xE1;s de 1.200 emisoras argentinas verificadas</li>' +
         '</ul>' +
         '<div class="rp-welcome-privacy">' +
-          '&#x1F512; No te rastreamos ni guardamos tus datos personales. ' +
-          'Lo de abajo es an&#xF3;nimo y nos ayuda a mejorar.' +
+          '&#x1F512; Sin rastreo, sin datos personales guardados.' +
         '</div>' +
+        '<p class="rp-welcome-footer">' +
+          'Este proyecto lo hago solo, gratis y sin publicidad. Si te sirve, ' +
+          'me vas a ver pedirte una mano m&#xE1;s adelante &#x2014; cualquier ' +
+          'colaboraci&#xF3;n ayuda a mantenerlo online.' +
+        '</p>' +
+        '<button class="rp-welcome-cta">&#xA1;Listo, a escuchar! &#x2192;</button>';
+
+      document.body.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+
+      function dismiss() {
+        localStorage.setItem(WELCOME_KEY, String(Date.now()));
+        toast.classList.remove('rp-welcome--in');
+        toast.classList.add('rp-welcome--out');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+      }
+
+      toast.querySelector('.rp-welcome-close').addEventListener('click', dismiss);
+      toast.querySelector('.rp-welcome-cta').addEventListener('click', dismiss);
+    }
+
+    // ── Encuesta de sitio (opinión + ubicación) — separada de la bienvenida,
+    // aparece un poco después para que el visitante ya haya escuchado algo
+    // antes de opinar. Una sola vez por visitante. ────────────────────────────
+    function siteSurveyStart() {
+      if (localStorage.getItem(SITE_SURVEY_KEY)) return;
+      clearTimeout(siteSurveyTimer);
+      siteSurveyTimer = setTimeout(showSiteSurvey, SITE_SURVEY_SECS * 1000);
+    }
+
+    function siteSurveyStop() {
+      clearTimeout(siteSurveyTimer); siteSurveyTimer = 0;
+    }
+
+    function showSiteSurvey() {
+      if (localStorage.getItem(SITE_SURVEY_KEY)) return;
+
+      var toast = document.createElement('div');
+      toast.className = 'rp-welcome';
+      toast.innerHTML =
+        '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
         '<div class="rp-welcome-q">&#xBF;Qu&#xE9; te parece el sitio?</div>' +
-        '<div class="rp-welcome-btns" id="_rwq1">' +
+        '<div class="rp-welcome-btns" id="_rsq1">' +
           '<button data-r="1">&#x1F44D; Me gusta</button>' +
           '<button data-r="0">&#x1F610; Regular</button>' +
           '<button data-r="-1">&#x1F44E; No me convence</button>' +
         '</div>' +
         '<div class="rp-welcome-q">&#xBF;Desde d&#xF3;nde escuch&#xE1;s?</div>' +
-        '<div class="rp-welcome-btns" id="_rwq2">' +
+        '<div class="rp-welcome-btns" id="_rsq2">' +
           '<button data-l="casa">&#x1F3E0; Casa</button>' +
           '<button data-l="trabajo">&#x1F4BC; Trabajo</button>' +
           '<button data-l="viaje">&#x1F697; Viajando</button>' +
           '<button data-l="caminando">&#x1F4F1; Caminando</button>' +
         '</div>' +
-        '<button class="rp-welcome-cta">&#xA1;Listo, a escuchar! &#x2192;</button>' +
-        '<p class="rp-welcome-footer">' +
-          'No te volvemos a molestar hasta que tengamos m&#xE1;s novedades para contarte.' +
-        '</p>';
+        '<button class="rp-welcome-cta">Listo &#x2192;</button>';
 
       document.body.appendChild(toast);
       requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
@@ -651,24 +695,24 @@
       var selRating = null;
       var selLoc    = null;
 
-      toast.querySelectorAll('#_rwq1 [data-r]').forEach(function (btn) {
+      toast.querySelectorAll('#_rsq1 [data-r]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          toast.querySelectorAll('#_rwq1 [data-r]').forEach(function (b) { b.classList.remove('rp-sel'); });
+          toast.querySelectorAll('#_rsq1 [data-r]').forEach(function (b) { b.classList.remove('rp-sel'); });
           btn.classList.add('rp-sel');
           selRating = parseInt(btn.dataset.r, 10);
         });
       });
 
-      toast.querySelectorAll('#_rwq2 [data-l]').forEach(function (btn) {
+      toast.querySelectorAll('#_rsq2 [data-l]').forEach(function (btn) {
         btn.addEventListener('click', function () {
-          toast.querySelectorAll('#_rwq2 [data-l]').forEach(function (b) { b.classList.remove('rp-sel'); });
+          toast.querySelectorAll('#_rsq2 [data-l]').forEach(function (b) { b.classList.remove('rp-sel'); });
           btn.classList.add('rp-sel');
           selLoc = btn.dataset.l;
         });
       });
 
       function dismiss() {
-        localStorage.setItem(WELCOME_KEY, String(Date.now()));
+        localStorage.setItem(SITE_SURVEY_KEY, String(Date.now()));
         toast.classList.remove('rp-welcome--in');
         toast.classList.add('rp-welcome--out');
         setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
@@ -680,7 +724,7 @@
           fetch(API_BASE + '/survey', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ slug: '_welcome_v2', rating: selRating, location: selLoc })
+            body: JSON.stringify({ slug: '_site_v4', rating: selRating, location: selLoc })
           }).catch(function () {});
         }
         dismiss();

@@ -70,17 +70,20 @@ if ($isPls || $isM3u) {
         exit('Playlist vacía o formato desconocido');
     }
 
-    // Si el stream resuelto es HTTPS, redirigir directamente al browser
-    if (strpos($resolved, 'https://') === 0) {
-        header('Location: ' . $resolved);
-        exit;
-    }
-
-    // Si sigue siendo HTTP, seguir y proxiarlo
     $url = $resolved;
 }
 
-// ── Proxy del stream ──────────────────────────────────────────────────────────
+// Si la URL (directa o resuelta de playlist) es HTTPS, redirigir al browser
+// en vez de pipear por PHP. El hosting compartido corta las respuestas
+// largas de proxy.php a los ~300s (confirmado: la misma URL con VLC directo
+// nunca se corta) — evitarlo del todo es mejor que sostener la conexión acá.
+// La URL real deja de estar oculta en este caso, pero nunca fue secreta.
+if (strpos($url, 'https://') === 0) {
+    header('Location: ' . $url);
+    exit;
+}
+
+// ── Proxy del stream (solo queda HTTP acá) ────────────────────────────────────
 set_time_limit(0);
 ignore_user_abort(false);
 

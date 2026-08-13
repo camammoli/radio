@@ -1,6 +1,6 @@
 <?php
 /**
- * suscribirse.php — Suscripción a alertas de Radio Argentina v3
+ * suscribirse.php — Suscripción a alertas de Radio Argentina v4
  * El oyente deja su Telegram o email y sus preferencias (artistas, programas, géneros).
  */
 

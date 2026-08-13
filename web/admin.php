@@ -1,6 +1,6 @@
 <?php
 /**
- * admin.php — Panel de administración Radio Argentina v3.
+ * admin.php — Panel de administración Radio Argentina v4.
  * Autenticación por sesión. No indexado.
  */
 
