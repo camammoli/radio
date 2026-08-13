@@ -137,8 +137,30 @@
     });
 
     audio.addEventListener('pause', function () {
-      // 'pause' se dispara también al hacer audio.src = '' — ignorar si ya estamos en idle
-      if (state !== 'idle' && state !== 'stopped') {
+      if (destroyed) return;
+      // El navegador dispara 'pause' (y luego 'ended') cuando la conexión se
+      // cierra "limpio" del lado del servidor — lo interpreta como fin de
+      // stream, aunque una radio en vivo nunca "termina" de verdad. Es el
+      // mismo corte silencioso que cubren watchdogCheck y el handler de
+      // 'error': si veníamos reproduciendo bien, reconectar antes de darlo
+      // por perdido. Sin esto, el estado pasaba a 'stopped' antes de que el
+      // watchdog (que corre cada 5s) llegara siquiera a notar el corte.
+      if (state === 'playing' || state === 'buffering') {
+        if (reconnectAttempts < MAX_RECONNECT) {
+          reconnectAttempts++;
+          audio.src = resolveUrl(url);
+          audio.play().catch(function () {});
+          lastProgress = Date.now();
+          return;
+        }
+        watchdogStop();
+        setState('error');
+        onError(url, nombre, 'se perdió la conexión');
+        return;
+      }
+      // 'pause' también se dispara por nuestro propio stop() (audio.src='')
+      // y no debe pisar el estado 'connecting' de una emisora recién elegida.
+      if (state !== 'idle' && state !== 'stopped' && state !== 'connecting') {
         setState('stopped');
       }
     });
