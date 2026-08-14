@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0688 — 2026-08-14 — Fix: estadisticas.php caída por corrupción DB (recuperación de stream_history)
+
+### Contexto
+
+TKT-0687 (2026-08-13) había detectado que `/radio/estadisticas.php` devolvía 500 por corrupción real de páginas b-tree en `stream_history` — preexistente, no causada por el deploy de v4.0.0. En ese momento Carlos decidió dejarlo así ("los crawlers siempre rompen todo, por ahora dejalo así"), sin tocar la DB. El 14/08 pidió retomarlo.
+
+### Procedimiento
+
+Mismo método ya usado 2 veces antes (TKT-0721/0722 en junio, recuperación de julio documentada en memoria de proyecto): descarga fresca de `radio_v2.sqlite` por FTP → `sqlite3 .recover` a SQL → rebuild en archivo nuevo → validación (`PRAGMA integrity_check` ok, `PRAGMA foreign_key_check` limpio) → subida atómica (`put .new` + `mv`).
+
+Esta corrupción fue más extensa que las anteriores: no un solo índice sino varios árboles b-tree afectados. `.recover` volcó 6929 filas de `stream_history` a la tabla auxiliar `lost_and_found`, pero solo con 2 de las 9 columnas originales recuperables (aparentemente `checked_at` + el `id`), sin `station_id` ni `estado` — no se pudieron reinsertar de forma válida (violarían el `NOT NULL` de esas columnas). Se descartó esa tabla auxiliar tras confirmar que no había solapamiento de ids con la `stream_history` ya recuperada (166.452 filas intactas). Pérdida real: esas ~6929 filas de log de checkeos históricos de un total de cientos de miles — no crítico, solo reduce levemente la granularidad del histórico de uptime en ese rango de fechas puntual.
+
+### Verificación
+
+Queries reales de `estadisticas.php` (estado actual + historial 91 días con window function) y de `admin_stats.php` (pico de concurrencia, self-join sobre `listeners`) probadas contra la DB recuperada antes de subir. Post-deploy en producción: `estadisticas.php` → 200 sin errores (antes 500), `admin_stats.php` → 302 (redirect login normal, sin sesión), `admin.php` → 200, sitio público → 200.
+
+### Estado
+
+Subido a producción por FTP (deploy directo de datos, no de código — no requiere commit). TKT-0687 puede cerrarse; TKT-0688 es el registro del fix.
+
+---
+
 ## TKT-0686 — 2026-08-13 — v4.0.0: fix real de cortes en Aspen (HTTPS directo), banners consolidados
 
 ### Contexto
