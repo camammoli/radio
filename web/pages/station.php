@@ -369,10 +369,16 @@ if ($prov) {
     },
 
     onListeners: function (total, stationCount) {
-      var n = stationCount > 0 ? stationCount : total;
-      stList.textContent = n > 0
-        ? (n === 1 ? '1 persona escuchando ahora' : n + ' personas escuchando ahora')
-        : '';
+      var partes = [];
+      if (stationCount > 0) {
+        partes.push(stationCount === 1 ? '1 persona escuchando esta emisora' : stationCount + ' personas escuchando esta emisora');
+      } else if (total > 0) {
+        partes.push('nadie escuchando esta emisora ahora');
+      }
+      if (total > 0) {
+        partes.push(total === 1 ? '1 en todo el sitio' : total + ' en todo el sitio');
+      }
+      stList.textContent = partes.join(' · ');
     },
 
     onError: function (rawUrl, nombre, msg) {

@@ -1,0 +1,18 @@
+name: Aprender patrones de programas
+
+on:
+  schedule:
+    - cron: '0 7 * * 1'   # Lunes 07:00 UTC (04:00 AR) — el cron cPanel documentado nunca se configuró
+  workflow_dispatch:
+
+jobs:
+  learn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Disparar aprendizaje de patrones vía API
+        env:
+          RADIO_ADMIN_KEY: ${{ secrets.RADIO_ADMIN_KEY }}
+        run: |
+          curl -sf "https://mammoli.ar/radio/api/cron_learn_patterns.php?key=$RADIO_ADMIN_KEY"

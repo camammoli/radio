@@ -4,6 +4,8 @@
  * Retorna un singleton. No incluir directamente desde la web — prefijo _ lo protege.
  */
 
+require_once __DIR__ . '/_helpers.php';
+
 function radio_db(): PDO {
     static $pdo = null;
     if ($pdo) return $pdo;
@@ -71,6 +73,24 @@ function radio_db(): PDO {
         $pdo->exec('DROP VIEW IF EXISTS v_stations');
         $pdo->exec($v_stations_sql);
     }
+
+    // Normalización one-off de stations.provincia a las 24 provincias canónicas
+    // (TKT-0689). Guardada en settings para no re-procesar en cada request.
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
+        $done = $pdo->query("SELECT value FROM settings WHERE key='provincia_normalizada_v1'")->fetchColumn();
+        if ($done === false) {
+            $rows = $pdo->query("SELECT id, provincia FROM stations WHERE provincia IS NOT NULL AND provincia != ''")->fetchAll();
+            $upd = $pdo->prepare('UPDATE stations SET provincia = ? WHERE id = ?');
+            foreach ($rows as $row) {
+                $canon = normalizar_provincia($row['provincia']);
+                if ($canon !== null && $canon !== $row['provincia']) {
+                    $upd->execute([$canon, $row['id']]);
+                }
+            }
+            $pdo->prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('provincia_normalizada_v1', '1', datetime('now'))")->execute();
+        }
+    } catch (Exception $e) {}
 
     return $pdo;
 }

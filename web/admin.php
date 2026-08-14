@@ -176,7 +176,9 @@ if (isset($_GET['ajax'])) {
                              WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
                              ELSE NULL END AS duration_secs,
                         CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
-                        (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos
+                        (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
+                        (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
+                          AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
                  FROM plays p
                  LEFT JOIN stations s ON s.id=p.station_id
                  LEFT JOIN listeners l ON l.sid=p.session_id
@@ -235,6 +237,16 @@ $welcome_loc = $db->query(
      GROUP BY location ORDER BY cnt DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 $loc_icons = ['casa' => '🏠', 'trabajo' => '💼', 'viaje' => '🚗', 'caminando' => '📱'];
+
+// Oyentes por provincia (geolocalizado por IP, últimos 30 días — TKT-0689)
+try { $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'); } catch (Exception $e) {}
+$geo_provincia = $db->query(
+    "SELECT provincia, COUNT(DISTINCT ip_hash) AS cnt
+     FROM plays
+     WHERE provincia IS NOT NULL AND played_at >= datetime('now','-30 days')
+     GROUP BY provincia ORDER BY cnt DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+$geo_total = array_sum(array_column($geo_provincia, 'cnt'));
 
 // Encuestas por emisora (top 40)
 $station_surveys = $db->query(
@@ -331,7 +343,9 @@ $plays_recientes = $db->query(
               ELSE NULL
             END AS duration_secs,
             CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
-            (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos
+            (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
+            (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
+              AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
      FROM plays p
      LEFT JOIN stations s ON s.id = p.station_id
      LEFT JOIN listeners l ON l.sid = p.session_id
@@ -437,6 +451,16 @@ function visitor_badge($dias): string {
     if ($dias >= 4) return '<span title="Frecuente (4-7 días)">⭐</span>';
     if ($dias >= 2) return '<span title="Recurrente (2-3 días)">🔁</span>';
     return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
+}
+
+// Station-hopping: mismo IP saltando de emisora en emisora en poco tiempo
+// (caso real documentado: 35 cambios en 3hs). No es un bloqueo, solo una señal
+// visual para no confundir esas sesiones con audiencia real al leer métricas.
+function bot_badge($hops): string {
+    $hops = (int)$hops;
+    if ($hops >= 12) return '<span title="'.$hops.' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖</span>';
+    if ($hops >= 6)  return '<span title="'.$hops.' emisoras distintas en 1h — station-hopping, revisar">🤔</span>';
+    return '';
 }
 
 // Fila de emisora con formulario de edición (contacto/observación/destacada/notas),
@@ -667,6 +691,21 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
         <p class="empty" style="padding:6px 0">Sin respuestas aún.</p>
       <?php endif; ?>
     </div>
+
+    <div class="welcome-block">
+      <h3>Oyentes por provincia — geolocalizado (<?= $geo_total ?>, 30 días)</h3>
+      <?php if ($geo_provincia): ?>
+        <?php foreach ($geo_provincia as $gp): ?>
+        <div class="loc-bar">
+          <span style="min-width:130px">📍 <?= h($gp['provincia']) ?></span>
+          <div class="loc-bar-fill" style="width:<?= $geo_total > 0 ? round($gp['cnt']/$geo_total*120) : 0 ?>px"></div>
+          <span style="color:var(--muted)"><?= (int)$gp['cnt'] ?></span>
+        </div>
+        <?php endforeach; ?>
+      <?php else: ?>
+        <p class="empty" style="padding:6px 0">Sin datos aún — se completa a medida que llegan oyentes nuevos.</p>
+      <?php endif; ?>
+    </div>
   </div>
 
   <?php if ($station_surveys): ?>
@@ -755,7 +794,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   ?>
   <table>
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th>IP hash</th><th>Sesión</th>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real">🤖</th><th>IP hash</th><th>Sesión</th>
     </tr></thead>
     <tbody id="plays-body">
     <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
@@ -771,11 +810,12 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       </td>
       <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
       <td style="font-size:14px;text-align:center"><?= visitor_badge($pl['dias_activos'] ?? null) ?></td>
+      <td style="font-size:14px;text-align:center"><?= bot_badge($pl['hops_1h'] ?? 0) ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
     </tr>
     <?php endforeach; else: ?>
-    <tr><td colspan="6" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
+    <tr><td colspan="7" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
@@ -1166,6 +1206,13 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
   }
 
+  function botBadge(hops) {
+    hops = parseInt(hops, 10) || 0;
+    if (hops >= 12) return '<span title="' + hops + ' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖</span>';
+    if (hops >= 6)  return '<span title="' + hops + ' emisoras distintas en 1h — station-hopping, revisar">🤔</span>';
+    return '';
+  }
+
   var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR'};
 
   function upd(id, val) {
@@ -1206,6 +1253,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td style="font-size:12px;white-space:nowrap">' + dur + '</td>'
               + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
               + '<td style="font-size:14px;text-align:center">' + visitorBadge(p.dias_activos) + '</td>'
+              + '<td style="font-size:14px;text-align:center">' + botBadge(p.hops_1h) + '</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
               + '</tr>';

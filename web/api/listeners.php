@@ -27,18 +27,11 @@ $sid    = substr(preg_replace('/[^a-z0-9]/i', '', str_param('sid', 40)), 0, 40);
 $slug   = str_param('station', 100);   // ahora recibe slug (no nombre)
 $source = str_param('source', 30, 'web-listing');
 
-// Migración: columna ended_at en plays (safe, idempotente)
-try { $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'); } catch (Exception $e) {}
+// Migración: columna provincia en plays (safe, idempotente)
+try { $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'); } catch (Exception $e) {}
 
 // Limpiar expirados: primero cerrar plays con el último heartbeat, luego borrar
-try {
-    $db->exec(
-        "UPDATE plays SET ended_at = (SELECT last_seen FROM listeners WHERE sid = plays.session_id)
-         WHERE session_id IN (SELECT sid FROM listeners WHERE last_seen < datetime('now', '-90 seconds'))
-         AND ended_at IS NULL"
-    );
-} catch (Exception $e) {}
-$db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
+cerrar_sesiones_expiradas($db);
 
 // ── Resolver station_id desde slug ────────────────────────────────────────────
 
@@ -105,9 +98,10 @@ if ($action === 'ping') {
 
         // Registrar reproducción histórica
         if ($station_id) {
+            $ip = client_ip();
             $db->prepare(
-                'INSERT INTO plays (station_id, session_id, ip_hash, source) VALUES (?,?,?,?)'
-            )->execute([$station_id, $sid, ip_hash(client_ip()), $source]);
+                'INSERT INTO plays (station_id, session_id, ip_hash, source, provincia) VALUES (?,?,?,?,?)'
+            )->execute([$station_id, $sid, ip_hash($ip), $source, geo_provincia($db, $ip)]);
         }
 
         // Notificación Telegram

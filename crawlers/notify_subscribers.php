@@ -190,6 +190,60 @@ foreach ($subscribers as $sub) {
     }
 }
 
+// ── Género: notificar si el género coincide con los tags de una emisora en vivo ──
+// (antes, keywords_match() excluía explícitamente 'genre' del matching por texto
+// de título — correcto, un género no aparece en "Artista - Canción". Pero eso
+// dejaba a los suscriptores de género sin ningún camino de notificación. Acá se
+// compara contra stations.tags en vez de contra el texto ICY.)
+if ($icy_by_station) {
+    $st_tags = [];
+    $ids_ph2 = implode(',', array_map('intval', array_keys($icy_by_station)));
+    $stn_tags_rows = $db->query("SELECT id, tags FROM stations WHERE id IN ({$ids_ph2})")->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($stn_tags_rows as $r) {
+        $st_tags[$r['id']] = array_map('strtolower', json_decode($r['tags'] ?? '[]', true) ?: []);
+    }
+
+    foreach ($subscribers as $sub) {
+        $prefs = json_decode($sub['preferences'] ?? '[]', true) ?: [];
+        $genre_prefs = array_filter($prefs, fn($p) => ($p['type'] ?? '') === 'genre');
+        if (!$genre_prefs) continue;
+
+        foreach (array_keys($icy_by_station) as $sid) {
+            $ck = $sub['id'] . '_' . $sid;
+            if (isset($cooldowns[$ck])) continue;
+
+            $tags = $st_tags[$sid] ?? [];
+            $matched_genre = null;
+            foreach ($genre_prefs as $gp) {
+                if (in_array(strtolower($gp['value']), $tags, true)) { $matched_genre = $gp['value']; break; }
+            }
+            if (!$matched_genre) continue;
+
+            $stn = $station_names[$sid] ?? null;
+            if (!$stn) continue;
+            $stn_nombre = $stn['nombre'];
+            $stn_url    = 'https://mammoli.ar/radio/' . ($stn['slug'] ?? '') . '/';
+
+            $msg_tg = "📻 *Radio Argentina — Tu género favorito está sonando*\n\n"
+                    . "[{$stn_nombre}]({$stn_url}) — género *{$matched_genre}* — está al aire ahora.";
+            $msg_email = "📻 {$stn_nombre} — género {$matched_genre} — está al aire ahora.\n"
+                       . "Escuchá en: {$stn_url}\n\n— Radio Argentina";
+
+            $sent = ($sub['contact_type'] === 'telegram')
+                ? tg_send($sub['contact_value'], $msg_tg)
+                : email_send($sub['contact_value'], "🎶 {$matched_genre} — en el aire ahora", $msg_email);
+
+            if ($sent) {
+                $db->prepare("INSERT INTO subscriber_matches (subscriber_id, station_id, keyword, match_count, notified) VALUES (?,?,?,?,1)")
+                   ->execute([$sub['id'], $sid, $matched_genre, 1]);
+                $cooldowns[$ck] = true;
+                $total_notified++;
+                $log("Género notificado: suscriptor #{$sub['id']} → {$stn_nombre} ({$matched_genre})");
+            }
+        }
+    }
+}
+
 // ── Verificar patrones de programas próximos ──────────────────────────────────
 // Busca programas que empiezan en los próximos 15 minutos según historial aprendido
 $next_hour   = (int)date('G');
@@ -197,14 +251,6 @@ $next_mins   = (int)date('i');
 $notify_hour = $next_mins >= 45 ? ($next_hour + 1) % 24 : $next_hour;
 $dow         = (int)date('w');
 
-$upcoming = $db->prepare("
-    SELECT pp.*, s.nombre, s.slug
-    FROM program_patterns pp
-    JOIN stations s ON s.id = pp.station_id
-    WHERE pp.confidence >= 0.6
-      AND pp.hour = ?
-      AND (pp.day_of_week IS NULL OR pp.day_of_week = ?)
-")->execute([$notify_hour, $dow]);
 $upcoming_patterns = $db->query("
     SELECT pp.*, s.nombre, s.slug
     FROM program_patterns pp
@@ -226,7 +272,11 @@ foreach ($upcoming_patterns as $pat) {
         }
         if (!$match) continue;
 
-        $ck = 'prog_' . $sub['id'] . '_' . $pat['id'];
+        // Misma forma de clave que el resto (sub+estación) para que el cooldown
+        // persista de verdad: se recarga de subscriber_matches al inicio del
+        // script, y antes esta rama nunca insertaba ahí (bug: reenviaba la misma
+        // alerta hasta 9 veces/hora, una por corrida de cron).
+        $ck = $sub['id'] . '_' . $pat['station_id'];
         if (isset($cooldowns[$ck])) continue;
 
         $stn_url = 'https://mammoli.ar/radio/' . ($pat['slug'] ?? '') . '/';
@@ -242,6 +292,8 @@ foreach ($upcoming_patterns as $pat) {
             $sent = email_send($sub['contact_value'], "📅 En breve: {$pat['keyword']}", $msg_em);
         }
         if ($sent) {
+            $db->prepare("INSERT INTO subscriber_matches (subscriber_id, station_id, keyword, match_count, notified) VALUES (?,?,?,?,1)")
+               ->execute([$sub['id'], $pat['station_id'], $pat['keyword'], 1]);
             $cooldowns[$ck] = true;
             $total_notified++;
             $log("Programa próximo notificado: suscriptor #{$sub['id']} → {$pat['keyword']} @ {$pat['nombre']}");

@@ -11,13 +11,23 @@ $db = radio_db();
 
 // ── Cargar emisoras ───────────────────────────────────────────────────────────
 
+// Encuestas (👍1 / 😐0 / 👎-1) como desempate liviano: entre emisoras igual de
+// vivas, la de mejor feedback neto sube un poco antes de caer a plays/votos.
+// La mayoría no tiene encuestas → COALESCE a 0 → orden sin cambios para ellas.
 $stations = $db->query(
-    "SELECT id, n, slug, nombre, url, provincia, tags, codec, bitrate,
-            logo, estado, icy_supported, total_plays, rb_votes, last_checked
-     FROM v_stations
+    "SELECT s.id, s.n, s.slug, s.nombre, s.url, s.provincia, s.tags, s.codec, s.bitrate,
+            s.logo, s.estado, s.icy_supported, s.total_plays, s.rb_votes, s.last_checked
+     FROM v_stations s
+     LEFT JOIN (
+         SELECT station_id, SUM(rating) AS score
+         FROM surveys
+         WHERE station_id IS NOT NULL
+         GROUP BY station_id
+     ) sv ON sv.station_id = s.id
      ORDER BY
-       CASE estado WHEN 'ok' THEN 0 WHEN 'timeout' THEN 1 ELSE 2 END,
-       total_plays DESC, rb_votes DESC, n ASC"
+       CASE s.estado WHEN 'ok' THEN 0 WHEN 'timeout' THEN 1 ELSE 2 END,
+       COALESCE(sv.score, 0) DESC,
+       s.total_plays DESC, s.rb_votes DESC, s.n ASC"
 )->fetchAll();
 
 $total = count($stations);
