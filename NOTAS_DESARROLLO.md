@@ -4,6 +4,25 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0691 — 2026-08-14 — Provincia geolocalizada en Reproducciones, Compartidos y Encuestas
+
+### Contexto
+
+Tras revisar v4.1 (TKT-0689), Carlos pidió mostrar la provincia geolocalizada "en todas las pestañas donde sea posible, sobre todo en Reproducciones" — la geolocalización ya guardaba `plays.provincia` desde v4.1, pero solo se mostraba agregada en el dashboard resumen de Encuestas, no en ninguna tabla de detalle.
+
+### Cambios
+
+- **Reproducciones** (prioridad explícita): columna nueva usando `plays.provincia` (ya se guardaba, solo faltaba seleccionarlo/mostrarlo) — query inicial, refresh AJAX (`?ajax=1`) y ambos templates de fila (PHP + JS).
+- **Compartidos**: columna nueva vía `LEFT JOIN ip_geo_cache` por `ip_hash` — la tabla `shares` no tiene columna propia de provincia, no hizo falta agregarla porque `ip_geo_cache` ya cubre cualquier IP vista antes en cualquier parte del sitio.
+- **Encuestas — detalle**: columna "Provincia (geo)" al lado de la "Ubicación" autoreportada existente, mismo JOIN, para comparar dato real vs. autoreportado.
+- Migración `CREATE TABLE IF NOT EXISTS ip_geo_cache` agregada también al bloque de `admin.php`, por si el panel se visita antes que cualquier ping real haya creado la tabla.
+
+### Verificación
+
+Servidor PHP local sobre copia fresca de producción (`integrity_check` ok) antes de desplegar: login OK, 7 ocurrencias de "Provincia" en las 3 tablas, JSON del refresh AJAX válido con provincia real (CABA en el primer registro), sin errores PHP. Desplegado por FTP y reverificado en producción con el mismo resultado.
+
+---
+
 ## TKT-0690 — 2026-08-14 — DB corrupta de nuevo durante el deploy de v4.1 (causa raíz sin confirmar)
 
 ### Contexto
