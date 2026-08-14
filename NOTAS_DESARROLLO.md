@@ -4,6 +4,62 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0690 — 2026-08-14 — DB corrupta de nuevo durante el deploy de v4.1 (causa raíz sin confirmar)
+
+### Contexto
+
+Al desplegar v4.1 (TKT-0689), la primera request real post-deploy tiró `PDOException: database disk image is malformed` en `_db.php:27` — dentro de `radio_db()`, antes de llegar a cualquier código nuevo de v4.1. Diagnosticado con un script temporal (subido por FTP, ejecutado una vez, borrado de inmediato) que descartó cualquier problema de versión de PHP o del código nuevo: PHP 8.3.33, `str_contains`, arrow functions y `_helpers.php` cargaban y corrían perfecto de forma aislada — el único error real era la excepción de SQLite al conectar.
+
+Misma clase de corrupción que TKT-0687/0721/0722, pero ocurrió de nuevo en la ventana de ~3 horas entre la recuperación de TKT-0688 (misma sesión, ~15:5x) y este deploy (~19:08) — se corrompió sola otra vez, sin relación con el código de v4.1 (nunca llegó a ejecutarse contra la DB corrupta).
+
+### Recuperación
+
+Mismo procedimiento ya probado 3 veces este año: descarga fresca → `sqlite3 .recover` (sin errores) → rebuild → `PRAGMA integrity_check` ok + `foreign_key_check` limpio → drop de `lost_and_found` (21.680 filas parciales de 2 columnas, sin `station_id`/`estado`, no reinsertables) → subida atómica (`put .new` + `mv`). Verificado en producción: sitio, estadísticas, admin, ficha de emisora todos 200; ping real a `listeners.php` funciona y geolocaliza.
+
+### Causa raíz — sigue sin confirmarse
+
+Sospecha histórica (memoria de proyecto, 2026-07-23): `icy_refresh.php` vía cron cPanel cada 10 min, fuera del radar de GitHub Actions y su `concurrency: group`. Esta es la **tercera vez** que se repite el patrón (TKT-0721/0722 en julio, TKT-0687 el 13/08, este el 14/08) sin lograr confirmar la causa de fondo — cada vez se resuelve el síntoma, nunca se instrumentó `icy_refresh.php` para confirmar o descartar la hipótesis con evidencia directa.
+
+**Pendiente recomendado**: instrumentar `icy_refresh.php` (logging de inicio/fin de escritura, o migrarlo al mismo patrón atómico `put .new` + `mv` que ya usan los demás crawlers) para resolver esto con evidencia en vez de inferencia por horarios.
+
+---
+
+## TKT-0689 — 2026-08-14 — v4.1: geolocalización, sesiones huérfanas, contador, provincia, encuestas, fixes admin
+
+### Contexto
+
+A partir del documento de propuestas (`Radio_v4.1_Propuestas.html`, generado en la sesión anterior), Carlos pidió implementar todo salvo descripciones con IA y el FAQ de reproductores externos, que quedan pendientes a propósito. Checkpoint pre-cambios: tag `pre-v4.1-2026-08-14`. Release: tag `v4.1.0`, commit `4f594c0`.
+
+### Lado usuario
+
+**1) Geolocalización de oyentes.** `geo_provincia()` en `_helpers.php` usa ip-api.com (sin cuenta ni license key — opción elegida tras confirmar que la alternativa, MaxMind GeoLite2, requiere una que no se tenía) con caché en `ip_geo_cache` indexada por `ip_hash`: el IP crudo nunca se persiste, solo se usa en memoria para la consulta puntual. Usa el código ISO 3166-2:AR (campo `region` de la API) como fuente primaria en vez de parsear el nombre de la región en texto libre — evita ambigüedades como "Buenos Aires C.F." vs. "Buenos Aires" provincia. Se llama desde `listeners.php` al crear cada play nuevo. Verificado con tráfico real en producción: ya hay oyentes geolocalizados a Buenos Aires, CABA, Río Negro y Chaco.
+
+**2) Cierre proactivo de sesiones huérfanas.** La limpieza que ya existía en `listeners.php` (cierra `plays.ended_at` con el último heartbeat, borra `listeners` vencidos) solo corría de forma pasiva, disparada por tráfico real. Se extrajo a `cerrar_sesiones_expiradas()` (compartida) y se agregó `cron_close_sessions.php` (endpoint autenticado con `RADIO_ADMIN_KEY`) + GitHub Actions cada 15 minutos, para que también corra sin visitas.
+
+**3) Fix contador de oyentes en station.php.** Bug confirmado en sesión anterior: cuando nadie escuchaba esa emisora puntual (`stationCount=0`), el fallback mostraba el total del sitio como si fueran oyentes de esa emisora. El bug estaba solo en el frontend — la API ya devolvía ambos números (`count` y `listeners_station`) correctamente. Ahora se muestran los dos, aclarados: "N personas escuchando esta emisora · M en todo el sitio".
+
+**4) Normalización de `stations.provincia`.** Mapeo a las 24 provincias canónicas (23 + CABA), con tabla de alias de ciudades (Rosario→Santa Fe, Mar del Plata→Buenos Aires, etc.) y detección de CABA por variantes de texto. Validado contra las 75 variantes reales distintas encontradas en la DB antes de aplicar — 100% de cobertura salvo `NULL` y "Argentina" genérico, que quedan sin dato a propósito en vez de adivinar. Migración one-off automática en `_db.php`, guardada en `settings.provincia_normalizada_v1` para no reprocesar. Confirmado corriendo solo, en el primer request real post-deploy.
+
+**5) Encuestas ordenan el listado.** En `listing.php`, el feedback de encuestas (👍1/😐0/👎-1) ahora es un desempate en el `ORDER BY`: entre emisoras con el mismo estado, la de mejor puntaje sube antes de caer a plays/votos. La mayoría no tiene encuestas → `COALESCE` a 0 → sin cambios de orden para ellas.
+
+### Lado admin
+
+**6) `notify_subscribers.php` — dos bugs reales corregidos.** Las suscripciones `type=genre` nunca notificaban nada: tanto `keywords_match()` como el matching de "programa próximo" las excluían explícitamente del todo. Se agregó un bloque nuevo que compara géneros contra `stations.tags` de emisoras con actividad ICY reciente (un género no aparece en "Artista - Canción", tiene que compararse contra otra cosa). Además, el cooldown de "programa próximo" usaba una clave (`prog_subid_patternid`) que el query de carga inicial de cooldowns nunca reconstruía, y el bloque nunca insertaba en `subscriber_matches` — el cooldown solo duraba lo que dura una corrida del script, reenviando la misma alerta hasta 9 veces por hora. Fix: misma forma de clave que el resto del sistema (sub+estación) + persistencia real.
+
+**7) `learn_patterns.php` — cron activado.** El cron de cPanel documentado (`0 4 * * 1`) nunca se configuró: 0 patrones detectados en 3+ semanas desde v3.0. Se creó `cron_learn_patterns.php` (endpoint autenticado) + GitHub Actions semanal. Probado contra datos reales en producción: corre en menos de 1 segundo sobre 6.014 registros de `icy_history`.
+
+**8) `admin.php` — dashboard de provincia + detección de bots.** Nueva sección "Oyentes por provincia (geolocalizado)" en la pestaña Encuestas, usa `plays.provincia`. Nueva columna con badge de station-hopping (🤔 6+ emisoras distintas del mismo IP en 1h, 🤖 12+) en Reproducciones, replicada en el refresh AJAX. Umbral validado contra el caso real ya documentado (sesión con 35 cambios en 3hs) que da `hops_1h=24`, bien por encima.
+
+### Pendiente a propósito
+
+Descripciones de emisoras con IA y FAQ de reproductores externos quedan fuera de esta tanda (decisión explícita de Carlos).
+
+### Verificación
+
+`estadisticas.php`/`admin.php`/listado/ficha de emisora en 200. Ambos endpoints cron probados con y sin key (403 sin key). Ping real a `listeners.php` devuelve `count`+`listeners_station` correctos y geolocaliza. Admin panel logueado muestra la sección de provincia y el badge de bot sin errores PHP. `notify_subscribers.php` probado **solo localmente** — nunca en producción, para no disparar notificaciones reales al único suscriptor real del sistema.
+
+---
+
 ## TKT-0688 — 2026-08-14 — Fix: estadisticas.php caída por corrupción DB (recuperación de stream_history)
 
 ### Contexto
