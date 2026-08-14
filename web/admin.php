@@ -93,6 +93,7 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS reportes (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 )'); } catch (Exception $e) {}
 try { $db->exec('CREATE INDEX IF NOT EXISTS idx_plays_iphash ON plays(ip_hash)'); } catch (Exception $e) {}
+try { $db->exec("CREATE TABLE IF NOT EXISTS ip_geo_cache (ip_hash TEXT PRIMARY KEY, provincia TEXT, updated_at TEXT DEFAULT (datetime('now')))"); } catch (Exception $e) {}
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
@@ -171,7 +172,7 @@ if (isset($_GET['ajax'])) {
                 'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
             ],
             'plays' => $db->query(
-                "SELECT p.played_at, p.ip_hash, p.source, p.session_id, s.nombre, s.slug,
+                "SELECT p.played_at, p.ip_hash, p.provincia, p.source, p.session_id, s.nombre, s.slug,
                         CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
                              WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
                              ELSE NULL END AS duration_secs,
@@ -185,8 +186,9 @@ if (isset($_GET['ajax'])) {
                  ORDER BY p.played_at DESC LIMIT 200"
             )->fetchAll(),
             'shares' => $db->query(
-                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre
+                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre, g.provincia
                  FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
+                                 LEFT JOIN ip_geo_cache g ON g.ip_hash=sh.ip_hash
                  ORDER BY sh.created_at DESC LIMIT 100"
             )->fetchAll(),
         ];
@@ -314,9 +316,10 @@ $notify_val = $notify_db !== false ? $notify_db === '1' : (defined('NOTIFY_OYENT
 // Shares recientes (últimas 100)
 $shares_recientes = $db->query(
     "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug,
-            s.nombre
+            s.nombre, g.provincia
      FROM shares sh
      LEFT JOIN stations s ON s.id = sh.station_id
+     LEFT JOIN ip_geo_cache g ON g.ip_hash = sh.ip_hash
      ORDER BY sh.created_at DESC
      LIMIT 100"
 )->fetchAll(PDO::FETCH_ASSOC);
@@ -324,16 +327,17 @@ $shares_recientes = $db->query(
 // Detalle de encuestas con ip_hash (últimas 100)
 $surveys_detalle = $db->query(
     "SELECT sv.rating, sv.location, sv.ip_hash, sv.created_at,
-            s.nombre, s.slug
+            s.nombre, s.slug, g.provincia AS provincia_geo
      FROM surveys sv
      LEFT JOIN stations s ON s.id = sv.station_id
+     LEFT JOIN ip_geo_cache g ON g.ip_hash = sv.ip_hash
      ORDER BY sv.created_at DESC
      LIMIT 100"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Plays recientes (últimas 200)
 $plays_recientes = $db->query(
-    "SELECT p.played_at, p.ended_at, p.ip_hash, p.source, p.session_id,
+    "SELECT p.played_at, p.ended_at, p.ip_hash, p.provincia, p.source, p.session_id,
             s.nombre, s.slug,
             CASE
               WHEN p.ended_at IS NOT NULL
@@ -735,7 +739,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php if ($surveys_detalle): ?>
   <table>
     <thead><tr>
-      <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th>IP hash</th>
+      <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th title="Provincia geolocalizada por IP, para comparar contra la ubicación autoreportada">Provincia (geo)</th><th>IP hash</th>
     </tr></thead>
     <tbody>
     <?php foreach ($surveys_detalle as $sv):
@@ -748,6 +752,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       <td><?= $rlbl ?></td>
       <td><?php if ($sv['slug']): ?><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">bienvenida</span><?php endif; ?></td>
       <td style="color:var(--muted)"><?= $sv['location'] ? h(ucfirst($sv['location'])) : '—' ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= $sv['provincia_geo'] ? '📍 ' . h($sv['provincia_geo']) : '—' ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sv['ip_hash'] ?? '', 0, 16)) ?>…</td>
     </tr>
     <?php endforeach; ?>
@@ -764,7 +769,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
   <table>
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>IP hash</th>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>Provincia</th><th>IP hash</th>
     </tr></thead>
     <tbody id="shares-body">
     <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
@@ -772,10 +777,11 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
       <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
       <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= $sh['provincia'] ? '📍 ' . h($sh['provincia']) : '—' ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
     </tr>
     <?php endforeach; else: ?>
-    <tr><td colspan="4" class="empty">Sin compartidos registrados todavía.</td></tr>
+    <tr><td colspan="5" class="empty">Sin compartidos registrados todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
@@ -794,7 +800,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   ?>
   <table>
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real">🤖</th><th>IP hash</th><th>Sesión</th>
+      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real">🤖</th><th>Provincia</th><th>IP hash</th><th>Sesión</th>
     </tr></thead>
     <tbody id="plays-body">
     <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
@@ -811,11 +817,12 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
       <td style="font-size:14px;text-align:center"><?= visitor_badge($pl['dias_activos'] ?? null) ?></td>
       <td style="font-size:14px;text-align:center"><?= bot_badge($pl['hops_1h'] ?? 0) ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= $pl['provincia'] ? '📍 ' . h($pl['provincia']) : '—' ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
     </tr>
     <?php endforeach; else: ?>
-    <tr><td colspan="7" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
+    <tr><td colspan="8" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
@@ -1254,6 +1261,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
               + '<td style="font-size:14px;text-align:center">' + visitorBadge(p.dias_activos) + '</td>'
               + '<td style="font-size:14px;text-align:center">' + botBadge(p.hops_1h) + '</td>'
+              + '<td style="font-size:12px;color:var(--muted)">' + (p.provincia ? '📍 ' + esc(p.provincia) : '—') + '</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
               + '</tr>';
@@ -1272,6 +1280,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
               + '<td>' + nom + '</td>'
               + '<td>' + esc(CH[sh.channel] || sh.channel) + '</td>'
+              + '<td style="font-size:12px;color:var(--muted)">' + (sh.provincia ? '📍 ' + esc(sh.provincia) : '—') + '</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((sh.ip_hash || '').substring(0,16)) + '…</td>'
               + '</tr>';
           }).join('');
