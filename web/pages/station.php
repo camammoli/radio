@@ -119,6 +119,7 @@ if ($prov) {
   <div class="badges">
     <a class="badge" href="/radio/">← Todas las emisoras</a>
     <a class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
+    <a class="badge" href="/radio/contacto.php">💬 Contacto</a>
     <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Café</a>
     <button id="theme-btn" class="badge">☀️ Modo claro</button>
   </div>

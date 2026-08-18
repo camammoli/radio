@@ -109,6 +109,7 @@ $ld_itemlist = [
   <div class="badges">
     <a  class="badge" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
     <a  class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
+    <a  class="badge" href="/radio/contacto.php">💬 Contacto</a>
     <a  class="badge" href="/radio/suscribirse.php">🔔 Alertas</a>
     <a  class="badge" href="/radio/estadisticas.php">📊 Estadísticas</a>
     <a  class="badge" href="https://github.com/camammoli/radio" target="_blank" rel="noopener">GitHub</a>
