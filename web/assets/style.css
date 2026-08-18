@@ -560,6 +560,26 @@ body.light .rp-welcome-privacy { background: rgba(0,0,0,.05); }
 }
 .rp-welcome-cta:hover { opacity: .85; }
 
+.rp-ayuda-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.rp-ayuda-actions .rp-welcome-cta {
+  width: auto;
+  margin-top: 0;
+  text-decoration: none;
+  font-size: 13px;
+  padding: 9px 6px;
+}
+.rp-ayuda-nomolestar {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.rp-ayuda-nomolestar:hover { border-color: var(--muted); opacity: 1; }
+
 .rp-welcome-footer {
   margin-top: 10px;
   font-size: 11px; color: var(--muted);

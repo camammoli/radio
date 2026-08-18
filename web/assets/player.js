@@ -41,8 +41,10 @@
   var WELCOME_KEY   = 'radio_welcome_v4';
   var SITE_SURVEY_SECS = 150; // 2:30 — antes de la encuesta de emisora (3min)
   var SITE_SURVEY_KEY  = 'radio_site_survey_v1';
-  var AYUDA_SECS    = 240;   // 4min — pedido de ayuda para sostener el proyecto, después de todo lo demás
-  var AYUDA_KEY     = 'radio_ayuda_v1';
+  var AYUDA_DELAY_MS   = 1000;                       // casi inmediato al entrar al sitio
+  var AYUDA_SNOOZE_KEY = 'radio_ayuda_snooze_until';  // timestamp (ms) hasta el cual no mostrar
+  var AYUDA_NEVER_KEY  = 'radio_ayuda_never';         // '1' = no mostrar nunca más
+  var AYUDA_SNOOZE_DIAS = 7;
 
   function RadioPlayer(opts) {
     // ── Config ──────────────────────────────────────────────────────────────
@@ -93,7 +95,6 @@
       survStart();
       welcomeStart();
       siteSurveyStart();
-      ayudaStart();
       setupMediaSession();
       lastProgress = Date.now();
       watchdogStart();
@@ -135,7 +136,6 @@
       survStop();
       welcomeStop();
       siteSurveyStop();
-      ayudaStop();
       onNowPlaying(null);
       // audio.error.code: 3=DECODE, 4=SRC_NOT_SUPPORTED — el navegador bajó el
       // stream pero no puede decodificarlo (típico con AAC+/HE-AAC en algunos
@@ -326,7 +326,6 @@
       survStop();
       welcomeStop();
       siteSurveyStop();
-      ayudaStop();
       onNowPlaying(null);
     }
 
@@ -660,22 +659,36 @@
       toast.querySelector('.rp-welcome-cta').addEventListener('click', dismiss);
     }
 
-    // ── Pedido de ayuda para sostener el proyecto — una sola vez por
-    // visitante, en cualquier página (listing o estación), después de que
-    // ya escuchó un rato. Independiente del toast de bienvenida: aparece
-    // aunque ya se haya cerrado ese, y a los que ya lo cerraron antes.
-    function ayudaStart() {
-      if (localStorage.getItem(AYUDA_KEY)) return;
-      clearTimeout(ayudaTimer);
-      ayudaTimer = setTimeout(showAyuda, AYUDA_SECS * 1000);
+    // ── Pedido de ayuda para sostener el proyecto — aparece ni bien se entra
+    // al sitio (no depende de reproducir), en cualquier página. A diferencia
+    // de bienvenida/encuesta, NO es "una sola vez para siempre": si el
+    // visitante no toca ningún botón de acción, vuelve a aparecer en la
+    // próxima entrada. Solo se pausa si responde algo:
+    //   OK / Contacto     → pausa AYUDA_SNOOZE_DIAS días
+    //   Cafecito / No molestar → no vuelve a aparecer nunca más
+    function ayudaInit() {
+      if (ayudaSuprimido()) return;
+      ayudaTimer = setTimeout(showAyuda, AYUDA_DELAY_MS);
     }
 
-    function ayudaStop() {
+    function ayudaCancel() {
       clearTimeout(ayudaTimer); ayudaTimer = 0;
     }
 
+    function ayudaSuprimido() {
+      if (localStorage.getItem(AYUDA_NEVER_KEY)) return true;
+      var until = parseInt(localStorage.getItem(AYUDA_SNOOZE_KEY) || '0', 10);
+      return until > Date.now();
+    }
+
+    function ayudaLog(tipo) {
+      try {
+        fetch('/radio/api/ayuda_toast.php?tipo=' + encodeURIComponent(tipo), { keepalive: true }).catch(function () {});
+      } catch (e) {}
+    }
+
     function showAyuda() {
-      if (localStorage.getItem(AYUDA_KEY)) return;
+      if (ayudaSuprimido()) return;
 
       // Si el toast de bienvenida o el de encuesta de sitio siguen abiertos
       // (el visitante no los cerró), no superponer otro toast en el mismo
@@ -728,24 +741,49 @@
         '<p>&#x1F4BB; <a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">El proyecto es open source, lo pod&#xE9;s ver ac&#xE1;</a></p>' +
         '<p>Gracias por escuchar, por sugerir emisoras, por avisarme cuando algo se cae. Este proyecto ' +
         'existe gracias a la gente que lo usa &#x2014; ayudame a que siga as&#xED;.</p>' +
-        '<a class="rp-welcome-cta" href="contacto.php" target="_blank" rel="noreferrer" style="text-decoration:none;text-align:center">&#x1F4EC; Contactanos</a>' +
-        '<button class="rp-welcome-cta" style="margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--text)">Cerrar</button>';
+        '<div class="rp-ayuda-actions">' +
+          '<button class="rp-welcome-cta rp-ayuda-ok">&#x1F44D; OK</button>' +
+          '<a class="rp-welcome-cta rp-ayuda-cafecito" href="https://cafecito.app/mammoli" target="_blank" rel="noreferrer">&#x2615; Cafecito</a>' +
+          '<a class="rp-welcome-cta rp-ayuda-contacto" href="contacto.php" target="_blank" rel="noreferrer">&#x1F4EC; Contacto</a>' +
+          '<button class="rp-welcome-cta rp-ayuda-nomolestar">&#x1F6AB; No molestar m&#xE1;s</button>' +
+        '</div>';
 
       document.body.appendChild(toast);
       requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+      ayudaLog('mostrado');
 
-      function dismiss() {
-        localStorage.setItem(AYUDA_KEY, String(Date.now()));
+      function close() {
         toast.classList.remove('rp-welcome--in');
         toast.classList.add('rp-welcome--out');
         setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
       }
 
-      toast.querySelector('.rp-welcome-close').addEventListener('click', dismiss);
-      var closeBtn = toast.querySelectorAll('.rp-welcome-cta')[1];
-      if (closeBtn) closeBtn.addEventListener('click', dismiss);
-      // El botón de Contactanos no cierra el toast al click — abre en pestaña
-      // nueva y el visitante puede seguir leyendo o cerrar con la X/Cerrar.
+      function snooze() {
+        localStorage.setItem(AYUDA_SNOOZE_KEY, String(Date.now() + AYUDA_SNOOZE_DIAS * 24 * 60 * 60 * 1000));
+      }
+
+      function never() {
+        localStorage.setItem(AYUDA_NEVER_KEY, '1');
+      }
+
+      // La X cierra sin fijar preferencia — vuelve a aparecer en la próxima
+      // entrada, a diferencia de los 4 botones de abajo que sí la cambian.
+      toast.querySelector('.rp-welcome-close').addEventListener('click', close);
+
+      toast.querySelector('.rp-ayuda-ok').addEventListener('click', function () {
+        ayudaLog('ok'); snooze(); close();
+      });
+      toast.querySelector('.rp-ayuda-nomolestar').addEventListener('click', function () {
+        ayudaLog('no_molestar'); never(); close();
+      });
+      // Cafecito y Contacto abren en pestaña nueva (comportamiento nativo del
+      // <a>, no se previene) y además fijan la preferencia correspondiente.
+      toast.querySelector('.rp-ayuda-cafecito').addEventListener('click', function () {
+        ayudaLog('cafecito'); never(); close();
+      });
+      toast.querySelector('.rp-ayuda-contacto').addEventListener('click', function () {
+        ayudaLog('contacto'); snooze(); close();
+      });
     }
 
     // ── Encuesta de sitio (opinión + ubicación) — separada de la bienvenida,
@@ -835,6 +873,7 @@
     function destroy() {
       destroyed = true;
       stop();
+      ayudaCancel();
       document.removeEventListener('visibilitychange', arguments.callee);
     }
 
@@ -843,6 +882,10 @@
     var passiveTimer = setInterval(function () {
       if (state !== 'playing' && state !== 'buffering') pollPassive();
     }, HB_MS);
+
+    // Pedido de ayuda: ni bien se entra al sitio, independiente de si se
+    // reproduce algo o no.
+    ayudaInit();
 
     return {
       play:       play,

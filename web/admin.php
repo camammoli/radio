@@ -324,6 +324,20 @@ $shares_recientes = $db->query(
      LIMIT 100"
 )->fetchAll(PDO::FETCH_ASSOC);
 
+// Toast de ayuda/sostener el proyecto — estadísticas + eventos recientes
+try {
+    $ayuda_stats = $db->query(
+        "SELECT tipo, COUNT(*) AS n FROM ayuda_toast_eventos GROUP BY tipo"
+    )->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (Exception $e) { $ayuda_stats = []; }
+
+try {
+    $ayuda_eventos = $db->query(
+        "SELECT tipo, ip_hash, provincia, created_at FROM ayuda_toast_eventos
+         ORDER BY created_at DESC LIMIT 200"
+    )->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) { $ayuda_eventos = []; }
+
 // Detalle de encuestas con ip_hash (últimas 100)
 $surveys_detalle = $db->query(
     "SELECT sv.rating, sv.location, sv.ip_hash, sv.created_at,
@@ -594,6 +608,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <button class="tab-btn" data-tab="telegram">Telegram</button>
   <button class="tab-btn" data-tab="encuestas">Encuestas</button>
   <button class="tab-btn" data-tab="compartidos">Compartidos</button>
+  <button class="tab-btn" data-tab="ayuda">🙏 Ayuda</button>
   <button class="tab-btn" data-tab="reproducciones">Reproducciones</button>
   <button class="tab-btn" data-tab="sugerencias">
     Sugerencias
@@ -782,6 +797,45 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     </tr>
     <?php endforeach; else: ?>
     <tr><td colspan="5" class="empty">Sin compartidos registrados todavía.</td></tr>
+    <?php endif; ?>
+    </tbody>
+  </table>
+</div>
+
+<!-- ══ Tab: Toast de ayuda ═══════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-ayuda">
+  <h2>Toast de ayuda — quién lo vio y qué respondió</h2>
+  <?php
+    $ay_mostrado   = (int)($ayuda_stats['mostrado']    ?? 0);
+    $ay_ok         = (int)($ayuda_stats['ok']          ?? 0);
+    $ay_nomolestar = (int)($ayuda_stats['no_molestar'] ?? 0);
+    $ay_cafecito   = (int)($ayuda_stats['cafecito']    ?? 0);
+    $ay_contacto   = (int)($ayuda_stats['contacto']    ?? 0);
+    $ay_respondio  = $ay_ok + $ay_nomolestar + $ay_cafecito + $ay_contacto;
+    $ay_tasa       = $ay_mostrado > 0 ? round($ay_respondio / $ay_mostrado * 100, 1) : 0;
+  ?>
+  <div class="cards">
+    <div class="card"><div class="v"><?= $ay_mostrado ?></div><div class="l">Veces mostrado</div></div>
+    <div class="card"><div class="v pos">👍 <?= $ay_ok ?></div><div class="l">OK (7 días)</div></div>
+    <div class="card"><div class="v pos">☕ <?= $ay_cafecito ?></div><div class="l">Cafecito</div></div>
+    <div class="card"><div class="v">💬 <?= $ay_contacto ?></div><div class="l">Contacto (7 días)</div></div>
+    <div class="card"><div class="v neg">🚫 <?= $ay_nomolestar ?></div><div class="l">No molestar más</div></div>
+    <div class="card"><div class="v"><?= $ay_tasa ?>%</div><div class="l">Tasa de respuesta</div></div>
+  </div>
+  <h3 style="font-size:14px;margin:20px 0 8px">Eventos recientes (últimos 200)</h3>
+  <?php $ay_labels = ['mostrado' => '👁 Mostrado', 'ok' => '👍 OK', 'no_molestar' => '🚫 No molestar', 'cafecito' => '☕ Cafecito', 'contacto' => '💬 Contacto']; ?>
+  <table>
+    <thead><tr><th>Fecha / Hora</th><th>Tipo</th><th>Provincia</th><th>IP hash</th></tr></thead>
+    <tbody>
+    <?php if ($ayuda_eventos): foreach ($ayuda_eventos as $ev): ?>
+    <tr>
+      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($ev['created_at'],0,19))) ?></td>
+      <td><?= $ay_labels[$ev['tipo']] ?? h($ev['tipo']) ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= $ev['provincia'] ? '📍 ' . h($ev['provincia']) : '—' ?></td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($ev['ip_hash'] ?? '', 0, 16)) ?>…</td>
+    </tr>
+    <?php endforeach; else: ?>
+    <tr><td colspan="4" class="empty">Sin eventos registrados todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
