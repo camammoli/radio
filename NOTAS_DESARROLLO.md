@@ -4,6 +4,44 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0694 — 2026-08-18 — Rediseño del toast de ayuda: aparece en cada entrada, 4 botones de acción
+
+### Contexto
+
+Carlos reportó que tras casi una hora escuchando, el toast de TKT-0692 nunca le apareció. Investigado y encontrado: el `CACHE_NAME` del service worker (`sw.js`) seguía en `radio-ar-v9` desde antes del deploy de TKT-0692 — al no bumpearlo, cualquier visitante recurrente (Carlos incluido) seguía recibiendo el `player.js` viejo desde la caché del navegador, sin el toast nuevo, sin siquiera intentar contactar al servidor (estrategia cache-first para `.js`/`.css`). Mismo bug ya documentado y resuelto una vez en julio (TKT-0684) — esta vez se me pasó bumpearlo al deployar.
+
+A partir de esto, Carlos pidió rediseñar el toast por completo en vez de solo arreglar el cache bug.
+
+### Nuevo diseño (a pedido explícito de Carlos, confirmado antes de implementar)
+
+- Aparece **ni bien se entra al sitio** (cualquier página), sin esperar a reproducir nada — ya no depende del evento `'playing'` del audio.
+- **No es "una vez para siempre"**: si el visitante no responde nada (cierra con la X), vuelve a aparecer en la próxima entrada, todas las veces que haga falta.
+- 4 botones de acción, cada uno con consecuencia distinta:
+  - **👍 OK** → pausa 7 días.
+  - **☕ Cafecito** (abre cafecito.app en pestaña nueva) → No molestar más (permanente) — si ya aportó, no tiene sentido insistir.
+  - **📬 Contacto** (abre contacto.php en pestaña nueva) → pausa 7 días.
+  - **🚫 No molestar más** → nunca más.
+
+### Implementación
+
+`player.js`: se sacó `ayudaStart()`/`AYUDA_KEY` (atado a `'playing'` + 240s + localStorage de una sola vez) y se reemplazó por `ayudaInit()` (se llama incondicionalmente al construir el `RadioPlayer`, delay de 1000ms) + `ayudaSuprimido()` (chequea `radio_ayuda_never` y `radio_ayuda_snooze_until` en cada carga) + `ayudaLog(tipo)` (beacon `fetch` con `keepalive:true` a `api/ayuda_toast.php`). Se mantiene la guarda de colisión con `.rp-welcome` (bienvenida/encuesta de sitio) ya existente de TKT-0692, ahora más relevante porque el toast puede aparecer antes de que el visitante interactúe. El cuerpo de texto (redactado por Carlos) no se tocó — solo cambió la fila de botones del final.
+
+Nuevo `web/api/ayuda_toast.php`: GET-only (`api_method('GET')`), valida `tipo` contra whitelist, crea `ayuda_toast_eventos` (`id, tipo, ip_hash, provincia, created_at`) si no existe, reutiliza `geo_provincia()`/`ip_hash()`/`client_ip()` de `_helpers.php` — mismo patrón que `share.php`.
+
+`admin.php`: pestaña nueva "🙏 Ayuda" — cards con conteos por tipo + tasa de respuesta (respondidos/mostrado), tabla de eventos recientes (fecha, tipo, provincia, ip_hash). Queries envueltas en try/catch (la tabla puede no existir aún en un admin.php fresco antes del primer evento real).
+
+`sw.js`: `CACHE_NAME` bumpeado a `radio-ar-v10` — obligatorio en este deploy para que el nuevo player.js llegue a cualquiera que ya haya visitado el sitio antes.
+
+### Metodología de prueba (sin tocar producción hasta validar todo)
+
+Se armó un entorno 100% local sin necesitar root: `php8.2-cli` + `mbstring`/`pdo_sqlite`/`sqlite3`/`curl` vía `apt-get download` + `dpkg-deb -x` (mismo truco ya usado con `sqlite3` en TKT-0693), servido con `php -S` sobre un docroot con symlink `radio/ -> web/` (necesario porque el sitio usa rutas absolutas `/radio/...`), con una copia real (pero descartable) de la DB de producción y un `config.php` local con `TG_TOKEN` vacío para no disparar Telegram real. Se probó con Playwright: aparición al entrar sin reproducir, cada uno de los 4 botones (incluyendo que Cafecito/Contacto abren pestaña nueva Y fijan la preferencia correcta), reaparición tras cerrar con la X, y el escenario de colisión con el toast de bienvenida. Recién después de que las 5 pruebas pasaran se desplegó a producción y se repitió la verificación clave con Playwright contra el sitio real.
+
+### Hallazgo colateral, no resuelto todavía — login de admin.php también bloqueado por WAF para navegadores reales
+
+Verificando la pestaña nueva del admin, se encontró que el `<form method="post">` de login de `admin.php` tiene el MISMO bug de ModSecurity ya documentado en TKT-0692 (sugerir.php) y en `contacto.php`: un navegador real que envía el login recibe **406 "Not Acceptable"**, mientras que `curl` con las mismas credenciales entra sin problema. A diferencia de los otros casos, acá el fix obvio (GET+fetch+JSON) tiene una contra real: **expondría la contraseña de admin en la URL** (logs del servidor, historial del navegador) — no es un simple intercambio de método como en los formularios públicos. Queda sin tocar a propósito, pendiente de decidir con Carlos el enfoque (¿excepción de ModSecurity por `.htaccess` para esa ruta puntual? ¿challenge-response en vez de mandar la contraseña en claro?) antes de tocar nada.
+
+---
+
 ## TKT-0693 — 2026-08-18 — DB corrupta de nuevo (sitio caído 500) — recuperada con patch de page count + rescate por chunks
 
 ### Contexto
