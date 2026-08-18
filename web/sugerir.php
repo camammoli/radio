@@ -97,14 +97,21 @@ function check_stream(string $url, int $maxHops = 5): array {
     return ['ok' => false, 'msg' => 'Demasiados redirects'];
 }
 
-$result = null;
-$error  = null;
+// El envío se hace por GET vía fetch() desde JS, no por POST de formulario
+// nativo — este hosting rechaza con 406 (Mod_Security) cualquier POST cuyo
+// User-Agent sea un navegador real, sin importar el Content-Type (mismo
+// hallazgo que en el Starlink Panel y en contacto.php). POST se deja
+// funcionando por compatibilidad con curl/scripts, pero el frontend usa GET.
+if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
+    header('Content-Type: application/json; charset=utf-8');
+    $src = $_SERVER['REQUEST_METHOD'] === 'POST' ? $_POST : $_GET;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nombre   = trim(strip_tags($_POST['nombre']   ?? ''));
-    $url      = trim($_POST['url']      ?? '');
-    $provincia = trim(strip_tags($_POST['provincia'] ?? ''));
-    $contacto = trim(strip_tags($_POST['contacto'] ?? ''));
+    $nombre    = trim(strip_tags($src['nombre']    ?? ''));
+    $url       = trim($src['url']       ?? '');
+    $provincia = trim(strip_tags($src['provincia'] ?? ''));
+    $contacto  = trim(strip_tags($src['contacto']  ?? ''));
+
+    $error = null;
 
     // Validaciones
     if (strlen($nombre) < 2) {
@@ -129,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $dup->execute([$url]);
                 $dup_row = $dup->fetch();
                 if ($dup_row) {
-                    $error = 'Esta URL ya está en el directorio como "' . htmlspecialchars($dup_row['nombre']) . '". ¡Gracias de todas formas!';
+                    $error = 'Esta URL ya está en el directorio como "' . $dup_row['nombre'] . '". ¡Gracias de todas formas!';
                 } else {
                     try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
 
@@ -145,14 +152,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                          . ($contacto ? "\nContacto: {$contacto}" : '')
                          . "\n\nRevisala en https://mammoli.ar/radio/admin.php";
                     tg_send($msg);
-
-                    $result = ['nombre' => $nombre, 'url' => $url];
                 }
             } catch (Exception $e) {
                 $error = 'Error al guardar la sugerencia. Intentá de nuevo más tarde.';
             }
         }
     }
+
+    if ($error) {
+        echo json_encode(['ok' => false, 'error' => $error]);
+    } else {
+        echo json_encode(['ok' => true, 'nombre' => $nombre]);
+    }
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -207,32 +219,25 @@ body.light input,body.light select{background:#f9fafb}
   <h2>Sugerir una emisora</h2>
   <p>Si conocés una radio argentina que no está en el listado, completá el formulario. El stream se verifica automáticamente y si funciona queda en revisión para ser agregada.</p>
 
-  <?php if ($result): ?>
-    <div class="success">
-      <strong>¡Gracias por la sugerencia!</strong>
-      <strong><?= htmlspecialchars($result['nombre']) ?></strong> quedó en revisión y será agregada pronto si cumple los criterios del directorio.
-    </div>
-    <a href="index.php" style="display:block;text-align:center;margin-top:16px;color:var(--accent);font-size:14px">← Volver al player</a>
-  <?php else: ?>
-    <?php if ($error): ?><div class="error">⚠️ <?= htmlspecialchars($error) ?></div><?php endif; ?>
-    <form method="post" id="form-sug">
-      <label for="nombre">Nombre de la radio *</label>
-      <input type="text" id="nombre" name="nombre" required maxlength="100" placeholder="Ej: FM La Nacional" value="<?= htmlspecialchars($_POST['nombre'] ?? '') ?>">
+  <div id="msg-area"></div>
 
-      <label for="url">URL del stream *</label>
-      <input type="url" id="url" name="url" required maxlength="500" placeholder="https://..." value="<?= htmlspecialchars($_POST['url'] ?? '') ?>">
-      <p class="hint">URL directa del stream de audio (mp3, aac, ogg). No la página web de la radio.</p>
+  <form id="form-sug">
+    <label for="nombre">Nombre de la radio *</label>
+    <input type="text" id="nombre" name="nombre" required maxlength="100" placeholder="Ej: FM La Nacional">
 
-      <label for="provincia">Provincia / País</label>
-      <input type="text" id="provincia" name="provincia" maxlength="60" placeholder="Ej: Mendoza" value="<?= htmlspecialchars($_POST['provincia'] ?? $_GET['provincia'] ?? '') ?>">
+    <label for="url">URL del stream *</label>
+    <input type="url" id="url" name="url" required maxlength="500" placeholder="https://...">
+    <p class="hint">URL directa del stream de audio (mp3, aac, ogg). No la página web de la radio.</p>
 
-      <label for="contacto">Tu email o contacto <span style="font-weight:normal">(opcional, para avisarte cuando se agregue)</span></label>
-      <input type="text" id="contacto" name="contacto" maxlength="100" placeholder="Ej: tu@email.com" value="<?= htmlspecialchars($_POST['contacto'] ?? '') ?>">
+    <label for="provincia">Provincia / País</label>
+    <input type="text" id="provincia" name="provincia" maxlength="60" placeholder="Ej: Mendoza" value="<?= htmlspecialchars($_GET['provincia'] ?? '') ?>">
 
-      <button type="submit" class="btn" id="btn-sug">Verificar y sugerir</button>
-      <div class="spinner" id="spinner"></div>
-    </form>
-  <?php endif; ?>
+    <label for="contacto">Tu email o contacto <span style="font-weight:normal">(opcional, para avisarte cuando se agregue)</span></label>
+    <input type="text" id="contacto" name="contacto" maxlength="100" placeholder="Ej: tu@email.com">
+
+    <button type="submit" class="btn" id="btn-sug">Verificar y sugerir</button>
+    <div class="spinner" id="spinner"></div>
+  </form>
 </div>
 </div>
 
@@ -248,13 +253,54 @@ body.light input,body.light select{background:#f9fafb}
     localStorage.setItem('radio_theme', isLight ? 'light' : 'dark');
     syncBtn();
   });
+
   var form = document.getElementById('form-sug');
-  if (form) form.addEventListener('submit', function(){
-    var btnEl = document.getElementById('btn-sug');
-    var sp = document.getElementById('spinner');
-    if(btnEl){ btnEl.disabled = true; btnEl.textContent = 'Verificando stream...'; }
-    if(sp){ sp.style.display = 'block'; }
+  var msgArea = document.getElementById('msg-area');
+  var btnEl = document.getElementById('btn-sug');
+  var sp = document.getElementById('spinner');
+
+  form.addEventListener('submit', function(e){
+    e.preventDefault();
+    btnEl.disabled = true;
+    btnEl.textContent = 'Verificando stream...';
+    if (sp) sp.style.display = 'block';
+    msgArea.innerHTML = '';
+
+    var params = new URLSearchParams({
+      enviar: '1',
+      nombre: document.getElementById('nombre').value,
+      url: document.getElementById('url').value,
+      provincia: document.getElementById('provincia').value,
+      contacto: document.getElementById('contacto').value
+    });
+
+    fetch('sugerir.php?' + params.toString())
+      .then(function(r){ return r.json(); })
+      .then(function(data){
+        if (sp) sp.style.display = 'none';
+        if (data.ok) {
+          form.style.display = 'none';
+          msgArea.innerHTML = '<div class="success"><strong>¡Gracias por la sugerencia!</strong><strong>' + escHtml(data.nombre) + '</strong> quedó en revisión y será agregada pronto si cumple los criterios del directorio.</div>'
+            + '<a href="index.php" style="display:block;text-align:center;margin-top:16px;color:var(--accent);font-size:14px">← Volver al player</a>';
+        } else {
+          msgArea.innerHTML = '<div class="error">⚠️ ' + escHtml(data.error || 'No se pudo procesar la sugerencia.') + '</div>';
+          btnEl.disabled = false;
+          btnEl.textContent = 'Verificar y sugerir';
+        }
+      })
+      .catch(function(){
+        if (sp) sp.style.display = 'none';
+        msgArea.innerHTML = '<div class="error">⚠️ No se pudo enviar la sugerencia. Intentá de nuevo más tarde.</div>';
+        btnEl.disabled = false;
+        btnEl.textContent = 'Verificar y sugerir';
+      });
   });
+
+  function escHtml(s){
+    var d = document.createElement('div');
+    d.textContent = s;
+    return d.innerHTML;
+  }
 })();
 </script>
 </body>

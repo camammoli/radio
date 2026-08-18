@@ -487,6 +487,14 @@ body.light .sbtn.copied { color: #15803d; }
 .rp-welcome--in  { transform: translateY(0); opacity: 1; }
 .rp-welcome--out { transform: translateY(24px); opacity: 0; }
 
+.rp-welcome--ayuda {
+  width: 380px;
+  max-height: min(80vh, 640px);
+  overflow-y: auto;
+}
+.rp-welcome--ayuda p { margin: 0 0 10px; font-size: 13px; }
+.rp-welcome--ayuda p:last-of-type { margin-bottom: 14px; }
+
 .rp-welcome-close {
   position: absolute; top: 10px; right: 12px;
   background: none; border: none;

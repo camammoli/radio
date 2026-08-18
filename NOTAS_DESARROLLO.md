@@ -4,6 +4,58 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0693 — 2026-08-18 — DB corrupta de nuevo (sitio caído 500) — recuperada con patch de page count + rescate por chunks
+
+### Contexto
+
+Detectado incidentalmente mientras se verificaba `contacto.php` (TKT-0692) en producción: `radio_v2.sqlite` corrupta (`database disk image is malformed`), sitio entero devolviendo 500 (index, `api/stations.php`, todo). Mismo patrón recurrente que TKT-0690/0721/0726/0732, pero esta vez `.recover` fallaba de entrada con `SQL logic error` sin producir ni siquiera el CREATE TABLE del schema.
+
+### Diagnóstico
+
+El header SQLite (offset 28, `in_header_page_count`) decía 5952 páginas contra 5923 páginas físicas reales en el archivo descargado (24.260.608 bytes ÷ 4096 = 5923.0 exacto, sin truncamiento por transferencia FTP — header y tamaño de archivo consistentes entre sí, solo desincronizados entre ellos). Archivo truncado ~29 páginas / ~116KB respecto a lo que su propio header declaraba, consistente con una escritura interrumpida a mitad de camino.
+
+Se descargó `sqlite3` (CLI, no estaba instalado) vía `apt-get download` + `dpkg-deb -x` sin necesitar root. Se parcheó a mano el campo `in_header_page_count` del header (4 bytes, offset 28) para que coincida con el tamaño real del archivo, sobre una copia — nunca el original. Con ese único cambio, el schema y la mayoría de las tablas volvieron a ser legibles sin usar `.recover` en absoluto.
+
+### Alcance del daño
+
+De 18 tablas, 16 quedaron 100% intactas: `stations`, `plays`, `listeners`, `settings`, `stream_status`, `crawler_runs`, `icy_cache`, `icy_history`, `ip_geo_cache`, `program_patterns`, `reportes`, `shares`, `subscriber_matches`, `subscribers`, `surveys`, `sqlite_sequence`. Solo `station_events` y `stream_history` (y sus índices) tenían páginas realmente perdidas en la cola — las filas más recientes, coherente con la teoría de escritura interrumpida.
+
+### Recuperación
+
+Reconstrucción tabla por tabla en una DB nueva vía Python/sqlite3 (mismo `libsqlite3` del sistema). Para las 16 tablas intactas, copia directa. Para `station_events` y `stream_history`, rescate en chunks de 200 filas con reintento fila-por-fila sobre los chunks que fallaban, para aislar al máximo el daño real:
+- `station_events`: 4817/4874 filas (99,8%) — 141 filas irrecuperables en el tramo final.
+- `stream_history`: 184.170/239.294 filas (76,9%) — ~55.100 filas de historial de checkeos perdidas de forma irrecuperable en el tramo final (mayor pérdida que TKT-0688 en la misma tabla, pero sigue siendo solo log de monitoreo histórico, no datos de usuario).
+
+`PRAGMA integrity_check` → `ok`, `PRAGMA foreign_key_check` → limpio, sobre la base reconstruida. `VACUUM` + `wal_checkpoint(TRUNCATE)` antes de subir, para no dejar `-wal`/`-shm` huérfanos. Subida atómica (`put .new` + `mv`), mismo mecanismo que las recuperaciones anteriores. Verificado en producción: `index.php`, `api/stations.php`, `estadisticas.php`, `admin.php` todos 200.
+
+### Causa raíz — sigue sin confirmarse
+
+Misma sospecha histórica documentada en TKT-0690 (`icy_refresh.php` vía cron cPanel, fuera del `concurrency: group` de GitHub Actions). Pendiente recomendado: instrumentar `icy_refresh.php` con logging de inicio/fin de escritura, o migrarlo al patrón atómico `put .new` + `mv`.
+
+---
+
+## TKT-0692 — 2026-08-18 — Botón de ayuda/contacto para sostener el proyecto + fix WAF en Sugerir emisora
+
+### Contexto
+
+Pedido: subir a producción el texto sobre sostener el proyecto (ya redactado y editado por Carlos en `Texto_Ayuda_Sostener_Radio.md`) como un toast que aparezca una vez a todos los visitantes, en cualquier página de entrada — reemplazando el mailto final por un botón de contacto con su propio formulario.
+
+### Implementación
+
+`player.js`: nuevo toast `AYUDA_KEY='radio_ayuda_v1'`, se dispara 240s después de `'playing'`, mismo patrón que `showWelcome()`/site-survey ya existentes (una sola vez por visitante vía `localStorage`). Se le agregó una guarda de colisión (si ya hay otro `.rp-welcome` visible, reintenta a los 10s) porque el welcome (90s) y el site-survey (150s) pueden quedar abiertos al mismo tiempo que este nuevo toast de 240s, y ninguno se auto-cierra — sin la guarda, se superponían en la misma posición fija de pantalla. Verificado con Playwright usando `page.clock.fastForward()`.
+
+Nuevo `contacto.php`: formulario de contacto general (nombre opcional, email opcional, mensaje), honeypot anti-bot, notifica por Telegram, guarda en tabla nueva `contacto_mensajes`.
+
+### Bug encontrado (no pedido, hallado verificando lo anterior): Sugerir una emisora rota para cualquier visitante real
+
+Mismo hallazgo que ya documentado para Catastro y Starlink Panel: este hosting bloquea con 406 (Mod_Security) cualquier POST cuyo User-Agent sea un navegador real, sin importar el Content-Type — pero el POST idéntico desde `curl` pasa bien, lo mismo que un GET con el mismo UA. Confirmado con Playwright (navegación real, no solo curl). `sugerir.php` ya estaba en producción con un `<form method="post">` nativo — es decir, **nadie pudo sugerir una emisora exitosamente desde que se implementó esa función**, sin que nadie lo notara porque el error solo aparece con navegadores reales.
+
+Fix (mismo patrón ya probado en Starlink Panel y aplicado también a `contacto.php` desde el inicio): convertir el submit a `fetch()` por GET con querystring, respuesta JSON en vez de recarga de página completa. Se preservó toda la lógica existente (`check_stream()`, guarda SSRF vía `radio_url_is_safe()`, chequeo de duplicados, generación de slug, notificación Telegram) — solo cambió el mecanismo de transporte.
+
+Ambos formularios verificados end-to-end en producción con Playwright (envío real exitoso, sin 406). Fila de prueba en `contacto_mensajes` borrada después de verificar.
+
+---
+
 ## TKT-0691 — 2026-08-14 — Provincia geolocalizada en Reproducciones, Compartidos y Encuestas
 
 ### Contexto

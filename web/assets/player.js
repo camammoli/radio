@@ -41,6 +41,8 @@
   var WELCOME_KEY   = 'radio_welcome_v4';
   var SITE_SURVEY_SECS = 150; // 2:30 — antes de la encuesta de emisora (3min)
   var SITE_SURVEY_KEY  = 'radio_site_survey_v1';
+  var AYUDA_SECS    = 240;   // 4min — pedido de ayuda para sostener el proyecto, después de todo lo demás
+  var AYUDA_KEY     = 'radio_ayuda_v1';
 
   function RadioPlayer(opts) {
     // ── Config ──────────────────────────────────────────────────────────────
@@ -69,6 +71,7 @@
     var survShown  = false;
     var welcomeTimer = 0;
     var siteSurveyTimer = 0;
+    var ayudaTimer = 0;
     var destroyed  = false;
     var watchdogTimer     = 0;
     var lastProgress      = 0;
@@ -90,6 +93,7 @@
       survStart();
       welcomeStart();
       siteSurveyStart();
+      ayudaStart();
       setupMediaSession();
       lastProgress = Date.now();
       watchdogStart();
@@ -131,6 +135,7 @@
       survStop();
       welcomeStop();
       siteSurveyStop();
+      ayudaStop();
       onNowPlaying(null);
       // audio.error.code: 3=DECODE, 4=SRC_NOT_SUPPORTED — el navegador bajó el
       // stream pero no puede decodificarlo (típico con AAC+/HE-AAC en algunos
@@ -321,6 +326,7 @@
       survStop();
       welcomeStop();
       siteSurveyStop();
+      ayudaStop();
       onNowPlaying(null);
     }
 
@@ -652,6 +658,94 @@
 
       toast.querySelector('.rp-welcome-close').addEventListener('click', dismiss);
       toast.querySelector('.rp-welcome-cta').addEventListener('click', dismiss);
+    }
+
+    // ── Pedido de ayuda para sostener el proyecto — una sola vez por
+    // visitante, en cualquier página (listing o estación), después de que
+    // ya escuchó un rato. Independiente del toast de bienvenida: aparece
+    // aunque ya se haya cerrado ese, y a los que ya lo cerraron antes.
+    function ayudaStart() {
+      if (localStorage.getItem(AYUDA_KEY)) return;
+      clearTimeout(ayudaTimer);
+      ayudaTimer = setTimeout(showAyuda, AYUDA_SECS * 1000);
+    }
+
+    function ayudaStop() {
+      clearTimeout(ayudaTimer); ayudaTimer = 0;
+    }
+
+    function showAyuda() {
+      if (localStorage.getItem(AYUDA_KEY)) return;
+
+      // Si el toast de bienvenida o el de encuesta de sitio siguen abiertos
+      // (el visitante no los cerró), no superponer otro toast en el mismo
+      // lugar de la pantalla — reintentar en 10s en vez de amontonarlos.
+      if (document.querySelector('.rp-welcome')) {
+        ayudaTimer = setTimeout(showAyuda, 10000);
+        return;
+      }
+
+      var toast = document.createElement('div');
+      toast.className = 'rp-welcome rp-welcome--ayuda';
+      toast.innerHTML =
+        '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
+        '<h3>&#x1F64F; Un pedido</h3>' +
+        '<p>Radio Argentina es un proyecto personal. Lo arm&#xE9; y lo mantengo solo, ' +
+        'en mi tiempo libre &#x2014; no hay una empresa ni un equipo atr&#xE1;s, soy una ' +
+        'persona a la que le gusta la radio y quiso que estas +1200 emisoras argentinas ' +
+        'est&#xE9;n disponibles gratis, sin cuentas y sin publicidad invasiva.</p>' +
+        '<p>Sostenerlo online tiene un costo real. Este sitio no es una p&#xE1;gina est&#xE1;tica: ' +
+        'monitorea en tiempo real el estado de m&#xE1;s de 1200 streams, sincroniza metadata (ICY) ' +
+        'para mostrarte qu&#xE9; est&#xE1; sonando en cada radio, y sostiene un sistema de alertas ' +
+        'que escucha esas mismas 1200 emisoras buscando tus artistas o programas favoritos. Todo eso ' +
+        'consume ancho de banda de verdad. De hecho, tuve que contratar un plan de hosting m&#xE1;s ' +
+        'potente y con m&#xE1;s ancho de banda porque el anterior no daba abasto &#x2014; el consumo ' +
+        'se dispar&#xF3; y me dej&#xF3; al l&#xED;mite.</p>' +
+        '<p>Tengo un cafecito hace un tiempo, pero honestamente no alcanza para cubrir lo que cuesta ' +
+        'sostener esto mes a mes.</p>' +
+        '<p>Si 1 de cada 10 personas que escuchan la radio en un mes aportara un cafecito alguna vez ' +
+        '(no todos los meses, solo cuando puedan) ya cubrir&#xED;amos bastante los gastos que genera ' +
+        'el sitio. La audiencia todav&#xED;a es chica pero viene creciendo fuerte mes a mes &#x2014; ' +
+        'cuanta m&#xE1;s gente escuche, menos le toca aportar a cada uno para que esto siga en pie.</p>' +
+        '<p>Si te gusta el proyecto, si lo us&#xE1;s, si te parece que vale la pena que siga gratis y ' +
+        'sin publicidad invasiva &#x2014; necesito una mano. No hace falta una fortuna: cualquier ' +
+        'aporte, por chico que sea, ayuda a pagar el hosting y a que este proyecto siga en pie.</p>' +
+        '<p>Y no es solo una cuesti&#xF3;n de plata. Si la comunidad de oyentes nos diera una mano ' +
+        '&#x2014;contando qu&#xE9; falla, avisando cuando una radio se cae, sugiriendo emisoras que ' +
+        'faltan, corriendo la voz&#x2014; el servicio mejorar&#xED;a much&#xED;simo m&#xE1;s r&#xE1;pido ' +
+        'de lo que puedo hacerlo yo solo en mi tiempo libre. Hay proyectos de radio online mucho m&#xE1;s ' +
+        'grandes (apps con miles de usuarios, directorios internacionales) que tienen cosas que a este ' +
+        'todav&#xED;a le faltan: notificaci&#xF3;n autom&#xE1;tica cuando tu emisora favorita vuelve ' +
+        'despu&#xE9;s de una ca&#xED;da, recomendaciones seg&#xFA;n lo que escuch&#xE1;s, guardado de ' +
+        'favoritos sincronizado entre tus dispositivos, integraci&#xF3;n con podcasts, mejores filtros ' +
+        'de b&#xFA;squeda por g&#xE9;nero y provincia. Ninguna de esas cosas es imposible ac&#xE1; ' +
+        '&#x2014; lo que falta es tiempo, y el tiempo se estira mucho m&#xE1;s cuando no lo tengo que ' +
+        'pelear solo contra el hosting cada mes.</p>' +
+        '<p>Si nadie ayuda a sostenerlo, lamentablemente en alg&#xFA;n momento voy a tener que darlo ' +
+        'de baja. No quiero llegar a eso &#x2014; le dedico tiempo real y lo hago con ganas &#x2014; ' +
+        'pero tampoco puedo bancarlo solo indefinidamente.</p>' +
+        '<p>&#x2615; <a href="https://cafecito.app/mammoli" target="_blank" rel="noreferrer">Invitame un cafecito</a></p>' +
+        '<p>&#x1F4BB; <a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">El proyecto es open source, lo pod&#xE9;s ver ac&#xE1;</a></p>' +
+        '<p>Gracias por escuchar, por sugerir emisoras, por avisarme cuando algo se cae. Este proyecto ' +
+        'existe gracias a la gente que lo usa &#x2014; ayudame a que siga as&#xED;.</p>' +
+        '<a class="rp-welcome-cta" href="contacto.php" target="_blank" rel="noreferrer" style="text-decoration:none;text-align:center">&#x1F4EC; Contactanos</a>' +
+        '<button class="rp-welcome-cta" style="margin-top:8px;background:transparent;border:1px solid var(--border);color:var(--text)">Cerrar</button>';
+
+      document.body.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+
+      function dismiss() {
+        localStorage.setItem(AYUDA_KEY, String(Date.now()));
+        toast.classList.remove('rp-welcome--in');
+        toast.classList.add('rp-welcome--out');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+      }
+
+      toast.querySelector('.rp-welcome-close').addEventListener('click', dismiss);
+      var closeBtn = toast.querySelectorAll('.rp-welcome-cta')[1];
+      if (closeBtn) closeBtn.addEventListener('click', dismiss);
+      // El botón de Contactanos no cierra el toast al click — abre en pestaña
+      // nueva y el visitante puede seguir leyendo o cerrar con la X/Cerrar.
     }
 
     // ── Encuesta de sitio (opinión + ubicación) — separada de la bienvenida,
