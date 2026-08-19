@@ -4,6 +4,24 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0695 — 2026-08-18 — DB corrupta por SEGUNDA VEZ en el mismo día — sospecha de icy_refresh.php descartada
+
+### Contexto
+
+Carlos reportó "la página de radio da error 500" — segunda corrupción de `radio_v2.sqlite` en el mismo día (la primera fue TKT-0693, unas horas antes). Mismo patrón exacto: `in_header_page_count` del header desincronizado del tamaño físico real del archivo (esta vez 164 páginas de diferencia / ~656KB, contra 29 páginas / ~116KB la vez anterior).
+
+### Recuperación
+
+Idéntico procedimiento a TKT-0693: parche del header (offset 28, page count) sobre una copia → 20/22 tablas 100% intactas → mismas dos tablas dañadas de siempre (`station_events`, `stream_history` + sus índices) → rescate por chunks + fila-a-fila. Resultado llamativo: se recuperaron **exactamente las mismas** 4817/4874 filas de `station_events` y 184170/239294 de `stream_history` que la vez anterior — el `max(rowid)` vía `sqlite_sequence` no había avanzado nada desde la recuperación de TKT-0693. Es decir, entre una corrupción y la otra, ninguna escritura nueva llegó a consolidarse con éxito en esas dos tablas. Se preservaron intactas 2 cosas nuevas reales que sí habían llegado en el medio: 1 mensaje de contacto (`contacto_mensajes`) y 8 eventos del toast de ayuda (`ayuda_toast_eventos`, TKT-0694). `integrity_check`/`foreign_key_check` limpios, subida atómica, sitio verificado 200 en index/stations-API/página de emisora/estadísticas.
+
+### Hallazgo que cambia la sospecha de causa raíz (TKT-0690)
+
+Se verificó en el código quién escribe efectivamente `station_events`/`stream_history`: **no es `icy_refresh.php`** (el cron cPanel cada 10min que se venía sospechando desde TKT-0690) — esas dos tablas las escribe `check_streams_v2.py`, que corre vía GitHub Actions (`check-streams-v2.yml`, cada 6hs) y que **ya tiene la protección que se suponía que evitaba esto**: `concurrency: group: radio-db-write` compartido entre los 3 workflows + subida atómica `put .new` + `mv`, agregada específicamente para este problema en TKT-0732. `icy_refresh.php` escribe `icy_cache`/`icy_history`, que en AMBOS incidentes de hoy quedaron 100% intactas — evidencia directa de que no es la causa.
+
+Que la corrupción siga ocurriendo pese a esa protección, siempre en las mismas dos tablas, y ahora dos veces en un solo día (frecuencia muy superior a los días/semanas entre incidentes anteriores), apunta a que la causa real nunca fue la sospechada. **Pendiente recomendado, más urgente que antes**: revisar `gh run list`/`gh api .../logs` de `check-streams-v2.yml` correlacionado con los horarios exactos de ambas corrupciones de hoy, en vez de seguir asumiendo por horarios.
+
+---
+
 ## TKT-0694 — 2026-08-18 — Rediseño del toast de ayuda: aparece en cada entrada, 4 botones de acción
 
 ### Contexto
