@@ -41,11 +41,17 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
     // completa todos los inputs del formulario lo va a llenar; un humano no.
     $honeypot = trim($src['web'] ?? '');
 
+    // Trampa de tiempo: "ts" es el timestamp (server-side) de cuando se
+    // renderizó la página. Un envío a menos de 2s de haberse mostrado es
+    // casi seguro un bot (ningún humano lee y completa el form tan rápido).
+    $ts_render = (int) ($src['ts'] ?? 0);
+    $es_rapido = $ts_render <= 0 || (time() - $ts_render) < 2;
+
     $nombre  = trim(strip_tags($src['nombre']  ?? ''));
     $email   = trim(strip_tags($src['email']   ?? ''));
     $mensaje = trim(strip_tags($src['mensaje'] ?? ''));
 
-    if ($honeypot !== '') {
+    if ($honeypot !== '' || $es_rapido) {
         // Bot: fingir éxito sin guardar ni notificar, no darle feedback útil.
         echo json_encode(['ok' => true]);
         exit;
@@ -78,7 +84,7 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $quien = $nombre ?: 'Anónimo';
         $contacto_linea = $email ? "\nContacto: {$email}" : '';
-        tg_send("✉️ Nuevo mensaje de contacto\nDe: {$quien}{$contacto_linea}\n\n{$mensaje}");
+        tg_send("📻 [Radio Argentina] Nuevo mensaje de contacto\nDe: {$quien}{$contacto_linea}\n\n{$mensaje}");
 
         echo json_encode(['ok' => true]);
     } catch (Exception $e) {
@@ -86,6 +92,7 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     exit;
 }
+$render_ts = time(); // trampa de tiempo: momento en que se renderizó el form
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -152,6 +159,7 @@ body.light input,body.light textarea{background:#f9fafb}
     <label for="mensaje">Mensaje *</label>
     <textarea id="mensaje" name="mensaje" required maxlength="2000" placeholder="Contame..."></textarea>
 
+    <input type="hidden" id="ts" name="ts" value="<?= $render_ts ?>">
     <div class="hp" aria-hidden="true">
       <label for="web">No completar</label>
       <input type="text" id="web" name="web" tabindex="-1" autocomplete="off">
@@ -190,7 +198,8 @@ body.light input,body.light textarea{background:#f9fafb}
       nombre: document.getElementById('nombre').value,
       email: document.getElementById('email').value,
       mensaje: document.getElementById('mensaje').value,
-      web: document.getElementById('web').value
+      web: document.getElementById('web').value,
+      ts: document.getElementById('ts').value
     });
 
     fetch('contacto.php?' + params.toString())

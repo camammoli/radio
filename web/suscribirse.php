@@ -208,6 +208,15 @@ if (isset($_GET['activar']) && strlen($_GET['activar']) === 32) {
 
 // Acción: nueva suscripción POST (NO para action=editar ni action=send_link)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''), ['editar', 'send_link'])) {
+    // Honeypot (campo oculto por CSS) + trampa de tiempo (ts = timestamp del
+    // render anterior, viaja de ida y vuelta en el form). Envío casi
+    // instantáneo o con el honeypot completo = bot: se finge éxito sin
+    // tocar la DB ni mandar Telegram/email a nadie (evita mail-bombing de
+    // terceros con chat IDs/emails ajenos).
+    $honeypot  = trim($_POST['web2'] ?? '');
+    $ts_render = (int) ($_POST['ts'] ?? 0);
+    $es_bot    = $honeypot !== '' || $ts_render <= 0 || (time() - $ts_render) < 2;
+
     $type  = in_array($_POST['type'] ?? '', ['telegram', 'email']) ? $_POST['type'] : '';
     $value = trim($_POST['value'] ?? '');
     $prefs = [];
@@ -250,7 +259,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''),
     }
     $prefs = $prefs_ok;
 
-    if (!$type) {
+    if ($es_bot) {
+        $pending_token = 'x'; // fingir éxito, no se toca la DB ni se envía nada
+    } elseif (!$type) {
         $err = 'Seleccioná un método de contacto.';
     } elseif (!$value) {
         $err = $type === 'telegram' ? 'Ingresá tu chat ID de Telegram.' : 'Ingresá tu correo electrónico.';
@@ -324,8 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''),
     }
 }
 
-$cafecito = defined('CAFECITO_URL') ? CAFECITO_URL : 'https://cafecito.app/mammoli';
-$bot_name = defined('BOT_NAME') ? BOT_NAME : 'claude_ariel_bot';
+$cafecito  = defined('CAFECITO_URL') ? CAFECITO_URL : 'https://cafecito.app/mammoli';
+$bot_name  = defined('BOT_NAME') ? BOT_NAME : 'claude_ariel_bot';
+$render_ts = time(); // trampa de tiempo: momento en que se renderizó el form de suscripción
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -348,6 +360,7 @@ header .sub{font-size:.9rem;color:var(--muted)}
 .nav a:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
 .container{max-width:600px;margin:32px auto;padding:0 16px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:20px}
+.hp{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden}
 h2{font-size:1.05rem;font-weight:700;margin-bottom:14px;color:var(--accent)}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:500}
 input[type=text],input[type=email],textarea,select{
@@ -545,6 +558,11 @@ a{color:var(--accent)}
   </div>
 
   <form method="post">
+    <input type="hidden" name="ts" value="<?= $render_ts ?>">
+    <div class="hp" aria-hidden="true">
+      <label for="web2">Dejar en blanco</label>
+      <input type="text" id="web2" name="web2" tabindex="-1" autocomplete="off">
+    </div>
 
     <!-- Tipo de contacto -->
     <div class="card">
