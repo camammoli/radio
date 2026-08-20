@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0696 — 2026-08-20 — Anti-spam en formularios de contacto y suscripción
+
+### Contexto
+Auditoría general de formularios públicos en todos los sitios de mammoli.ar, disparada por
+spam llegando al form de contacto de mammoli.ar/.
+
+### Lo que se hizo
+- `web/contacto.php`: ya tenía honeypot bien camuflado (off-screen, no `display:none`).
+  Se agrega trampa de tiempo (timestamp `ts` embebido server-side en el render, rechaza
+  envíos a menos de 2s) y se etiqueta el aviso de Telegram con "[Radio Argentina]" para
+  identificarlo rápido entre notificaciones de otros sitios/bots.
+- `web/suscribirse.php`: no tenía ninguna protección. Se agrega honeypot (`web2`, off-screen)
+  + trampa de tiempo (mismo patrón: `ts` viaja de ida y vuelta en el form). Importa
+  especialmente acá porque el form manda mensajes de "confirmación" a cualquier chat ID de
+  Telegram o email que se le ponga — sin filtro es vector de mail-bombing a terceros.
+
+### Deploy
+FTP atómico (`put ... .new` + `mv`) a `/radio/`. Verificado con descarga FTP + diff contra
+el local (no con curl para páginas con challenge WAF).
+
+---
+
 ## TKT-0695 — 2026-08-18 — DB corrupta por SEGUNDA VEZ en el mismo día — sospecha de icy_refresh.php descartada
 
 ### Contexto
