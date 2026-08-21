@@ -41,9 +41,10 @@
   var WELCOME_KEY   = 'radio_welcome_v4';
   var SITE_SURVEY_SECS = 150; // 2:30 — antes de la encuesta de emisora (3min)
   var SITE_SURVEY_KEY  = 'radio_site_survey_v1';
-  var AYUDA_DELAY_MS   = 1000;                       // casi inmediato al entrar al sitio
+  var AYUDA_DELAY_MS   = 12000;                      // 12s: da tiempo a orientarse antes de interrumpir
   var AYUDA_SNOOZE_KEY = 'radio_ayuda_snooze_until';  // timestamp (ms) hasta el cual no mostrar
   var AYUDA_NEVER_KEY  = 'radio_ayuda_never';         // '1' = no mostrar nunca más
+  var AYUDA_SESSION_KEY = 'radio_ayuda_session_shown'; // sessionStorage: ya se mostró en esta sesión de navegación
   var AYUDA_SNOOZE_DIAS = 7;
 
   function RadioPlayer(opts) {
@@ -659,11 +660,13 @@
       toast.querySelector('.rp-welcome-cta').addEventListener('click', dismiss);
     }
 
-    // ── Pedido de ayuda para sostener el proyecto — aparece ni bien se entra
-    // al sitio (no depende de reproducir), en cualquier página. A diferencia
-    // de bienvenida/encuesta, NO es "una sola vez para siempre": si el
-    // visitante no toca ningún botón de acción, vuelve a aparecer en la
-    // próxima entrada. Solo se pausa si responde algo:
+    // ── Pedido de ayuda para sostener el proyecto — aparece a los
+    // AYUDA_DELAY_MS de entrar al sitio (no depende de reproducir), como
+    // máximo una vez por sesión de navegación (sessionStorage, se resetea
+    // al cerrar la pestaña) aunque el visitante recorra varias páginas sin
+    // responder. A diferencia de bienvenida/encuesta, NO es "una sola vez
+    // para siempre": si no toca ningún botón, vuelve a aparecer en la
+    // próxima sesión. Solo se pausa más allá de eso si responde algo:
     //   OK / Contacto     → pausa AYUDA_SNOOZE_DIAS días
     //   Cafecito / No molestar → no vuelve a aparecer nunca más
     function ayudaInit() {
@@ -677,6 +680,7 @@
 
     function ayudaSuprimido() {
       if (localStorage.getItem(AYUDA_NEVER_KEY)) return true;
+      if (sessionStorage.getItem(AYUDA_SESSION_KEY)) return true;
       var until = parseInt(localStorage.getItem(AYUDA_SNOOZE_KEY) || '0', 10);
       return until > Date.now();
     }
@@ -703,46 +707,18 @@
       toast.innerHTML =
         '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
         '<h3>&#x1F64F; Un pedido</h3>' +
-        '<p>Radio Argentina es un proyecto personal. Lo arm&#xE9; y lo mantengo solo, ' +
-        'en mi tiempo libre &#x2014; no hay una empresa ni un equipo atr&#xE1;s, soy una ' +
-        'persona a la que le gusta la radio y quiso que estas +1200 emisoras argentinas ' +
-        'est&#xE9;n disponibles gratis, sin cuentas y sin publicidad invasiva.</p>' +
-        '<p>Sostenerlo online tiene un costo real. Este sitio no es una p&#xE1;gina est&#xE1;tica: ' +
-        'monitorea en tiempo real el estado de m&#xE1;s de 1200 streams, sincroniza metadata (ICY) ' +
-        'para mostrarte qu&#xE9; est&#xE1; sonando en cada radio, y sostiene un sistema de alertas ' +
-        'que escucha esas mismas 1200 emisoras buscando tus artistas o programas favoritos. Todo eso ' +
-        'consume ancho de banda de verdad. De hecho, tuve que contratar un plan de hosting m&#xE1;s ' +
-        'potente y con m&#xE1;s ancho de banda porque el anterior no daba abasto &#x2014; el consumo ' +
-        'se dispar&#xF3; y me dej&#xF3; al l&#xED;mite.</p>' +
-        '<p>Tengo un cafecito hace un tiempo, pero honestamente no alcanza para cubrir lo que cuesta ' +
-        'sostener esto mes a mes.</p>' +
-        '<p>Si 1 de cada 10 personas que escuchan la radio en un mes aportara un cafecito alguna vez ' +
-        '(no todos los meses, solo cuando puedan) ya cubrir&#xED;amos bastante los gastos que genera ' +
-        'el sitio. La audiencia todav&#xED;a es chica pero viene creciendo fuerte mes a mes &#x2014; ' +
-        'cuanta m&#xE1;s gente escuche, menos le toca aportar a cada uno para que esto siga en pie.</p>' +
-        '<p>Si te gusta el proyecto, si lo us&#xE1;s, si te parece que vale la pena que siga gratis y ' +
-        'sin publicidad invasiva &#x2014; necesito una mano. No hace falta una fortuna: cualquier ' +
-        'aporte, por chico que sea, ayuda a pagar el hosting y a que este proyecto siga en pie.</p>' +
-        '<p>Y no es solo una cuesti&#xF3;n de plata. Si la comunidad de oyentes nos diera una mano ' +
-        '&#x2014;contando qu&#xE9; falla, avisando cuando una radio se cae, sugiriendo emisoras que ' +
-        'faltan, corriendo la voz&#x2014; el servicio mejorar&#xED;a much&#xED;simo m&#xE1;s r&#xE1;pido ' +
-        'de lo que puedo hacerlo yo solo en mi tiempo libre. Hay proyectos de radio online mucho m&#xE1;s ' +
-        'grandes (apps con miles de usuarios, directorios internacionales) que tienen cosas que a este ' +
-        'todav&#xED;a le faltan: notificaci&#xF3;n autom&#xE1;tica cuando tu emisora favorita vuelve ' +
-        'despu&#xE9;s de una ca&#xED;da, recomendaciones seg&#xFA;n lo que escuch&#xE1;s, guardado de ' +
-        'favoritos sincronizado entre tus dispositivos, integraci&#xF3;n con podcasts, mejores filtros ' +
-        'de b&#xFA;squeda por g&#xE9;nero y provincia. Ninguna de esas cosas es imposible ac&#xE1; ' +
-        '&#x2014; lo que falta es tiempo, y el tiempo se estira mucho m&#xE1;s cuando no lo tengo que ' +
-        'pelear solo contra el hosting cada mes.</p>' +
-        '<p>Si nadie ayuda a sostenerlo, lamentablemente en alg&#xFA;n momento voy a tener que darlo ' +
-        'de baja. No quiero llegar a eso &#x2014; le dedico tiempo real y lo hago con ganas &#x2014; ' +
-        'pero tampoco puedo bancarlo solo indefinidamente.</p>' +
-        '<p>&#x2615; <a href="https://cafecito.app/mammoli" target="_blank" rel="noreferrer">Invitame un cafecito</a></p>' +
-        '<p>&#x1F4BB; <a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">El proyecto es open source, lo pod&#xE9;s ver ac&#xE1;</a></p>' +
-        '<p>Gracias por escuchar, por sugerir emisoras, por avisarme cuando algo se cae. Este proyecto ' +
-        'existe gracias a la gente que lo usa &#x2014; ayudame a que siga as&#xED;.</p>' +
+        '<p>Radio Argentina lo armo y sostengo solo, en mi tiempo libre &#x2014; sin equipo, ' +
+        'sin publicidad. Mantener m&#xE1;s de 1200 streams monitoreados en vivo, con metadata ' +
+        'en tiempo real y alertas, tiene un costo de hosting real y creciente.</p>' +
+        '<p>Si 1 de cada 10 oyentes aportara un cafecito alguna vez, cubrir&#xED;amos gran parte ' +
+        'de ese costo. Cualquier aporte ayuda, por chico que sea &#x2014; y tambi&#xE9;n ayuda ' +
+        'mucho avisar cuando una radio se cae o sugerir una que falta.</p>' +
+        '<p>Quiero que este proyecto siga gratis y sin publicidad invasiva. Con una mano de la ' +
+        'comunidad, se puede.</p>' +
+        '<p>&#x1F4BB; <a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">Es open source, mir&#xE1; el c&#xF3;digo ac&#xE1;</a></p>' +
+        '<p>Gracias por escuchar, por sugerir emisoras, por avisarme cuando algo se cae.</p>' +
         '<div class="rp-ayuda-actions">' +
-          '<button class="rp-welcome-cta rp-ayuda-ok">&#x1F44D; OK</button>' +
+          '<button class="rp-welcome-cta rp-ayuda-ok">&#x1F44D; Ok, record&#xE1;melo en unos d&#xED;as</button>' +
           '<a class="rp-welcome-cta rp-ayuda-cafecito" href="https://cafecito.app/mammoli" target="_blank" rel="noreferrer">&#x2615; Cafecito</a>' +
           '<a class="rp-welcome-cta rp-ayuda-contacto" href="contacto.php" target="_blank" rel="noreferrer">&#x1F4EC; Contacto</a>' +
           '<button class="rp-welcome-cta rp-ayuda-nomolestar">&#x1F6AB; No molestar m&#xE1;s</button>' +
@@ -751,6 +727,7 @@
       document.body.appendChild(toast);
       requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
       ayudaLog('mostrado');
+      sessionStorage.setItem(AYUDA_SESSION_KEY, '1');
 
       function close() {
         toast.classList.remove('rp-welcome--in');

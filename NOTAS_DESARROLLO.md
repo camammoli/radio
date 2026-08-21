@@ -4,6 +4,71 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0697 — 2026-08-21 — Toast de ayuda: una vez por sesión + delay 12s + texto resumido
+
+### Contexto
+
+Carlos notó una tasa de respuesta muy baja en el toast de ayuda/cafecito (TKT-0694): ~5,5%
+de las veces que se muestra termina en un click de OK/Cafecito/Contacto/No molestar; el
+resto lo cierra con la X o simplemente lo ignora. Pidió opinión antes de tocar nada.
+
+Se descargó `radio_v2.sqlite` (solo lectura) para analizar `ayuda_toast_eventos` en vez de
+especular: 112 filas `mostrado` pero solo **66 IPs únicas** — mucha repetición a la misma
+persona (hasta 5 veces). El gap mínimo entre dos apariciones a la misma IP es de **~30
+segundos**, no milisegundos — es decir, no es un bug de doble disparo, es gente navegando
+de una página a otra dentro del sitio (listado → emisora → otra emisora) y recibiendo el
+pedido de nuevo en cada una, porque el diseño de TKT-0694 lo dispara en cada página
+("aparece ni bien se entra al sitio... en cualquier página"), no una vez por visita. Además
+no existe ningún dato de user-agent/dispositivo en `ayuda_toast_eventos` ni en `plays` —
+no se puede saber mobile vs. PC con los datos actuales.
+
+Con esa evidencia, opinión entregada y **confirmada por Carlos**: no sacar la X (rompería
+el tono "te pido una mano sin trucos" del propio texto), pero sí atacar frecuencia y timing,
+que la data muestra como el problema más grande. Carlos sumó su propia idea de renombrar el
+botón OK para que quede claro que va a volver a aparecer.
+
+### Lo que se hizo
+
+`web/assets/player.js`:
+- `AYUDA_DELAY_MS`: 1000 → **12000** (12s) — ya no interrumpe al segundo de entrar a la página.
+- Nueva `AYUDA_SESSION_KEY` (sessionStorage) chequeada en `ayudaSuprimido()` — el toast se
+  muestra como máximo **una vez por sesión de navegación** (se resetea al cerrar la
+  pestaña) aunque el visitante recorra varias páginas sin responder ningún botón. Se marca
+  en `showAyuda()` junto al `ayudaLog('mostrado')` existente. No reemplaza el snooze/never
+  por localStorage (OK/Cafecito/Contacto/No molestar siguen funcionando igual) — es una
+  capa adicional solo para la repetición dentro de la misma sesión.
+- Texto del toast reescrito de 7 párrafos largos a 5 cortos — mismo pedido concreto (1 de
+  cada 10 aporta un cafecito alguna vez), mismo link a GitHub, mismo agradecimiento final.
+  Se sacó el link de Cafecito duplicado dentro del texto (ya existe como botón de acción).
+- Botón OK renombrado de "OK" a **"Ok, recordámelo en unos días"** (idea de Carlos) — deja
+  explícito que va a reaparecer (coincide con el snooze real de `AYUDA_SNOOZE_DIAS`=7).
+- Comentario de cabecera de la función actualizado para documentar el límite por sesión.
+
+`web/sw.js`:
+- `CACHE_NAME`: `radio-ar-v10` → **`radio-ar-v11`** — lección ya documentada en TKT-0684/
+  TKT-0694: cualquier cambio a `player.js` sin bump deja a los visitantes recurrentes
+  sirviendo la versión cacheada vieja indefinidamente.
+
+### Backup pre-cambio
+
+Local: `~/Escritorio/Backups/radio_toast_fix_20260821_081853/` (`player.js.orig`,
+`sw.js.orig`). Server-side: `radio/assets/player.js.bak_20260821_081853` y
+`radio/sw.js.bak_20260821_081853` (mismo patrón `.bak_<timestamp>` que ya usa el proyecto).
+
+### Deploy
+
+Sintaxis verificada con `node --check` antes de subir. FTP atómico (`put ... .new` + `mv`)
+a `/radio/assets/` y `/radio/`. Verificado en producción: `sw.js` sirve `radio-ar-v11`,
+`player.js` sirve `AYUDA_DELAY_MS = 12000`, sitio responde 200.
+
+### Pendiente
+
+Sin dato de mobile vs. PC — si Carlos lo quiere a futuro, agregar user-agent (o al menos un
+flag booleano "es_mobile" derivado del header) a `ayuda_toast_eventos` es el único cambio
+de schema necesario.
+
+---
+
 ## TKT-0696 — 2026-08-20 — Anti-spam en formularios de contacto y suscripción
 
 ### Contexto
