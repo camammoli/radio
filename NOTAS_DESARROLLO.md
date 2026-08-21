@@ -4,6 +4,82 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0699 — 2026-08-21 — Panel admin v4: filtro, orden por cabecera, paginado y agrupado en las 14 tablas
+
+### Contexto
+
+Carlos pidió "llevá el panel de control a la versión 4 (de hecho el sistema está en la
+versión 4)" — el header del panel efectivamente decía "Admin v3" mientras el sitio ya
+está en v4.1.0 desde TKT-0689. Pidió, para todos los listados: paginado, orden por
+cabecera, agrupar, filtrar. Copia de seguridad previa explícitamente pedida.
+
+### Lo que se hizo
+
+`web/admin.php`:
+- Header `📻 Radio Argentina — Admin v3` → `Admin v4`.
+- Nueva librería JS genérica `DT` (`window.DT`, ~250 líneas, un solo `<script>` nuevo
+  antes del script de tab-nav/auto-refresh existente): dado cualquier
+  `<table class="dt">`, agrega automáticamente:
+  - **Filtro** de texto libre (input arriba de la tabla, busca en todo el `textContent`
+    de cada fila).
+  - **Orden por click en cabecera** — comparador genérico: si el texto de la celda
+    reduce a un número válido (quitando todo lo que no sea dígito/punto/signo) compara
+    numérico, si no compara alfabético (`localeCompare` con locale `es`). Las columnas
+    de fecha (`YYYY-MM-DD HH:MM:SS`) ordenan bien con este mismo comparador porque el
+    formato zero-padded concatenado da un número consistente con el orden cronológico —
+    no hizo falta un parser de fechas aparte. Columnas de Acción/IP hash marcadas
+    `data-nosort="1"` en el `<th>` para no ofrecer un orden sin sentido.
+  - **Paginado** (10/25/50/100/Todo, con Anterior/Siguiente y contador de página).
+  - **Agrupado opcional** por columna — solo en los `<th>` marcados con
+    `data-group="Etiqueta"` (Emisora, Provincia, Tipo, Estado, Motivo, Canal, Rating,
+    Día, Crawler — donde agrupar aporta algo real; se dejó afuera de las tablas donde ya
+    es ~1 fila por entidad, como ICY o el resumen de encuestas por emisora). Inserta
+    filas de cabecera de grupo colapsables (click para expandir/contraer) y desactiva el
+    paginado mientras hay un agrupado activo (mostrar todo agrupado es más útil que
+    paginar a través de grupos cortados).
+  - Todo 100% client-side, sin pegar a la API de nuevo — las tablas son chicas (30-200
+    filas), alcanza y sobra.
+- Aplicado a las 14 tablas del panel (encuestas resumen, encuestas detalle, compartidos,
+  toast de ayuda, reproducciones, sugerencias, problemas, pendientes de verificación,
+  seguimiento especial, suscriptores, notificaciones enviadas, patrones de programas,
+  ICY, crawlers) vía `id="dt-<nombre>" class="dt"` en cada `<table>`.
+- **Compatibilidad con el auto-refresh AJAX existente (TKT-0718):** Reproducciones y
+  Compartidos reemplazan su `tbody.innerHTML` cada 10s. `DT.refresh(table)` se llama
+  justo después de cada reemplazo — recaptura las filas nuevas del DOM y vuelve a
+  aplicar filtro/orden/página/agrupado vigentes, sin duplicar la toolbar ni el pager.
+
+### Backup pre-cambio
+
+Local: `~/Escritorio/Backups/radio_admin_v4_20260821_180330/admin.php.orig_produccion`.
+Server-side: `radio/admin.php.bak_20260821_180446` (mismo patrón `.bak_<timestamp>` ya
+usado en el proyecto).
+
+### Testing
+
+Se armó un entorno local real antes de tocar producción (mismo patrón que TKT-0690/0694):
+`php8.2-cli` + `pdo`/`pdo_sqlite`/`sqlite3`/`mbstring`/`curl` extraídos vía
+`apt-get download` + `dpkg-deb -x` (sin root), copia fresca de la DB de producción,
+`php -S` sirviendo `web/` con `config.php` de prueba (token de Telegram falso y
+`NOTIFY_OYENTES=false` a propósito, para no disparar avisos reales durante las pruebas).
+Se instaló `playwright` (el binario de Chromium ya estaba cacheado en el entorno) y se
+corrió un script de test real contra el servidor local: login, click en cabecera
+(orden asc/desc con verificación de clase CSS), filtro con verificación de que las filas
+visibles realmente contienen el texto buscado, agrupado con verificación de las filas de
+grupo generadas y del colapso al click, cambio de tamaño de página y de página con
+verificación de contenido distinto, y — el caso más delicado — esperar un ciclo completo
+de 10s de auto-refresh AJAX y confirmar que la tabla sigue con datos y sin toolbar
+duplicada. Los 18 chequeos pasaron, cero errores de consola. Verificado también en vivo
+en producción con login real (curl + cookie jar): header "Admin v4" presente, controles
+nuevos presentes en las 14 tablas con datos.
+
+### Entorno de prueba limpiado
+
+Servidor PHP local detenido, copia de la DB de prueba borrada, `config.php` local
+restaurado a sus valores reales (token de Telegram, `NOTIFY_OYENTES=true`) tras las
+pruebas — nada de esto quedó en el repo (`config.php`/`db/` gitignored).
+
+---
+
 ## TKT-0697 — 2026-08-21 — Toast de ayuda: una vez por sesión + delay 12s + texto resumido
 
 ### Contexto

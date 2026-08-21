@@ -538,6 +538,24 @@ table{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:8px}
 th{text-align:left;padding:7px 10px;background:var(--card2);color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top}
 tr:hover td{background:var(--card2)}
+/* ── Tablas — filtro/orden/paginado/agrupado (DT) ─────────────────────────── */
+.dt-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.dt-toolbar input[type=search]{background:var(--card2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:6px 10px;font-size:12px;min-width:170px;outline:none}
+.dt-toolbar input[type=search]:focus{border-color:var(--accent)}
+.dt-toolbar select{background:var(--card2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:6px 8px;font-size:12px}
+.dt-count{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.dt-pager{display:flex;gap:10px;align-items:center;margin:6px 0 18px;font-size:12px;color:var(--muted)}
+.dt-pager button{background:var(--card2);border:1px solid var(--border);color:var(--text);
+  border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer}
+.dt-pager button:disabled{opacity:.35;cursor:default}
+th.dt-th{cursor:pointer;user-select:none}
+th.dt-th:hover{color:var(--text)}
+th.dt-sort-asc::after{content:' \25B2';font-size:9px}
+th.dt-sort-desc::after{content:' \25BC';font-size:9px}
+tr.dt-group-row td{background:var(--card2);font-weight:600;color:var(--accent);cursor:pointer}
+tr.dt-hidden{display:none}
 .pos{color:var(--green)} .neu{color:var(--yellow)} .neg{color:var(--red)}
 .badge-ok{color:var(--green)} .badge-err{color:var(--red)} .badge-warn{color:var(--yellow)}
 .url{font-size:11px;color:var(--muted);word-break:break-all}
@@ -581,7 +599,7 @@ if(localStorage.getItem('radio_theme')==='light')document.body.classList.add('li
 </script>
 
 <div class="top-bar">
-  <h1>📻 Radio Argentina — Admin v3</h1>
+  <h1>📻 Radio Argentina — Admin v4</h1>
   <div class="top-actions">
     <span id="refresh-ind" style="font-size:11px;color:var(--muted)"></span>
     <a href="admin_stats.php" class="btn-out">📊 Estadísticas</a>
@@ -728,7 +746,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   </div>
 
   <?php if ($station_surveys): ?>
-  <table>
+  <table id="dt-encuestas-resumen" class="dt">
     <thead><tr>
       <th>Emisora</th><th>👍</th><th>😐</th><th>👎</th><th>Total</th><th>Última</th>
     </tr></thead>
@@ -752,9 +770,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <h2 id="encuestas-detalle" style="margin-top:28px">Encuestas — detalle (últimas 100)</h2>
   <p class="note" style="margin-bottom:10px">IP hasheada: identificador anónimo consistente (misma IP = mismo hash).</p>
   <?php if ($surveys_detalle): ?>
-  <table>
+  <table id="dt-encuestas-detalle" class="dt">
     <thead><tr>
-      <th>Fecha</th><th>Rating</th><th>Emisora</th><th>Ubicación</th><th title="Provincia geolocalizada por IP, para comparar contra la ubicación autoreportada">Provincia (geo)</th><th>IP hash</th>
+      <th>Fecha</th><th data-group="Rating">Rating</th><th data-group="Emisora">Emisora</th><th>Ubicación</th><th title="Provincia geolocalizada por IP, para comparar contra la ubicación autoreportada" data-group="Provincia (geo)">Provincia (geo)</th><th data-nosort="1">IP hash</th>
     </tr></thead>
     <tbody>
     <?php foreach ($surveys_detalle as $sv):
@@ -782,9 +800,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <div class="tab-content" id="tab-compartidos">
   <h2 id="shares">Compartidos recientes (últimas 100)</h2>
   <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
-  <table>
+  <table id="dt-compartidos" class="dt">
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Canal</th><th>Provincia</th><th>IP hash</th>
+      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th>
     </tr></thead>
     <tbody id="shares-body">
     <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
@@ -824,8 +842,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   </div>
   <h3 style="font-size:14px;margin:20px 0 8px">Eventos recientes (últimos 200)</h3>
   <?php $ay_labels = ['mostrado' => '👁 Mostrado', 'ok' => '👍 OK', 'no_molestar' => '🚫 No molestar', 'cafecito' => '☕ Cafecito', 'contacto' => '💬 Contacto']; ?>
-  <table>
-    <thead><tr><th>Fecha / Hora</th><th>Tipo</th><th>Provincia</th><th>IP hash</th></tr></thead>
+  <table id="dt-ayuda" class="dt">
+    <thead><tr><th>Fecha / Hora</th><th data-group="Tipo">Tipo</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th></tr></thead>
     <tbody>
     <?php if ($ayuda_eventos): foreach ($ayuda_eventos as $ev): ?>
     <tr>
@@ -852,9 +870,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
   }
   ?>
-  <table>
+  <table id="dt-reproducciones" class="dt">
     <thead><tr>
-      <th>Fecha / Hora</th><th>Emisora</th><th>Duración</th><th>Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real">🤖</th><th>Provincia</th><th>IP hash</th><th>Sesión</th>
+      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th>Duración</th><th data-group="Origen">Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)" data-nosort="1">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real" data-nosort="1">🤖</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th><th data-nosort="1">Sesión</th>
     </tr></thead>
     <tbody id="plays-body">
     <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
@@ -886,9 +904,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <div class="tab-content" id="tab-sugerencias">
   <h2 id="sugerencias">Sugerencias pendientes (<?= count($sugerencias) ?>)</h2>
   <?php if ($sugerencias): ?>
-  <table>
+  <table id="dt-sugerencias" class="dt">
     <thead><tr>
-      <th>Nombre</th><th>URL</th><th>Provincia</th><th>Contacto</th><th>Recibida</th><th>Acción</th>
+      <th>Nombre</th><th data-nosort="1">URL</th><th data-group="Provincia">Provincia</th><th>Contacto</th><th>Recibida</th><th data-nosort="1">Acción</th>
     </tr></thead>
     <tbody>
     <?php foreach ($sugerencias as $sg): ?>
@@ -932,8 +950,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <h2 id="problemas">Radios con problemas (<?= count($problemas) ?>)</h2>
   <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Ocultas, con stream caído/timeout según el último chequeo, o reportadas por oyentes en los últimos 14 días.</p>
   <?php if ($problemas): ?>
-  <table>
-    <thead><tr><th>Nombre</th><th>URL</th><th>Motivo</th><th>Acción</th></tr></thead>
+  <table id="dt-problemas" class="dt">
+    <thead><tr><th>Nombre</th><th data-nosort="1">URL</th><th data-group="Motivo">Motivo</th><th data-nosort="1">Acción</th></tr></thead>
     <tbody>
     <?php foreach ($problemas as $p):
       $motivos = [];
@@ -955,8 +973,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <h2 id="pendientes">Pendientes de verificación (<?= count($pendientes_crawler) ?>)</h2>
   <p style="color:var(--muted);font-size:12px;margin-bottom:12px">Aprobadas, pero el crawler de streams (cada 6hs) todavía no las chequeó ni una vez.</p>
   <?php if ($pendientes_crawler): ?>
-  <table>
-    <thead><tr><th>Nombre</th><th>URL</th><th>Agregada</th><th>Acción</th></tr></thead>
+  <table id="dt-pendientes" class="dt">
+    <thead><tr><th>Nombre</th><th data-nosort="1">URL</th><th>Agregada</th><th data-nosort="1">Acción</th></tr></thead>
     <tbody>
     <?php foreach ($pendientes_crawler as $p): station_meta_row($p, $csrf, 'pendientes', ago($p['created_at'])); endforeach; ?>
     </tbody>
@@ -971,8 +989,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <h2 id="seguimiento">Seguimiento especial (<?= count($seguimiento) ?>)</h2>
   <p style="color:var(--muted);font-size:12px;margin-bottom:12px">En observación, o con un contacto privado cargado (radios que nos escribieron directamente, casos piloto, etc).</p>
   <?php if ($seguimiento): ?>
-  <table>
-    <thead><tr><th>Nombre</th><th>URL</th><th>Contacto privado</th><th>Acción</th></tr></thead>
+  <table id="dt-seguimiento" class="dt">
+    <thead><tr><th>Nombre</th><th data-nosort="1">URL</th><th>Contacto privado</th><th data-nosort="1">Acción</th></tr></thead>
     <tbody>
     <?php foreach ($seguimiento as $s): station_meta_row($s, $csrf, 'seguimiento', h($s['contacto_privado'] ?? '')); endforeach; ?>
     </tbody>
@@ -1015,9 +1033,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   ?>
 
   <?php if ($subscribers_list): ?>
-  <table>
+  <table id="dt-suscriptores" class="dt">
     <thead><tr>
-      <th>ID</th><th>Tipo</th><th>Contacto</th><th>Preferencias</th><th>Estado</th><th>Última notif.</th><th>Registrado</th><th>Acciones</th>
+      <th>ID</th><th data-group="Tipo">Tipo</th><th data-nosort="1">Contacto</th><th data-nosort="1">Preferencias</th><th data-group="Estado">Estado</th><th>Última notif.</th><th>Registrado</th><th data-nosort="1">Acciones</th>
     </tr></thead>
     <tbody>
     <?php foreach ($subscribers_list as $sub):
@@ -1074,9 +1092,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 
   <h2 id="notificaciones" style="margin-top:28px">Notificaciones enviadas (últimas 30)</h2>
   <?php if ($notif_recientes): ?>
-  <table>
+  <table id="dt-notificaciones" class="dt">
     <thead><tr>
-      <th>Fecha</th><th>Suscriptor</th><th>Keyword detectado</th><th>Emisora</th><th>Matches</th>
+      <th>Fecha</th><th data-nosort="1">Suscriptor</th><th>Keyword detectado</th><th data-group="Emisora">Emisora</th><th>Matches</th>
     </tr></thead>
     <tbody>
     <?php foreach ($notif_recientes as $n): ?>
@@ -1096,9 +1114,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 
   <h2 id="patrones" style="margin-top:28px">Patrones de programas detectados</h2>
   <?php if ($program_patterns): ?>
-  <table>
+  <table id="dt-patrones" class="dt">
     <thead><tr>
-      <th>Programa / Keyword</th><th>Emisora</th><th>Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
+      <th>Programa / Keyword</th><th data-group="Emisora">Emisora</th><th data-group="Día">Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
     </tr></thead>
     <tbody>
     <?php foreach ($program_patterns as $pp):
@@ -1130,8 +1148,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     Última actualización: <strong><?= ago($icy['ultima'] ?? null) ?></strong>
   </p>
   <?php if ($icy_activas): ?>
-  <table>
-    <thead><tr><th>Emisora</th><th>Sonando ahora</th><th>Actualizado</th></tr></thead>
+  <table id="dt-icy" class="dt">
+    <thead><tr><th>Emisora</th><th data-nosort="1">Sonando ahora</th><th>Actualizado</th></tr></thead>
     <tbody>
     <?php foreach ($icy_activas as $ic):
       $mins = (int)($ic['mins_ago'] ?? 0);
@@ -1171,9 +1189,9 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <div class="tab-content" id="tab-crawlers">
   <h2 id="crawlers">Crawlers — últimas ejecuciones</h2>
   <?php if ($crawler_runs): ?>
-  <table>
+  <table id="dt-crawlers" class="dt">
     <thead><tr>
-      <th>Crawler</th><th>Inicio</th><th>Duración</th>
+      <th data-group="Crawler">Crawler</th><th>Inicio</th><th>Duración</th>
       <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
     </tr></thead>
     <tbody>
@@ -1207,6 +1225,229 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
 </p>
 
+<script>
+// ── DT: filtro + orden por cabecera + paginado + agrupado, genérico para
+// cualquier <table class="dt"> del panel. Opera sobre las filas ya
+// renderizadas server-side (no pega a la API de nuevo) — las tablas de acá
+// son chicas (30-200 filas), así que hacerlo client-side alcanza y sobra.
+//
+// Marcar un <th> con data-group="Etiqueta" lo agrega como opción de
+// "Agrupar por". Marcar un <th> con data-nosort="1" (columnas de Acción,
+// IP hash, etc.) evita que se pueda ordenar por esa columna.
+//
+// DT.refresh(table) se usa desde refreshAdmin() para las 2 tablas que se
+// actualizan por AJAX cada 10s (Reproducciones, Compartidos) — recaptura
+// las filas nuevas que puso el fetch y vuelve a aplicar filtro/orden/página.
+window.DT = (function () {
+  function textOf(el) { return (el.textContent || '').trim(); }
+
+  function sortVal(td) {
+    var t = textOf(td);
+    var digits = t.replace(/[^\d.\-]/g, '');
+    var num = (digits === '' || digits === '-') ? NaN : parseFloat(digits);
+    return { text: t.toLowerCase(), num: isNaN(num) ? null : num };
+  }
+
+  function cmpVal(a, b) {
+    if (a.num !== null && b.num !== null) return a.num - b.num;
+    return a.text.localeCompare(b.text, 'es');
+  }
+
+  function dataRows(tbody, ncols) {
+    return Array.prototype.slice.call(tbody.children).filter(function (tr) {
+      return tr.tagName === 'TR' && tr.cells.length === ncols;
+    });
+  }
+
+  function enhance(table) {
+    if (!table || table.dataset.dtReady) return;
+    var thead = table.querySelector('thead');
+    var tbody = table.querySelector('tbody');
+    if (!thead || !tbody) return;
+    var ths = Array.prototype.slice.call(thead.querySelectorAll('th'));
+    var ncols = ths.length;
+    var masterRows = dataRows(tbody, ncols);
+    if (!masterRows.length) return; // tabla vacía (placeholder "Sin datos") — no agregar controles
+
+    var groupCols = [];
+    ths.forEach(function (th, i) { if (th.dataset.group) groupCols.push(i); });
+
+    var toolbar = document.createElement('div');
+    toolbar.className = 'dt-toolbar';
+
+    var filterInput = document.createElement('input');
+    filterInput.type = 'search';
+    filterInput.placeholder = '🔎 Filtrar…';
+    toolbar.appendChild(filterInput);
+
+    var groupSelect = null;
+    if (groupCols.length) {
+      groupSelect = document.createElement('select');
+      var o0 = document.createElement('option'); o0.value = ''; o0.textContent = 'Sin agrupar';
+      groupSelect.appendChild(o0);
+      groupCols.forEach(function (i) {
+        var o = document.createElement('option');
+        o.value = i;
+        o.textContent = 'Agrupar: ' + th_label(ths[i]);
+        groupSelect.appendChild(o);
+      });
+      toolbar.appendChild(groupSelect);
+    }
+
+    var sizeSelect = document.createElement('select');
+    [10, 25, 50, 100].forEach(function (n) {
+      var o = document.createElement('option'); o.value = String(n); o.textContent = n + '/pág';
+      sizeSelect.appendChild(o);
+    });
+    var oAll = document.createElement('option'); oAll.value = 'all'; oAll.textContent = 'Todo';
+    sizeSelect.appendChild(oAll);
+    sizeSelect.value = masterRows.length > 25 ? '25' : 'all';
+    toolbar.appendChild(sizeSelect);
+
+    var countEl = document.createElement('span');
+    countEl.className = 'dt-count';
+    toolbar.appendChild(countEl);
+
+    table.parentNode.insertBefore(toolbar, table);
+
+    var pager = document.createElement('div');
+    pager.className = 'dt-pager';
+    var btnPrev = document.createElement('button'); btnPrev.type = 'button'; btnPrev.textContent = '‹ Anterior';
+    var pageLabel = document.createElement('span');
+    var btnNext = document.createElement('button'); btnNext.type = 'button'; btnNext.textContent = 'Siguiente ›';
+    pager.appendChild(btnPrev); pager.appendChild(pageLabel); pager.appendChild(btnNext);
+    table.parentNode.insertBefore(pager, table.nextSibling);
+
+    function th_label(th) { return (th.dataset.group || textOf(th)); }
+
+    var st = { sortCol: -1, sortDir: 1, page: 1, filter: '', group: '' };
+
+    ths.forEach(function (th, i) {
+      if (th.dataset.nosort) return;
+      th.classList.add('dt-th');
+      th.addEventListener('click', function () {
+        if (st.sortCol === i) st.sortDir *= -1; else { st.sortCol = i; st.sortDir = 1; }
+        st.page = 1;
+        render();
+      });
+    });
+
+    filterInput.addEventListener('input', function () {
+      st.filter = filterInput.value.toLowerCase();
+      st.page = 1;
+      render();
+    });
+    if (groupSelect) {
+      groupSelect.addEventListener('change', function () {
+        st.group = groupSelect.value;
+        st.page = 1;
+        render();
+      });
+    }
+    sizeSelect.addEventListener('change', function () { st.page = 1; render(); });
+    btnPrev.addEventListener('click', function () { if (st.page > 1) { st.page--; render(); } });
+    btnNext.addEventListener('click', function () { st.page++; render(); });
+
+    function render() {
+      // limpiar cabeceras de grupo de un render anterior y desenganchar todas
+      // las filas de datos (siguen vivas en masterRows, solo se sacan del DOM)
+      Array.prototype.slice.call(tbody.querySelectorAll('.dt-group-row, .dt-empty-row')).forEach(function (r) { r.remove(); });
+      masterRows.forEach(function (tr) { if (tr.parentNode === tbody) tbody.removeChild(tr); });
+
+      var visible = masterRows;
+      if (st.filter) {
+        visible = visible.filter(function (tr) { return textOf(tr).toLowerCase().indexOf(st.filter) !== -1; });
+      }
+
+      ths.forEach(function (th, i) {
+        th.classList.remove('dt-sort-asc', 'dt-sort-desc');
+        if (i === st.sortCol) th.classList.add(st.sortDir === 1 ? 'dt-sort-asc' : 'dt-sort-desc');
+      });
+      if (st.sortCol >= 0) {
+        visible = visible.slice().sort(function (a, b) {
+          return cmpVal(sortVal(a.cells[st.sortCol]), sortVal(b.cells[st.sortCol])) * st.sortDir;
+        });
+      }
+
+      countEl.textContent = visible.length + ' de ' + masterRows.length;
+
+      if (st.group !== '') {
+        pager.style.display = 'none';
+        var gi = parseInt(st.group, 10);
+        var groups = {}, order = [];
+        visible.forEach(function (tr) {
+          var key = textOf(tr.cells[gi]) || '—';
+          if (!groups[key]) { groups[key] = []; order.push(key); }
+          groups[key].push(tr);
+        });
+        order.sort(function (a, b) { return a.localeCompare(b, 'es'); });
+        order.forEach(function (key) {
+          var gr = document.createElement('tr');
+          gr.className = 'dt-group-row';
+          var td = document.createElement('td');
+          td.colSpan = ncols;
+          function setLabel() { td.textContent = (gr.classList.contains('collapsed') ? '▸ ' : '▾ ') + key + ' (' + groups[key].length + ')'; }
+          setLabel();
+          gr.appendChild(td);
+          gr.addEventListener('click', function () {
+            gr.classList.toggle('collapsed');
+            groups[key].forEach(function (tr) { tr.classList.toggle('dt-hidden', gr.classList.contains('collapsed')); });
+            setLabel();
+          });
+          tbody.appendChild(gr);
+          groups[key].forEach(function (tr) { tbody.appendChild(tr); });
+        });
+      } else {
+        pager.style.display = '';
+        var pageSize = sizeSelect.value === 'all' ? visible.length : parseInt(sizeSelect.value, 10);
+        var totalPages = pageSize > 0 ? Math.max(1, Math.ceil(visible.length / pageSize)) : 1;
+        if (st.page > totalPages) st.page = totalPages;
+        var start = (st.page - 1) * pageSize;
+        var pageRows = pageSize > 0 ? visible.slice(start, start + pageSize) : visible;
+        pageRows.forEach(function (tr) { tbody.appendChild(tr); });
+        pageLabel.textContent = 'Página ' + st.page + ' de ' + totalPages;
+        btnPrev.disabled = st.page <= 1;
+        btnNext.disabled = st.page >= totalPages;
+      }
+
+      if (!visible.length) {
+        var er = document.createElement('tr');
+        er.className = 'dt-empty-row';
+        var etd = document.createElement('td');
+        etd.colSpan = ncols;
+        etd.className = 'empty';
+        etd.textContent = 'Sin resultados para este filtro.';
+        er.appendChild(etd);
+        tbody.appendChild(er);
+      }
+    }
+
+    function recapture() {
+      masterRows = dataRows(tbody, ncols);
+      st.page = 1;
+      render();
+    }
+
+    table.dataset.dtReady = '1';
+    table._dtRecapture = recapture;
+    render();
+  }
+
+  function refresh(table) {
+    if (!table) return;
+    if (!table.dataset.dtReady) { enhance(table); return; }
+    if (table._dtRecapture) table._dtRecapture();
+  }
+
+  function enhanceAll() {
+    document.querySelectorAll('table.dt').forEach(enhance);
+  }
+
+  document.addEventListener('DOMContentLoaded', enhanceAll);
+
+  return { enhance: enhance, refresh: refresh, enhanceAll: enhanceAll };
+}());
+</script>
 <script>
 (function () {
   // ── Tab navigation ──────────────────────────────────────────────────────────
@@ -1320,6 +1561,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
               + '</tr>';
           }).join('');
+          DT.refresh(document.getElementById('dt-reproducciones'));
         }
 
         // Shares
@@ -1338,6 +1580,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((sh.ip_hash || '').substring(0,16)) + '…</td>'
               + '</tr>';
           }).join('');
+          DT.refresh(document.getElementById('dt-compartidos'));
         }
 
         // Indicador
