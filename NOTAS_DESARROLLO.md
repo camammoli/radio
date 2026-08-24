@@ -1885,3 +1885,29 @@ Carlos ya había comentado allí como camammoli. Se implementó integración com
 ### Pendientes
 - Verificar que secrets.GITHUB_PAT tenga scope `gist` en GitHub Actions
 - Próximo lunes: confirmar que el step de sync corra sin errores en el workflow
+
+---
+
+## TKT-0701 — 2026-08-24 — Recuperación DB corrupta (5ª vez) + deploy de fixes que habían quedado pendientes de una sesión cortada
+
+### Contexto
+Sitio caído (500 en `/`, `admin.php` seguía respondiendo). Misma familia de incidentes de corrupción recurrente de `radio_v2.sqlite` ya documentados en TKT-0687/0690/0693/0695. Esta vez con una diferencia importante: se perdieron 21 filas reales de la tabla `stations` (antes solo se perdían tablas de log como `stream_history`/`station_events`).
+
+### Recuperación
+- Header con page-count desincronizado otra vez, `.recover` con el sqlite3 3.40.1 del sistema fallaba con "SQL logic error" — hubo que usar el binario oficial 3.45.1 (`sqlite-tools-linux-x64-3450100.zip`, mismo truco que TKT-0693) para que `.recover` funcionara.
+- El primer intento de reconstrucción quedó con 1246/1267 `stations` y decenas de violaciones de `PRAGMA foreign_key_check` (`stream_status`/`icy_cache`/`station_events`/`plays` referenciando rowids 151–171 inexistentes).
+- Se encontró que una sesión previa (cortada) ya había recuperado la DB a las 16:58 y la había dejado lista para subir en `~/Escritorio/Backups/radio_visitantes_fix_20260824_165814/radio_v2_recovered_a_subir.sqlite` — esa copia sí tenía las 1267 `stations` completas, `integrity_check` ok y 0 violaciones de FK. Se usó esa (no la reconstruida en esta sesión) para no perder ninguna emisora.
+- Subida por FTP muy lenta este día (~65KB/s) — el primer intento de `put` se cortó a los 2 min con solo 8/27MB. Se resolvió con `reput` (resume) en background en vez de reintentar desde cero.
+
+### Deploy
+Junto con la DB, se subieron los 2 archivos que la sesión cortada había dejado preparados en la misma carpeta de backup:
+- **`web/admin.php`**: el cálculo de `is_active` en las 2 queries de listado pasó de `l.sid IS NOT NULL` a `l.sid IS NOT NULL AND p.ended_at IS NULL` — corrige el bug ya conocido de sesiones que quedan "reproduciendo" para siempre en el panel cuando el heartbeat se corta sin avisar.
+- **`web/api/listeners.php`**: nuevo `BLOCKED_IP_HASHES = ['c7a0e2692b529b79']` — ese hash corresponde al patrón de station-hopping masivo (badge 🤖) ya visto en el admin; ahora ese IP recibe el conteo total del sitio en vez de contar como oyente real de cada emisora, para no seguir ensuciando las métricas de audiencia.
+
+### Hipótesis nueva sobre la causa raíz de la corrupción recurrente (sin confirmar)
+Los 3 workflows que hacen swap de la DB por FTP (`check-streams-v2`, `dedupe-streamtheworld`, `enrich-v2`) se coordinan entre sí con `concurrency: group: radio-db-write`, pero esa protección NO cubre las escrituras PHP en vivo del servidor: tráfico real (`listeners.php`/`plays`), `icy_refresh.php` (cron cPanel cada 10min) y los cron que llaman endpoints por HTTP (`cron_close_sessions.php` cada 15min, `cron_learn_patterns.php`). Entre el `mv` que activa el archivo nuevo y el `glob -a rm` que borra el `-wal`/`-shm` viejo del servidor (2 comandos lftp separados, con reconexión de por medio) hay una ventana en la que cualquier request PHP que abra la DB en modo WAL puede encontrar un `-wal` viejo (de antes del swap) y aplicarlo sobre las páginas del archivo nuevo → corrupción. No se pudo confirmar con timestamps exactos esta vez (la corrupción no coincidió con ninguna corrida de GitHub Actions cercana). Pendiente: combinar el `rm` del wal/shm en la MISMA sesión lftp que el `mv` (reduce la ventana a cero reconexiones) en los 3 workflows, y/o instrumentar con logging para capturar el próximo incidente con evidencia directa.
+
+### Archivos afectados
+- `web/admin.php`, `web/api/listeners.php` (deploy)
+- `db/radio_v2.sqlite` (restaurado en servidor)
+- Pendiente: `.github/workflows/check-streams-v2.yml`, `dedupe-streamtheworld.yml`, `enrich-v2.yml` (fusionar mv+rm en una sola sesión lftp, no aplicado aún)

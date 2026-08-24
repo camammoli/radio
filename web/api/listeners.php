@@ -84,8 +84,18 @@ if ($action === 'stop') {
 
 // ── Ping ──────────────────────────────────────────────────────────────────────
 
+// Hashes de IP con patrón confirmado de script/scraper (station-hopping masivo,
+// ver admin → Reproducciones, badge 🤖). No bloquea el stream/proxy, solo evita
+// que ensucien las métricas de audiencia real.
+const BLOCKED_IP_HASHES = ['c7a0e2692b529b79'];
+
 if ($action === 'ping') {
     if (!$sid) api_error('sid requerido', 400);
+
+    if (in_array(ip_hash(client_ip()), BLOCKED_IP_HASHES, true)) {
+        $count = (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn();
+        api_response(['count' => $count, 'listeners_station' => 0]);
+    }
 
     $existing = $db->prepare('SELECT sid FROM listeners WHERE sid = ?');
     $existing->execute([$sid]);

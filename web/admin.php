@@ -176,7 +176,7 @@ if (isset($_GET['ajax'])) {
                         CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
                              WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
                              ELSE NULL END AS duration_secs,
-                        CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
+                        CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
                         (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
                         (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
                           AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
@@ -360,7 +360,7 @@ $plays_recientes = $db->query(
                 THEN ROUND((julianday('now')       - julianday(p.played_at)) * 86400)
               ELSE NULL
             END AS duration_secs,
-            CASE WHEN l.sid IS NOT NULL THEN 1 ELSE 0 END AS is_active,
+            CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
             (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
             (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
               AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
