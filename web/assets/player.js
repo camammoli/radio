@@ -667,8 +667,8 @@
     // responder. A diferencia de bienvenida/encuesta, NO es "una sola vez
     // para siempre": si no toca ningún botón, vuelve a aparecer en la
     // próxima sesión. Solo se pausa más allá de eso si responde algo:
-    //   OK / Contacto     → pausa AYUDA_SNOOZE_DIAS días
-    //   Cafecito / No molestar → no vuelve a aparecer nunca más
+    //   OK / Contacto / Cafecito → pausa AYUDA_SNOOZE_DIAS días
+    //   No molestar              → no vuelve a aparecer nunca más
     function ayudaInit() {
       if (ayudaSuprimido()) return;
       ayudaTimer = setTimeout(showAyuda, AYUDA_DELAY_MS);
@@ -755,8 +755,12 @@
       });
       // Cafecito y Contacto abren en pestaña nueva (comportamiento nativo del
       // <a>, no se previene) y además fijan la preferencia correspondiente.
+      // Cafecito usa snooze(), no never(): el clic solo confirma que abrió el
+      // link externo, no que completó el pago (no hay webhook de Cafecito) —
+      // marcar "nunca más" acá silenciaría para siempre a quien clickeó pero
+      // no llegó a donar (medido: 3 de cada 4 clics reales en este proyecto).
       toast.querySelector('.rp-ayuda-cafecito').addEventListener('click', function () {
-        ayudaLog('cafecito'); never(); close();
+        ayudaLog('cafecito'); snooze(); close();
       });
       toast.querySelector('.rp-ayuda-contacto').addEventListener('click', function () {
         ayudaLog('contacto'); snooze(); close();

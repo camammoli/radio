@@ -4,6 +4,26 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0702 — 2026-08-25 — Fix Cafecito: clic marcaba "nunca más" sin confirmar donación real
+
+A partir del análisis de monetización de este día, Carlos reportó que de 4 clics reales en el botón
+☕ Cafecito del toast de ayuda, solo 1 se convirtió en una donación real. Revisando el código
+(`web/assets/player.js`, handler `.rp-ayuda-cafecito`), el clic llamaba a `never()` — igual que
+"No molestar más" — silenciando el aviso para siempre sin ninguna confirmación de pago (Cafecito es
+un link externo, no hay webhook). Con ese dato, 3 de cada 4 personas que mostraron intención de ayudar
+quedaban calladas para siempre sin haber aportado nada.
+
+**Fix:** el clic en Cafecito ahora llama a `snooze()` (mismo régimen que "OK"/"Contacto", pausa
+`AYUDA_SNOOZE_DIAS`=7 días) en vez de `never()`. Solo "No molestar más" sigue siendo permanente.
+Comentario del bloque `ayudaInit()` actualizado para reflejar el comportamiento real.
+
+Verificado sintaxis con `node --check` antes de subir. Deploy: `web/assets/player.js` +
+`web/sw.js` (`CACHE_NAME` bumpeado a `radio-ar-v12` — obligatorio en todo deploy que toque
+`player.js`, ver TKT-0684) por FTP directo. Confirmado en producción con `curl` post-deploy:
+`sw.js` sirve v12 y `player.js` tiene `snooze()` en el handler de cafecito.
+
+---
+
 ## TKT-0736 — 2026-08-25 — Botón flotante de contacto por Telegram
 
 Nuevo componente `components/telegram_button.php`, incluido en `listing.php` y `station.php` (todas

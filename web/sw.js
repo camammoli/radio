@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radio-ar-v11';
+const CACHE_NAME = 'radio-ar-v12';
 const PRECACHE   = ['/radio/manifest.json'];
 const ASSET_RE   = /\.(js|css|png|jpg|jpeg|svg|webp|woff2?|ico|gif)(\?|$)/i;
 // Streams/tracking: nunca interceptar ni cachear — proxy.php es una respuesta
