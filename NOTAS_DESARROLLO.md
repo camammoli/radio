@@ -4,6 +4,76 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0735 — 2026-08-25 — Pestaña "Emisoras" (ABM completo, nunca DELETE) + revisión de backups y visitas
+
+### Contexto
+Carlos pidió tres cosas: (1) backup antes de tocar nada, dado el historial de corrupción recurrente
+de `radio_v2.sqlite` (TKT-0687/0690/0693/0695/0701); (2) revisar con atención los datos de
+visitas/oyentes tras el fix de ayer (TKT-0701, contador is_active + bloqueo de IP bot); (3) una
+pestaña de ABM para el catálogo completo de emisoras, con la regla explícita de que **nunca se
+borren** — solo se marcan de baja, con un campo de "último cambio" para saber cuándo se dieron de
+alta o de baja.
+
+### Backup previo
+Descargada la DB de producción completa (`.sqlite` + `-wal` + `-shm`, importante bajar los tres —
+ver nota de WAL más abajo) antes de cualquier cambio. `integrity_check: ok`, sin violaciones de FK,
+1268 `stations`. Guardado en `~/Escritorio/Backups/radio_backup_completo_20260825_093805/`.
+
+### Revisión de visitas (post-fix TKT-0701)
+- El hash de IP bloqueado ayer (`c7a0e2692b529b79`, patrón de station-hopping/bot) no volvió a
+  aparecer en `plays` desde el 23/08 22:49 — justo antes del deploy del bloqueo. Parece efectivo.
+- Las sesiones activas en `listeners` (16 al momento de revisar) están todas con `last_seen` de
+  hace segundos y repartidas en estaciones distintas — sin señales de sesiones "pegadas" (el bug
+  que corrigió el fix de `is_active` en `admin.php`).
+- Ningún otro `ip_hash` con volumen de plays muestra un patrón sospechoso (alta concentración en
+  una sola emisora en poco tiempo) — la distribución observada es consistente con oyentes reales.
+
+### Nueva pestaña "Emisoras" (`web/admin.php`)
+- **Columnas nuevas en `stations`:** `activa INTEGER DEFAULT 1` y `ultimo_cambio TEXT`. Migración
+  auto-aplicada (mismo patrón `ALTER TABLE ... try/catch` que ya usa el archivo para las demás
+  columnas de metadata). `ultimo_cambio` se toca **solo** al hacer alta/baja — a diferencia de
+  `updated_at`, que cambia con cualquier edición.
+- **`v_stations` → versión 5:** se agregó `AND COALESCE(s.activa, 1) = 1` al filtro existente
+  (que ya ocultaba automáticamente las muertas 14+ días). Emisoras dadas de baja desaparecen del
+  sitio público pero la fila sigue intacta en `stations`, visible en el panel admin.
+- **Acciones nuevas:** `set_activa` (toggle alta/baja, nunca DELETE), `crear_emisora` (alta manual
+  con slug auto-generado si no se especifica), `editar_emisora` (nombre/url/provincia/homepage).
+- **UI:** tabla ABM completa (reutiliza el componente `DT` ya existente — filtro/orden/paginado),
+  formulario de alta manual colapsable, botón alta/baja + edición inline por fila.
+- Card nueva en Resumen: "Emisoras de baja" (0 al momento del deploy).
+
+### Nota importante sobre WAL (relevante para la causa raíz de TKT-0701)
+Al verificar el deploy, un primer intento de backup bajando solo `radio_v2.sqlite` (sin `-wal`)
+mostró la DB **sin** las columnas nuevas recién creadas — a pesar de que el panel admin, corriendo
+en el mismo momento, ya las usaba sin problema. Confirmado: había un `-wal` de 1.5MB sin checkpoint
+en el servidor. Esto es evidencia directa y reproducible del mecanismo que TKT-0701 ya había
+planteado como hipótesis (ventana de inconsistencia entre el archivo principal y el WAL). Cualquier
+proceso de backup/restore de esta DB **debe** bajar los tres archivos juntos (`.sqlite`, `-wal`,
+`-shm`), nunca solo el principal.
+
+### Probado antes de deployar
+Copia local de la DB de producción + `admin.php` nuevo servidos con PHP local (Docker): login,
+migración de esquema, alta, edición, baja, reactivación, y confirmación de que una emisora de baja
+desaparece de `v_stations` pero sigue en `stations`. Todo verificado antes de subir a producción.
+Deploy: solo `web/admin.php` por FTP (no se tocó el archivo de la DB directamente — la migración de
+esquema la aplica el propio PHP en producción, evitando el patrón de swap por FTP que es sospechoso
+de la corrupción recurrente).
+
+### Pendiente (fuera del alcance de hoy, para la próxima sesión de backups/confiabilidad)
+- El fix ya identificado en TKT-0701 (fusionar `mv`+`rm` del wal/shm en una sola sesión lftp en los
+  3 workflows que hacen swap de la DB) sigue sin aplicar.
+- Revisar y organizar el estado general de backups del proyecto (pedido explícito de Carlos para
+  la próxima sesión).
+- Monetización del sitio (pedido explícito de Carlos para la próxima sesión).
+
+### Archivos afectados
+- `web/admin.php` (deploy)
+- `db/radio_v2.sqlite` en servidor: migración auto-aplicada (columnas `activa`/`ultimo_cambio`,
+  vista `v_stations` v5) — no se subió el archivo de DB, solo se dejó que el propio admin.php la
+  migrara en su primer request.
+
+---
+
 ## TKT-0699 — 2026-08-21 — Panel admin v4: filtro, orden por cabecera, paginado y agrupado en las 14 tablas
 
 ### Contexto

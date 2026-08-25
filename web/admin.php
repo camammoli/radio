@@ -86,6 +86,42 @@ try { $db->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0') ;
 try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT') ; } catch (Exception $e) {}
 try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_privado TEXT') ; } catch (Exception $e) {}
 try { $db->exec('ALTER TABLE stations ADD COLUMN notas_privadas TEXT') ; } catch (Exception $e) {}
+// ABM de emisoras (TKT pendiente de numerar): nunca se borran, solo se marcan de baja.
+// activa=1 (alta) / activa=0 (de baja) — ultimo_cambio se toca SOLO al hacer alta/baja,
+// a diferencia de updated_at que cambia con cualquier edición.
+try { $db->exec('ALTER TABLE stations ADD COLUMN activa INTEGER DEFAULT 1') ; } catch (Exception $e) {}
+try { $db->exec('ALTER TABLE stations ADD COLUMN ultimo_cambio TEXT') ; } catch (Exception $e) {}
+$v_stations_sql = $db->query("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_stations'")->fetchColumn();
+if ($v_stations_sql === false || strpos($v_stations_sql, 'v_stations_version:5') === false) {
+    $db->exec('DROP VIEW IF EXISTS v_stations');
+    $db->exec("CREATE VIEW v_stations AS
+        -- v_stations_version:5 (agrega respeto por baja manual, activa=0)
+        SELECT
+            s.id, s.n, s.slug, s.nombre, s.url, s.provincia, s.tags,
+            s.codec, s.bitrate, s.homepage, s.logo, s.source,
+            s.rb_uuid, s.rb_votes, s.rb_clicks,
+            s.contacto_publico, s.destacada,
+            COALESCE(ss.estado, 'unknown')          AS estado,
+            ss.http_code, ss.response_ms,
+            ss.consecutive_failures,
+            ss.last_checked, ss.last_ok,
+            COALESCE(ic.supported, 0)               AS icy_supported,
+            ic.icy_name, ic.stream_title,
+            ic.last_checked                         AS icy_last_checked,
+            COALESCE(p.total_plays, 0)              AS total_plays
+        FROM stations s
+        LEFT JOIN stream_status  ss ON ss.station_id = s.id
+        LEFT JOIN icy_cache      ic ON ic.station_id = s.id
+        LEFT JOIN (
+            SELECT station_id, COUNT(*) AS total_plays FROM plays GROUP BY station_id
+        ) p ON p.station_id = s.id
+        WHERE s.approved = 1
+          AND COALESCE(s.activa, 1) = 1
+          AND NOT (
+                ss.estado = 'muerto'
+                AND (ss.last_ok IS NULL OR ss.last_ok < datetime('now','-14 days'))
+          )");
+}
 try { $db->exec('CREATE TABLE IF NOT EXISTS reportes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER REFERENCES stations(id),
@@ -118,6 +154,54 @@ if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
     $db->prepare('DELETE FROM stations WHERE id=? AND source="sugerencia" AND approved=0')
        ->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#sugerencias');
+    exit;
+}
+if ($act === 'set_activa' && ($_POST['csrf'] ?? '') === $csrf) {
+    // Alta/baja manual — NUNCA borra la fila, solo togglea activa y toca ultimo_cambio.
+    $nueva = !empty($_POST['activa']) ? 1 : 0;
+    $db->prepare('UPDATE stations SET activa=?, ultimo_cambio=datetime("now") WHERE id=?')
+       ->execute([$nueva, (int)($_POST['id'] ?? 0)]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#emisoras');
+    exit;
+}
+if ($act === 'crear_emisora' && ($_POST['csrf'] ?? '') === $csrf) {
+    $nombre = trim($_POST['nombre'] ?? '');
+    $url    = trim($_POST['url'] ?? '');
+    $slug   = trim($_POST['slug'] ?? '');
+    if ($slug === '' && $nombre !== '') {
+        $slug = trim(preg_replace('/-+/', '-', preg_replace('/[^a-z0-9]+/', '-', mb_strtolower($nombre))), '-');
+    }
+    if ($nombre === '' || $url === '' || $slug === '') {
+        $alta_err = 'Nombre, URL y slug son obligatorios.';
+    } else {
+        try {
+            $db->prepare('INSERT INTO stations
+                    (slug, nombre, url, provincia, homepage, source, approved, activa, created_at, updated_at, ultimo_cambio)
+                  VALUES (?, ?, ?, ?, ?, "manual", 1, 1, datetime("now"), datetime("now"), datetime("now"))')
+               ->execute([
+                    $slug, $nombre, $url,
+                    trim($_POST['provincia'] ?? '') ?: null,
+                    trim($_POST['homepage']  ?? '') ?: null,
+                ]);
+        } catch (Exception $e) {
+            $alta_err = 'No se pudo crear (¿slug o URL ya existen?): ' . $e->getMessage();
+        }
+    }
+    if (empty($alta_err)) {
+        header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#emisoras');
+        exit;
+    }
+}
+if ($act === 'editar_emisora' && ($_POST['csrf'] ?? '') === $csrf) {
+    $db->prepare('UPDATE stations SET nombre=?, url=?, provincia=?, homepage=?, updated_at=datetime("now") WHERE id=?')
+       ->execute([
+            trim($_POST['nombre'] ?? ''),
+            trim($_POST['url'] ?? ''),
+            trim($_POST['provincia'] ?? '') ?: null,
+            trim($_POST['homepage']  ?? '') ?: null,
+            (int)($_POST['id'] ?? 0),
+       ]);
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#emisoras');
     exit;
 }
 if ($act === 'sub_activate' && ($_POST['csrf'] ?? '') === $csrf) {
@@ -202,7 +286,8 @@ if (isset($_GET['ajax'])) {
 // ── Consultas ─────────────────────────────────────────────────────────────────
 
 $stats = [
-    'total'      => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1')->fetchColumn(),
+    'total'      => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1 AND COALESCE(activa,1)=1')->fetchColumn(),
+    'de_baja'    => (int)$db->query('SELECT COUNT(*) FROM stations WHERE approved=1 AND COALESCE(activa,1)=0')->fetchColumn(),
     'ok'         => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
     'icy'        => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
     'icy_activo' => (int)$db->query("SELECT COUNT(*) FROM icy_cache WHERE supported=1 AND stream_title IS NOT NULL AND stream_title!=''")->fetchColumn(),
@@ -292,6 +377,15 @@ $pendientes_crawler = $db->query(
      LEFT JOIN stream_status ss ON ss.station_id = s.id
      WHERE s.approved = 1 AND ss.station_id IS NULL
      ORDER BY s.created_at DESC"
+)->fetchAll(PDO::FETCH_ASSOC);
+
+// ABM completo de emisoras — TODO el catálogo (activas y de baja), nunca se borra nada acá.
+$emisoras_todas = $db->query(
+    "SELECT s.*, ss.estado
+     FROM stations s
+     LEFT JOIN stream_status ss ON ss.station_id = s.id
+     WHERE s.approved = 1
+     ORDER BY s.nombre COLLATE NOCASE"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Seguimiento especial: en observación, o con contacto privado cargado
@@ -515,6 +609,48 @@ function station_meta_row(array $s, string $csrf, string $volver, string $motivo
     <?php
 }
 
+// Fila de emisora para la pestaña Emisoras (ABM completo): toggle alta/baja
+// (nunca DELETE) + edición de campos core (nombre/url/provincia/homepage).
+function emisora_abm_row(array $s, string $csrf): void {
+    $activa = (int)($s['activa'] ?? 1) === 1;
+    ?>
+    <tr>
+      <td>
+        <?= h($s['nombre']) ?>
+        <?php if (!$activa): ?><span title="De baja" style="opacity:.6">🚫</span><?php endif; ?>
+        <br><span style="font-size:11px;color:var(--muted)"><?= h($s['slug']) ?></span>
+      </td>
+      <td class="url" style="max-width:220px"><a href="<?= h($s['url']) ?>" target="_blank" rel="noopener"><?= h($s['url']) ?></a></td>
+      <td><?= h($s['provincia'] ?? '—') ?></td>
+      <td><?= $activa ? '<span class="badge-ok">Alta</span>' : '<span class="badge-err">Baja</span>' ?></td>
+      <td style="font-size:12px"><?= h(date('d/m/Y', strtotime($s['created_at'] ?? 'now'))) ?></td>
+      <td style="font-size:12px"><?= $s['ultimo_cambio'] ? h(date('d/m/Y H:i', strtotime($s['ultimo_cambio']))) : '—' ?></td>
+      <td style="white-space:nowrap">
+        <form method="post" class="inline">
+          <input type="hidden" name="action" value="set_activa">
+          <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+          <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+          <input type="hidden" name="activa" value="<?= $activa ? '0' : '1' ?>">
+          <button class="<?= $activa ? 'btn-del' : 'btn-ok' ?>" type="submit"><?= $activa ? 'Dar de baja' : 'Reactivar' ?></button>
+        </form>
+        <details style="margin-top:4px">
+          <summary style="cursor:pointer;color:var(--accent)">Editar</summary>
+          <form method="post" style="margin-top:8px;display:flex;flex-direction:column;gap:6px;min-width:220px">
+            <input type="hidden" name="action" value="editar_emisora">
+            <input type="hidden" name="id" value="<?= (int)$s['id'] ?>">
+            <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+            <input type="text" name="nombre" placeholder="Nombre" value="<?= h($s['nombre']) ?>" required>
+            <input type="text" name="url" placeholder="URL del stream" value="<?= h($s['url']) ?>" required>
+            <input type="text" name="provincia" placeholder="Provincia" value="<?= h($s['provincia'] ?? '') ?>">
+            <input type="text" name="homepage" placeholder="Homepage" value="<?= h($s['homepage'] ?? '') ?>">
+            <button class="btn-ok" type="submit">Guardar</button>
+          </form>
+        </details>
+      </td>
+    </tr>
+    <?php
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -623,6 +759,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <!-- ── Tab bar ──────────────────────────────────────────────────────────────── -->
 <div class="tab-bar" id="tab-bar">
   <button class="tab-btn" data-tab="resumen">Resumen</button>
+  <button class="tab-btn" data-tab="emisoras">📻 Emisoras</button>
   <button class="tab-btn" data-tab="telegram">Telegram</button>
   <button class="tab-btn" data-tab="encuestas">Encuestas</button>
   <button class="tab-btn" data-tab="compartidos">Compartidos</button>
@@ -657,6 +794,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <h2 id="resumen">Resumen</h2>
   <div class="cards">
     <div class="card"><div class="v" id="stat-total"><?= $stats['total'] ?></div><div class="l">Emisoras activas</div></div>
+    <div class="card"><div class="v <?= $stats['de_baja'] > 0 ? 'neu' : '' ?>"><?= $stats['de_baja'] ?></div><div class="l">Emisoras de baja</div></div>
     <div class="card"><div class="v badge-ok" id="stat-ok"><?= $stats['ok'] ?></div><div class="l">Streams OK</div></div>
     <div class="card"><div class="v" id="stat-icy"><?= $stats['icy'] ?></div><div class="l">Con ICY</div></div>
     <div class="card"><div class="v pos" id="stat-icy-activo"><?= $stats['icy_activo'] ?></div><div class="l">ICY con título ahora</div></div>
@@ -668,6 +806,50 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     <div class="card"><div class="v pos"><?= $sub_stats['activos'] ?></div><div class="l">Suscriptores activos</div></div>
     <div class="card"><div class="v <?= $sub_stats['pendientes'] > 0 ? 'neu' : '' ?>"><?= $sub_stats['pendientes'] ?></div><div class="l">Pendientes activación</div></div>
   </div>
+</div>
+
+<!-- ══ Tab: Emisoras (ABM completo) ══════════════════════════════════════════ -->
+<div class="tab-content" id="tab-emisoras">
+  <h2 id="emisoras">Emisoras — ABM (<?= count($emisoras_todas) ?>)</h2>
+  <p style="color:var(--muted);font-size:12px;margin-bottom:12px">
+    Catálogo completo. Las emisoras <strong>nunca se borran</strong> — "Dar de baja" solo las oculta
+    del sitio público (deja de aparecer en el listado) y se puede reactivar en cualquier momento.
+    "Último cambio" es la fecha del alta/baja más reciente, no de cualquier edición.
+  </p>
+
+  <details style="margin-bottom:16px">
+    <summary style="cursor:pointer;color:var(--accent);font-weight:600">➕ Nueva emisora (alta manual)</summary>
+    <?php if (!empty($alta_err)): ?><p class="empty" style="color:var(--red)"><?= h($alta_err) ?></p><?php endif; ?>
+    <form method="post" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end">
+      <input type="hidden" name="action" value="crear_emisora">
+      <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+      <div><label style="font-size:11px;color:var(--muted);display:block">Nombre *</label>
+        <input type="text" name="nombre" required></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block">URL del stream *</label>
+        <input type="text" name="url" required style="min-width:260px"></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block">Slug (opcional, se genera solo)</label>
+        <input type="text" name="slug"></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block">Provincia</label>
+        <input type="text" name="provincia"></div>
+      <div><label style="font-size:11px;color:var(--muted);display:block">Homepage</label>
+        <input type="text" name="homepage"></div>
+      <button class="btn-ok" type="submit">Crear</button>
+    </form>
+  </details>
+
+  <?php if ($emisoras_todas): ?>
+  <table id="dt-emisoras" class="dt">
+    <thead><tr>
+      <th>Nombre</th><th data-nosort="1">URL</th><th>Provincia</th><th>Estado</th>
+      <th>Alta</th><th>Último cambio</th><th data-nosort="1">Acción</th>
+    </tr></thead>
+    <tbody>
+    <?php foreach ($emisoras_todas as $s): emisora_abm_row($s, $csrf); endforeach; ?>
+    </tbody>
+  </table>
+  <?php else: ?>
+  <p class="empty">No hay emisoras cargadas.</p>
+  <?php endif; ?>
 </div>
 
 <!-- ══ Tab: Telegram ═════════════════════════════════════════════════════════ -->
