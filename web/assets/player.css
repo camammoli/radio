@@ -306,7 +306,11 @@ body.light .rp-qr-modal    { background: rgba(0,0,0,.4); }
 .rp-tg-btn {
   position: fixed;
   left: 16px;
-  bottom: 88px;
+  /* env(safe-area-inset-bottom): en iOS Safari la barra inferior del navegador
+     puede tapar elementos fixed pegados abajo hasta que el usuario hace scroll
+     (recién ahí el navegador la esconde). Con viewport-fit=cover (head.php) +
+     esto, el botón queda siempre por encima de esa barra, sin depender del scroll. */
+  bottom: calc(88px + env(safe-area-inset-bottom));
   z-index: 140;
   display: inline-flex;
   align-items: center;
@@ -327,9 +331,15 @@ body.light .rp-qr-modal    { background: rgba(0,0,0,.4); }
 }
 .rp-tg-btn svg { flex: none; display: block; }
 
-@media (max-width: 480px) {
+/* En pantallas chicas (celular) queda solo el ícono, circular y compacto —
+   menos invasivo sobre el listado de emisoras. */
+@media (max-width: 640px) {
   .rp-tg-btn span { display: none; }
-  .rp-tg-btn { padding: 10px; }
+  .rp-tg-btn {
+    width: 44px; height: 44px; padding: 0;
+    align-items: center; justify-content: center;
+    gap: 0;
+  }
 }
 
 body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
@@ -339,7 +349,7 @@ body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 .rp-wa-btn {
   position: fixed;
   left: 16px;
-  bottom: 144px;
+  bottom: calc(144px + env(safe-area-inset-bottom));
   z-index: 140;
   display: inline-flex;
   align-items: center;
@@ -360,9 +370,13 @@ body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 }
 .rp-wa-btn svg { flex: none; display: block; }
 
-@media (max-width: 480px) {
+@media (max-width: 640px) {
   .rp-wa-btn span { display: none; }
-  .rp-wa-btn { padding: 10px; }
+  .rp-wa-btn {
+    width: 44px; height: 44px; padding: 0;
+    align-items: center; justify-content: center;
+    gap: 0;
+  }
 }
 
 body.light .rp-wa-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }

@@ -37,6 +37,32 @@ simple-icons (no dibujado a mano, para que sea exacto). Apilado arriba del botó
 - `web/assets/player.css` (estilos `.rp-wa-btn`)
 - `web/pages/listing.php`, `web/pages/station.php` (segundo include)
 
+### Actualización — mismo día — fix mobile: botones tapados hasta hacer scroll
+
+Carlos reportó que en mobile había que scrollear hasta el final para ver los botones. Diagnóstico
+confirmado con Puppeteer emulando iPhone (`getBoundingClientRect` mostró `position:fixed` correcto,
+sin ancestros con `transform`/`filter` rotos) — la posición en sí estaba bien. Causa real: en iOS
+Safari la barra inferior del navegador puede tapar elementos `fixed` pegados abajo hasta que el
+usuario hace scroll (recién ahí Safari la esconde) — headless Chrome no reproduce esto porque no
+simula esa barra dinámica, por eso no aparecía en las capturas locales.
+
+**Fix (técnica estándar de WebKit para este caso exacto):**
+- `viewport-fit=cover` agregado al meta viewport (`components/head.php`) — sin esto, `env()` no
+  devuelve nada.
+- `bottom: calc(88px + env(safe-area-inset-bottom))` (y `144px` para WhatsApp) en vez de un valor
+  fijo — empuja el botón por encima de la barra dinámica de Safari, sin depender de que el usuario
+  scrollee para revelarlo.
+- De paso, pedido explícito de Carlos: en pantallas ≤640px (subido desde 480px) los botones quedan
+  solo el ícono, circulares de 44×44px (mínimo recomendado de touch target), más compactos que la
+  pastilla con texto.
+
+Verificado con captura real de producción (Puppeteer + emulación iPhone 13, viewport 390×844): los
+dos círculos quedan dentro del viewport visible sin scroll, `44×44px`, sin superposición entre ellos.
+
+### Archivos afectados (esta actualización)
+- `web/components/head.php` (viewport-fit=cover)
+- `web/assets/player.css` (env safe-area + breakpoint ícono-solo a 640px)
+
 ---
 
 ## TKT-0735 — 2026-08-25 — Pestaña "Emisoras" (ABM completo, nunca DELETE) + revisión de backups y visitas
