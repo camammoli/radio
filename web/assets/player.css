@@ -297,3 +297,39 @@
 body.light .rp-bar         { box-shadow: 0 -4px 16px rgba(0,0,0,.1); }
 body.light .rp-survey      { box-shadow: 0 8px 24px rgba(0,0,0,.12); }
 body.light .rp-qr-modal    { background: rgba(0,0,0,.4); }
+
+/* ── Botón flotante de Telegram ──────────────────────────────────────────── */
+/* Colores propios de Telegram (no el tema del sitio) — a proposito, para que
+   se reconozca de un vistazo. left:16px + bottom:88px para no chocar nunca
+   con la barra del reproductor (bottom:0) ni con el toast de encuesta (right:16px). */
+
+.rp-tg-btn {
+  position: fixed;
+  left: 16px;
+  bottom: 88px;
+  z-index: 140;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #29a9eb;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 16px 10px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.rp-tg-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.4);
+}
+.rp-tg-btn svg { flex: none; display: block; }
+
+@media (max-width: 480px) {
+  .rp-tg-btn span { display: none; }
+  .rp-tg-btn { padding: 10px; }
+}
+
+body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }

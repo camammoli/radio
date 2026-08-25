@@ -452,5 +452,6 @@ if ($prov) {
 }());
 </script>
 <?php require __DIR__ . '/../components/privacy.php'; ?>
+<?php require __DIR__ . '/../components/telegram_button.php'; ?>
 </body>
 </html>

@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## TKT-0736 — 2026-08-25 — Botón flotante de contacto por Telegram
+
+Nuevo componente `components/telegram_button.php`, incluido en `listing.php` y `station.php` (todas
+las páginas públicas, menos el error temprano de estación no encontrada). Link a `https://t.me/Amammoli`
+(usuario público, nunca el número de teléfono). Ícono SVG inline del avión de papel de Telegram en
+blanco sobre fondo `#29a9eb` (color de marca de Telegram, no el `--accent` del sitio, a propósito).
+
+Posición fija `left:16px; bottom:88px` — elegida para no chocar nunca con la barra del reproductor
+(`bottom:0`, aparece/desaparece según si hay algo sonando) ni con el toast de encuesta (`right:16px`).
+En mobile (`max-width:480px`) el texto se oculta y queda solo el ícono circular.
+
+Probado local (PHP + copia de la DB) antes de subir: sin errores de sintaxis, el botón renderiza en
+ambas páginas con el link correcto. Primer intento del ícono tenía un círculo blanco de fondo propio
+que quedaba duplicado sobre el fondo ya azul del botón — corregido a solo el avión en blanco.
+
+### Archivos afectados
+- `web/components/telegram_button.php` (nuevo)
+- `web/assets/player.css` (estilos `.rp-tg-btn`)
+- `web/pages/listing.php`, `web/pages/station.php` (include antes de `</body>`)
+
+---
+
 ## TKT-0735 — 2026-08-25 — Pestaña "Emisoras" (ABM completo, nunca DELETE) + revisión de backups y visitas
 
 ### Contexto
