@@ -24,6 +24,19 @@ que quedaba duplicado sobre el fondo ya azul del botón — corregido a solo el 
 - `web/assets/player.css` (estilos `.rp-tg-btn`)
 - `web/pages/listing.php`, `web/pages/station.php` (include antes de `</body>`)
 
+### Actualización — mismo día — botón de WhatsApp apilado
+
+Carlos pidió lo mismo para WhatsApp, sin exponer el número de teléfono. Usó el link "click to chat"
+que WhatsApp genera con nombre de usuario (`wa.me/message/BD42PKGXON2QI1`) — no lleva el número en
+la URL. Nuevo componente `web/components/whatsapp_button.php`, ícono oficial bajado de
+simple-icons (no dibujado a mano, para que sea exacto). Apilado arriba del botón de Telegram
+(`bottom:144px` vs `bottom:88px`), mismo ancho de pill, verde `#25D366` de marca WhatsApp.
+
+### Archivos afectados (actualización)
+- `web/components/whatsapp_button.php` (nuevo)
+- `web/assets/player.css` (estilos `.rp-wa-btn`)
+- `web/pages/listing.php`, `web/pages/station.php` (segundo include)
+
 ---
 
 ## TKT-0735 — 2026-08-25 — Pestaña "Emisoras" (ABM completo, nunca DELETE) + revisión de backups y visitas

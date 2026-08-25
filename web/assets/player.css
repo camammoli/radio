@@ -333,3 +333,36 @@ body.light .rp-qr-modal    { background: rgba(0,0,0,.4); }
 }
 
 body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+/* ── Botón flotante de WhatsApp (apilado arriba del de Telegram) ─────────── */
+
+.rp-wa-btn {
+  position: fixed;
+  left: 16px;
+  bottom: 144px;
+  z-index: 140;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #25D366;
+  color: #fff;
+  text-decoration: none;
+  padding: 10px 16px 10px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  transition: transform .15s, box-shadow .15s;
+}
+.rp-wa-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.4);
+}
+.rp-wa-btn svg { flex: none; display: block; }
+
+@media (max-width: 480px) {
+  .rp-wa-btn span { display: none; }
+  .rp-wa-btn { padding: 10px; }
+}
+
+body.light .rp-wa-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
