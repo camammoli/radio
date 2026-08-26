@@ -4,6 +4,25 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## 🚨 TKT-0703 — 2026-08-26 — DB corrupta otra vez (estadisticas.php 500) + desactivados los 7 workflows de GitHub Actions
+
+Carlos reportó páginas del sitio dando 500. Diagnóstico: `estadisticas.php` → 500 (confirmado con curl), resto del sitio (listado, admin, API, páginas de emisora) → 200 normal. Se descargó la DB de producción (los 3 archivos, `.sqlite`+`-wal`+`-shm`) y `PRAGMA integrity_check` confirma corrupción real: `idx_events_notified` (índice, page 5108) más varias páginas del árbol B-tree en la zona de `stream_history`/`station_events` (pages 2754, 6688, decenas de celdas afectadas) — mismo patrón que los 5+ incidentes previos documentados (TKT-0687/0690/0693/0695/0701), no se investigó más a fondo el mapeo exacto de páginas esta vez.
+
+**Acción tomada a pedido explícito de Carlos ("apagá todos los crons que tenemos en github, son una máquina de corromper la base de datos"):** los 7 workflows de GitHub Actions del repo `camammoli/radio` quedaron **desactivados manualmente** (`gh workflow disable`, estado `disabled_manually`, reversible con `gh workflow enable`):
+- `check-streams-v2.yml` (Verificar streams v2)
+- `close-orphan-sessions.yml` (Cerrar sesiones huérfanas)
+- `competitor-scan.yml` (Competitor Scan)
+- `dedupe-streamtheworld.yml` (Deduplicar streamtheworld)
+- `enrich-v2.yml` (Enriquecer emisoras v2)
+- `gist-sync.yml` (Sincronizar gist de emisoras)
+- `learn-patterns.yml` (Aprender patrones de programas)
+
+**No tocado:** el cron de cPanel `icy_refresh.php` (cada 10 min, fuera de GitHub Actions) sigue corriendo — Carlos pidió específicamente "los crons de github", este no lo es. Tampoco se recuperó la DB corrupta todavía (`estadisticas.php` sigue en 500) — queda pendiente de que Carlos decida si se recupera ahora con el procedimiento ya probado (`.recover` → rebuild → validar → subida atómica) o se espera a definir qué hacer con los workflows antes de volver a arreglarla.
+
+**Contexto para la próxima sesión:** con los workflows de GitHub Actions parados, la próxima corrupción (si ocurre) va a poder atribuirse con certeza a otra causa (cron cPanel, escritura PHP en vivo, o algo del hosting) — es la primera vez que se aísla esta variable del todo. Vale la pena dejarlos apagados un tiempo y ver si el sitio deja de corromperse antes de decidir cómo reactivarlos (con qué fix).
+
+---
+
 ## TKT-0702 — 2026-08-25 — Fix Cafecito: clic marcaba "nunca más" sin confirmar donación real
 
 A partir del análisis de monetización de este día, Carlos reportó que de 4 clics reales en el botón
