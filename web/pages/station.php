@@ -190,6 +190,8 @@ if ($prov) {
   <div class="share-row-st">
     <button class="sbtn" id="sbtn-copy">🔗 Copiar link</button>
     <a class="sbtn" id="sbtn-wa" href="https://wa.me/?text=<?= urlencode('📻 Escuchá ' . $s['nombre'] . ' en vivo 👉 ' . $pg_url) ?>" target="_blank" rel="noopener">💬 WhatsApp</a>
+    <a class="sbtn" id="sbtn-x" href="https://twitter.com/intent/tweet?text=<?= urlencode('📻 Estoy escuchando ' . $s['nombre'] . ' en vivo') ?>&url=<?= urlencode($pg_url) ?>" target="_blank" rel="noopener">𝕏 X</a>
+    <a class="sbtn" id="sbtn-tg" href="https://t.me/share/url?url=<?= urlencode($pg_url) ?>&text=<?= urlencode('📻 Estoy escuchando ' . $s['nombre'] . ' en vivo') ?>" target="_blank" rel="noopener">✈️ Telegram</a>
     <button class="sbtn" id="sbtn-qr">⬛ QR</button>
   </div>
 
@@ -434,6 +436,14 @@ if ($prov) {
 
   document.getElementById('sbtn-wa').addEventListener('click', function () {
     pingShare('wa');
+  });
+
+  document.getElementById('sbtn-x').addEventListener('click', function () {
+    pingShare('x');
+  });
+
+  document.getElementById('sbtn-tg').addEventListener('click', function () {
+    pingShare('tg');
   });
 
   var qrModal = document.getElementById('qr-modal-st');

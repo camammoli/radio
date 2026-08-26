@@ -210,6 +210,8 @@ $ld_itemlist = [
   <div id="share-row">
     <button class="share-btn" id="btn-copy">🔗 Link</button>
     <a class="share-btn" id="btn-wa" href="#" target="_blank" rel="noopener">💬 WhatsApp</a>
+    <a class="share-btn" id="btn-x" href="#" target="_blank" rel="noopener">𝕏 X</a>
+    <a class="share-btn" id="btn-tg" href="#" target="_blank" rel="noopener">✈️ Telegram</a>
     <button class="share-btn" id="btn-qr">⬛ QR</button>
     <a id="btn-vlc" href="#" class="rp-vlc">📡 VLC</a>
   </div>
@@ -263,6 +265,8 @@ var btnVlc      = document.getElementById('btn-vlc');
 var shareRow    = document.getElementById('share-row');
 var btnCopy     = document.getElementById('btn-copy');
 var btnWa       = document.getElementById('btn-wa');
+var btnX        = document.getElementById('btn-x');
+var btnTg       = document.getElementById('btn-tg');
 var btnQr       = document.getElementById('btn-qr');
 var qrModal     = document.getElementById('qr-modal');
 var lBadge      = document.getElementById('listeners-badge');
@@ -427,6 +431,12 @@ function updateShare(slug, nombre) {
 
   btnWa.href = 'https://wa.me/?text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + '\n👉 ' + url);
   btnWa.onclick = function () { pingShare(slug, 'wa'); };
+
+  btnX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + ' en vivo') + '&url=' + encodeURIComponent(url);
+  btnX.onclick = function () { pingShare(slug, 'x'); };
+
+  btnTg.href = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + ' en vivo');
+  btnTg.onclick = function () { pingShare(slug, 'tg'); };
 
   btnQr.onclick = function () {
     document.getElementById('qr-img').src  = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);

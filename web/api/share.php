@@ -35,9 +35,9 @@ $st_id  = $st ? (int)$st['id'] : null;
 $db->prepare('INSERT INTO shares (station_id, slug, channel, ip_hash) VALUES (?,?,?,?)')
    ->execute([$st_id, $slug, $channel, ip_hash(client_ip())]);
 
-$icons = ['copy' => '🔗', 'wa' => '💬', 'qr' => '⬛'];
+$icons = ['copy' => '🔗', 'wa' => '💬', 'qr' => '⬛', 'x' => '𝕏', 'tg' => '✈️'];
 $icon  = $icons[$channel] ?? '📤';
-$label = ['copy' => 'Copió el link', 'wa' => 'Compartió por WhatsApp', 'qr' => 'Abrió el QR'][$channel] ?? 'Compartió';
+$label = ['copy' => 'Copió el link', 'wa' => 'Compartió por WhatsApp', 'qr' => 'Abrió el QR', 'x' => 'Compartió en X', 'tg' => 'Compartió por Telegram'][$channel] ?? 'Compartió';
 
 if (notify_active($db) && TG_TOKEN && TG_CHAT_ID) {
     $text = "$icon $label: $nombre";
