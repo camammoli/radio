@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           ref: master
 
@@ -31,3 +31,15 @@ jobs:
           TG_CHAT_ID:    ${{ secrets.TG_CHAT_ID }}
           RADIO_DB_PATH: db/radio_v2.sqlite
         run: python3 crawlers/competitor_scan.py
+
+      # El Telegram trunca a 20 items por seccion — esto sube el listado
+      # completo (reports/competitor_scan_full.json) como artifact, asi no
+      # se pierde el resto como pasaba antes (ver TKT-0715).
+      - name: Subir reporte completo como artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: competitor-scan-full-${{ github.run_number }}
+          path: reports/competitor_scan_full.json
+          retention-days: 90
+          if-no-files-found: ignore

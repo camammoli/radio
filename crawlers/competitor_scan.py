@@ -335,12 +335,33 @@ def build_report(source_name: str, competitor_count: int,
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def save_full_report(full_results: dict):
+    """
+    Guarda el resultado COMPLETO (sin el recorte de MAX_ITEMS que tiene el
+    mensaje de Telegram) a un JSON — el mensaje de Telegram se manda igual
+    truncado a 20 por sección para no hacerlo ilegible, pero antes ese resto
+    se perdía para siempre (no quedaba ni en la DB ni en ningún log). Este
+    archivo se sube como artifact del workflow (ver competitor-scan.yml).
+    """
+    out_dir = os.path.join(os.path.dirname(__file__), '..', 'reports')
+    os.makedirs(out_dir, exist_ok=True)
+    out_path = os.path.join(out_dir, 'competitor_scan_full.json')
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump({
+            'generated_at': datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ'),
+            'sources': full_results,
+        }, f, ensure_ascii=False, indent=1)
+    print(f'  Reporte completo guardado en {out_path}')
+
+
 def main():
     db_path = DB_PATH
     if '--db' in sys.argv:
         db_path = sys.argv[sys.argv.index('--db') + 1]
     if not os.path.exists(db_path):
         print(f'ERROR: DB no encontrada en {db_path}'); sys.exit(1)
+
+    full_results = {}
 
     db_stations = load_db_stations(db_path)
     print(f'DB: {len(db_stations)} emisoras aprobadas')
@@ -354,6 +375,7 @@ def main():
     if rb_stations:
         result = compare(rb_stations, db_stations)
         print(f'  Nuevas: {len(result["new"])}  Alt URLs: {len(result["alt_urls"])}')
+        full_results['radio-browser.info'] = result
         msg = build_report('radio-browser.info', len(rb_stations), len(db_stations), result)
         send_telegram(msg)
         time.sleep(2)
@@ -385,6 +407,7 @@ def main():
 
         result = compare(stations, db_stations)
         print(f'  Nuevas: {len(result["new"])}  Alt: {len(result["alt_urls"])}')
+        full_results[target['name']] = result
 
         # Solo reportar si hay novedades (o si es la primera vez)
         if result['new'] or result['alt_urls'] or len(result['existing']) < 5:
@@ -398,6 +421,9 @@ def main():
     # Resumen de dominios descubiertos si no se incluyeron en ningún reporte anterior
     if all_discovered:
         print(f'\n🕵️ Dominios nuevos descubiertos: {sorted(all_discovered)}')
+
+    if full_results:
+        save_full_report(full_results)
 
     print('\nListo.')
 
