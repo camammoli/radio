@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0704 — 2026-08-26 — Compartir por X y Telegram (además de WhatsApp/link/QR)
+
+A pedido de Carlos ("agregale a los compartidos la posibilidad de compartir lo que estás escuchando por
+redes sociales"). `share.php` ya aceptaba cualquier `channel` como texto libre (sin whitelist) — solo
+hizo falta sumar íconos/labels para `x` y `tg` en el mapeo de notificación a Telegram.
+
+**X (Twitter):** `https://twitter.com/intent/tweet?text=...&url=...` — intent web público, sin API key.
+**Telegram:** `https://t.me/share/url?url=...&text=...` — mismo patrón, sin API key.
+Mismo mensaje que WhatsApp ("📻 Estoy escuchando {nombre} en vivo"), agregados en `listing.php` (barra
+del reproductor) y `station.php` (página de emisora), mismo patrón de botones ya existente (`.share-btn`
+/`.sbtn`, ambos con `flex-wrap` así que no rompen el layout con 2 botones más).
+
+**Facebook quedó afuera a propósito:** su diálogo de compartir depende de tener meta tags Open Graph
+bien armados para mostrar una preview decente — no es "fácil de implementar" en el mismo sentido que los
+otros dos, que son una sola URL sin requisitos previos.
+
+Verificado sintaxis con `php -l` (php8.2 descargado sin root, mismo truco de siempre) antes de subir.
+Probado en producción: los botones aparecen con las URLs correctas y `api/share?channel=x` responde
+`{"ok":true}`.
+
+---
+
 ## 🚨 TKT-0703 — 2026-08-26 — DB corrupta otra vez (estadisticas.php 500) + desactivados los 7 workflows de GitHub Actions
 
 Carlos reportó páginas del sitio dando 500. Diagnóstico: `estadisticas.php` → 500 (confirmado con curl), resto del sitio (listado, admin, API, páginas de emisora) → 200 normal. Se descargó la DB de producción (los 3 archivos, `.sqlite`+`-wal`+`-shm`) y `PRAGMA integrity_check` confirma corrupción real: `idx_events_notified` (índice, page 5108) más varias páginas del árbol B-tree en la zona de `stream_history`/`station_events` (pages 2754, 6688, decenas de celdas afectadas) — mismo patrón que los 5+ incidentes previos documentados (TKT-0687/0690/0693/0695/0701), no se investigó más a fondo el mapeo exacto de páginas esta vez.
