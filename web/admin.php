@@ -145,13 +145,13 @@ if ($act === 'toggle_notify' && ($_POST['csrf'] ?? '') === $csrf) {
     exit;
 }
 if ($act === 'approve' && ($_POST['csrf'] ?? '') === $csrf) {
-    $db->prepare('UPDATE stations SET approved=1, updated_at=datetime("now") WHERE id=? AND source="sugerencia" AND approved=0')
+    $db->prepare("UPDATE stations SET approved=1, updated_at=datetime('now') WHERE id=? AND source IN ('sugerencia','radio-browser') AND approved=0")
        ->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#sugerencias');
     exit;
 }
 if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
-    $db->prepare('DELETE FROM stations WHERE id=? AND source="sugerencia" AND approved=0')
+    $db->prepare("DELETE FROM stations WHERE id=? AND source IN ('sugerencia','radio-browser') AND approved=0")
        ->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#sugerencias');
     exit;
@@ -295,11 +295,11 @@ $stats = [
     'plays_total'=> (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
     'listeners'  => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
     'surveys'    => (int)$db->query('SELECT COUNT(*) FROM surveys')->fetchColumn(),
-    'suger_pend' => (int)$db->query("SELECT COUNT(*) FROM stations WHERE source='sugerencia' AND approved=0")->fetchColumn(),
+    'suger_pend' => (int)$db->query("SELECT COUNT(*) FROM stations WHERE source IN ('sugerencia','radio-browser') AND approved=0")->fetchColumn(),
     'problemas'  => (int)$db->query(
         "SELECT COUNT(DISTINCT s.id) FROM stations s
          LEFT JOIN stream_status ss ON ss.station_id = s.id
-         WHERE s.approved = 0
+         WHERE (s.approved = 0 AND s.source NOT IN ('sugerencia','radio-browser'))
             OR ss.estado IN ('muerto','timeout')
             OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))"
     )->fetchColumn(),
@@ -353,19 +353,24 @@ $station_surveys = $db->query(
 
 // Sugerencias pendientes
 try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
+// "Sugerencias pendientes" incluye lo que escribe la gente (source=sugerencia)
+// Y lo que encuentran los crawlers de descubrimiento (source=radio-browser,
+// approved=0 hasta que se revisan acá) — mismo flujo de aprobar/rechazar.
 $sugerencias = $db->query(
-    "SELECT id, nombre, url, provincia, homepage, contacto, created_at
-     FROM stations WHERE source='sugerencia' AND approved=0
+    "SELECT id, nombre, url, provincia, homepage, contacto, source, created_at
+     FROM stations WHERE source IN ('sugerencia','radio-browser') AND approved=0
      ORDER BY created_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
-// Radios con problemas: ocultas, muertas/timeout, o reportadas en los últimos 14 días
+// Radios con problemas: ocultas, muertas/timeout, o reportadas en los últimos 14 días.
+// Las approved=0 de sugerencia/radio-browser NO entran acá — ya tienen su propio
+// lugar (pestaña Sugerencias) con botones de aprobar/rechazar.
 $problemas = $db->query(
     "SELECT s.*, ss.estado,
             (SELECT COUNT(*) FROM reportes r WHERE r.station_id = s.id AND r.created_at >= datetime('now','-14 days')) AS reportes_recientes
      FROM stations s
      LEFT JOIN stream_status ss ON ss.station_id = s.id
-     WHERE s.approved = 0
+     WHERE (s.approved = 0 AND s.source NOT IN ('sugerencia','radio-browser'))
         OR ss.estado IN ('muerto','timeout')
         OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))
      ORDER BY s.updated_at DESC"
@@ -995,7 +1000,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <!-- ══ Tab: Compartidos ══════════════════════════════════════════════════════ -->
 <div class="tab-content" id="tab-compartidos">
   <h2 id="shares">Compartidos recientes (últimas 100)</h2>
-  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR']; ?>
+  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram']; ?>
   <table id="dt-compartidos" class="dt">
     <thead><tr>
       <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th>
@@ -1109,7 +1114,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php if ($sugerencias): ?>
   <table id="dt-sugerencias" class="dt">
     <thead><tr>
-      <th>Nombre</th><th data-nosort="1">URL</th><th data-group="Provincia">Provincia</th><th>Contacto</th><th>Recibida</th><th data-nosort="1">Acción</th>
+      <th>Nombre</th><th data-nosort="1">URL</th><th data-group="Provincia">Provincia</th><th data-group="Origen">Origen</th><th>Contacto</th><th>Recibida</th><th data-nosort="1">Acción</th>
     </tr></thead>
     <tbody>
     <?php foreach ($sugerencias as $sg): ?>
@@ -1122,6 +1127,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       </td>
       <td class="url"><a href="<?= h($sg['url']) ?>" target="_blank" rel="noopener"><?= h($sg['url']) ?></a></td>
       <td><?= h($sg['provincia'] ?? '—') ?></td>
+      <td style="font-size:12px;color:var(--muted)"><?= $sg['source'] === 'radio-browser' ? '🔍 Radio Browser' : '👤 Sugerida' ?></td>
       <td style="font-size:12px"><?= $sg['contacto'] ? h($sg['contacto']) : '<span style="color:var(--muted)">—</span>' ?></td>
       <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($sg['created_at']) ?></td>
       <td style="white-space:nowrap">
@@ -1713,12 +1719,12 @@ window.DT = (function () {
 
   function botBadge(hops) {
     hops = parseInt(hops, 10) || 0;
-    if (hops >= 12) return '<span title="' + hops + ' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖</span>';
-    if (hops >= 6)  return '<span title="' + hops + ' emisoras distintas en 1h — station-hopping, revisar">🤔</span>';
-    return '';
+    if (hops >= 12) return '<span title="' + hops + ' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖 Bot</span>';
+    if (hops >= 6)  return '<span title="' + hops + ' emisoras distintas en 1h — station-hopping, revisar">🤔 Probable bot</span>';
+    return '<span style="color:var(--muted)">Persona</span>';
   }
 
-  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR'};
+  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR', x: '𝕏 X', tg: '✈️ Telegram'};
 
   function upd(id, val) {
     var el = document.getElementById(id);
@@ -1745,8 +1751,11 @@ window.DT = (function () {
         var pb = document.getElementById('plays-body');
         if (pb && d.plays) {
           pb.innerHTML = d.plays.map(function (p) {
+            var estado = p.is_active
+              ? '<span style="color:#22c55e">▶ Reproduciendo</span>'
+              : '<span style="color:var(--muted)">Terminada</span>';
             var dur = p.is_active
-              ? '<span style="color:#22c55e">▶ ' + esc(fmtDur(p.duration_secs)) + '</span>'
+              ? '<span style="color:#22c55e">' + esc(fmtDur(p.duration_secs)) + '</span>'
               : esc(fmtDur(p.duration_secs != null ? p.duration_secs : null));
             var nom = p.slug
               ? '<a href="/radio/' + esc(p.slug) + '/" target="_blank">' + esc(p.nombre || '—') + '</a>'
@@ -1755,10 +1764,11 @@ window.DT = (function () {
             return '<tr>'
               + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
               + '<td>' + nom + '</td>'
+              + '<td style="font-size:12px;white-space:nowrap">' + estado + '</td>'
               + '<td style="font-size:12px;white-space:nowrap">' + dur + '</td>'
               + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
               + '<td style="font-size:14px;text-align:center">' + visitorBadge(p.dias_activos) + '</td>'
-              + '<td style="font-size:14px;text-align:center">' + botBadge(p.hops_1h) + '</td>'
+              + '<td style="font-size:12px;text-align:center">' + botBadge(p.hops_1h) + '</td>'
               + '<td style="font-size:12px;color:var(--muted)">' + (p.provincia ? '📍 ' + esc(p.provincia) : '—') + '</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'

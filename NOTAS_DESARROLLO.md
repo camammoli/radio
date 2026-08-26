@@ -4,6 +4,44 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## 🐛 TKT-0718 — 2026-08-26 — Fix real de TKT-0717: 2 bugs encontrados por Carlos ("no veo las nuevas" / "la agrupación no funciona bien")
+
+**Bug 1 — las 200 emisoras de TKT-0716 eran invisibles.** Se insertaron con `source='radio-browser'`,
+pero la pestaña que revisa candidatas pendientes (`$sugerencias`, "Sugerencias pendientes") solo
+filtraba `source='sugerencia'` — y los botones Aprobar/Rechazar tenían el mismo filtro hardcodeado en
+el SQL (`WHERE ... AND source="sugerencia"`), así que ni ampliando la lista hubieran funcionado los
+botones. Las 200 quedaban cayendo en la pestaña "Problemas" (que sí incluye `approved=0` sin filtrar
+por source), mezcladas con emisoras realmente muertas/reportadas — de ahí la sensación de "no las veo".
+
+**Fix:** `$sugerencias`, sus stats (`suger_pend`), y los handlers `approve`/`reject` ahora aceptan
+`source IN ('sugerencia','radio-browser')`. `$problemas` ahora **excluye** esa combinación (ya tiene
+su lugar propio) para no duplicar ni inflar ese conteo. Agregada columna "Origen" (👤 Sugerida / 🔍
+Radio Browser) en la tabla para poder distinguirlas y agruparlas.
+
+**Bug 2 — el agrupado de Reproducciones se rompía a los 10 segundos.** La tabla se refresca sola cada
+10s vía `?ajax=1`, pero el JS que arma las filas nuevas (`refreshAdmin()`) es un **duplicado manual**
+del render PHP — no se actualizó en TKT-0717. Consecuencia: apenas cargaba la página andaba bien (9→10
+columnas correctas), pero al primer refresh automático las filas volvían a tener 9 columnas contra un
+header de 10, corriendo todo el contenido una columna a la izquierda — el agrupado por "Reproduciendo"
+o "Tipo de oyente" quedaba leyendo la columna equivocada. Mismo problema con `botBadge()` (JS) que
+seguía sin el texto agregado en la versión PHP (`bot_badge()`), y con el mapa `CH`/`$ch_labels` de
+Compartidos que nunca se actualizó cuando se agregó X/Telegram en TKT-0704 — mostraban el código crudo
+('x'/'tg') en vez de la etiqueta linda.
+
+**Lección para la próxima vez:** este panel tiene **funciones PHP y JS que renderizan lo mismo por
+duplicado** (uno para la carga inicial server-side, otro para el refresh AJAX cada 10s) — cualquier
+cambio a una fila de Reproducciones o Compartidos tiene que tocar los dos lugares, o queda una mitad
+sin actualizar que solo se nota después de 10 segundos mirando la página (por eso no se detectó en la
+prueba local de TKT-0717 — el love-testing con `php -S` no tuvo el refresh automático corriendo el
+tiempo suficiente / no se pensó en probarlo).
+
+Verificado todo de nuevo local (misma copia real de la DB): las 200 aparecen en Sugerencias (202
+total), el botón Aprobar funciona de verdad sobre un `source='radio-browser'` (probado en la copia
+local, nunca tocó producción), "Problemas" bajó a 548 sin las pendientes mezcladas, y el JS de refresh
+ahora arma 10 `<td>` iguales al header. Deploy: solo `admin.php`.
+
+---
+
 ## ✅ TKT-0717 — 2026-08-26 — Agrupar/filtrar en Emisoras y Reproducciones (admin)
 
 A pedido de Carlos: agrupar por activas/no activas en Emisoras + otro grupo, y filtrar Reproducciones
