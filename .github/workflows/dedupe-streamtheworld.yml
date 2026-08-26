@@ -65,10 +65,15 @@ jobs:
           c.execute('PRAGMA journal_mode = DELETE')
           c.close()
           "
+          # put+mv+rm en UNA sola sesion lftp — antes el rm del wal/shm viejo iba
+          # en una sesion FTP aparte, dejando una ventana real (reconexion) donde
+          # el archivo principal ya era el nuevo pero el wal/shm viejo seguia en
+          # disco. Ver TKT-0703/TKT-0706.
           lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
           set ssl:verify-certificate no
           put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
           mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
+          set cmd:fail-exit no
+          glob -a rm /radio/db/radio_v2.sqlite-wal /radio/db/radio_v2.sqlite-shm
           bye
           LFTP
-          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar -e "set ssl:verify-certificate no; glob -a rm /radio/db/radio_v2.sqlite-wal /radio/db/radio_v2.sqlite-shm; quit" 2>/dev/null || true
