@@ -4,6 +4,38 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0705 — 2026-08-26 — Revisión de los hallazgos del competitor-scan del 24/8
+
+Carlos preguntó qué se hizo con el aviso de Telegram del 24/8 (`competitor-scan` vs myradioenvivo.ar).
+Respuesta: nada — `competitor_scan.py` solo notifica, nunca escribe en la DB, así que quedó sin
+procesar. Revisión manual de cada ítem:
+
+- **Radio Del Sur** (posible nueva): sigue en la DB desde el 1/7 con `approved=0`
+  (`cdn1.tvlin.net/icecast/radiodelsuraudio/icecast.audio`) — probada de nuevo ahora, sigue sin
+  responder. Sin cambios, sigue pendiente de una URL válida.
+- **9 URLs alternativas**: 5 de esas 9 emisoras están caídas ahora mismo (`estado=timeout`) —
+  probadas las 5 alternativas en vivo: 4 son códigos de streamtheworld que devuelven 404 real (no
+  sirven, el dato del competidor está desactualizado), pero **Radio Popular (`pop`) sí tenía una
+  alternativa que funciona de verdad** (`c3ny1.mediainbox.net/popular.mp3` → redirige a streamtheworld
+  → 200 audio real, confirmado con `curl -IL`). Aplicado: `UPDATE stations SET url=...` + REINDEX +
+  integrity_check + subida atómica (put+rm+mv en una sola sesión lftp esta vez, aplicando ya la
+  lección de TKT-0703) + verificación de integridad post-subida (limpia, sin el problema de índices
+  que apareció ayer). Las otras 4 emisoras caídas (`radio-mitre-bahia-blanca`, `blue`, `am-750`,
+  `radio-nihuil-mendoza`) quedan sin URL de reemplazo — no se encontró nada que funcione.
+- **Hallazgo de rebote — 2 emisoras con nombre roto, visibles en el listado público:** IDs 13 y 553
+  tienen como `nombre` literalmente una URL mal parseada (`http//147.135.11.829300/` y
+  `https//playerservices.streamtheworld.com/api/livestream-redirect/UNOAAC.aac`). Ambas con 178
+  fallos consecutivos y `last_ok` NULL — llevan semanas/meses muertas. **No se ocultan del listado
+  público** porque su `estado` es `timeout`, no `muerto` — la vista `v_stations` solo oculta por
+  `estado='muerto'` (a propósito, `timeout` se trata como señal ambigua/transitoria — ver comentario
+  en el SQL de la vista). Con 178 fallos seguidos claramente no es transitorio: hay un hueco real en
+  esa clasificación. No se tocó nada (ni el nombre ni la lógica de `estado`) — sin ICY cacheado ni
+  otra pista fuerte de cuál es el nombre real de la id=13, y la id=553 sugiere "Radio Uno FM" por el
+  path de la URL (`radiounofm`) pero sin confirmar. Pendiente de que Carlos decida qué hacer con las
+  dos cosas.
+
+---
+
 ## ✅ TKT-0704 — 2026-08-26 — Compartir por X y Telegram (además de WhatsApp/link/QR)
 
 A pedido de Carlos ("agregale a los compartidos la posibilidad de compartir lo que estás escuchando por
