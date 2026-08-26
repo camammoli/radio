@@ -10,6 +10,7 @@ trafico_github.json
 web/logs/
 .ftp.conf
 db/*.sqlite
+web/db/
 web/api/config.php
 reports/
 

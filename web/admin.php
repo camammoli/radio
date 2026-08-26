@@ -565,14 +565,26 @@ function visitor_badge($dias): string {
     return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
 }
 
+// Salud del stream según el último chequeo del crawler (stream_status.estado)
+// — independiente del alta/baja manual: una emisora puede estar "Alta" (visible
+// al público) y con el stream caído, o "Baja" (oculta) y funcionando bien.
+function salud_badge(?string $estado): string {
+    switch ($estado) {
+        case 'ok':      return '<span class="badge-ok">OK</span>';
+        case 'muerto':  return '<span class="badge-err">Muerto</span>';
+        case 'timeout': return '<span style="color:var(--muted)">Timeout</span>';
+        default:        return '<span style="color:var(--muted)">Desconocido</span>';
+    }
+}
+
 // Station-hopping: mismo IP saltando de emisora en emisora en poco tiempo
 // (caso real documentado: 35 cambios en 3hs). No es un bloqueo, solo una señal
 // visual para no confundir esas sesiones con audiencia real al leer métricas.
 function bot_badge($hops): string {
     $hops = (int)$hops;
-    if ($hops >= 12) return '<span title="'.$hops.' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖</span>';
-    if ($hops >= 6)  return '<span title="'.$hops.' emisoras distintas en 1h — station-hopping, revisar">🤔</span>';
-    return '';
+    if ($hops >= 12) return '<span title="'.$hops.' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖 Bot</span>';
+    if ($hops >= 6)  return '<span title="'.$hops.' emisoras distintas en 1h — station-hopping, revisar">🤔 Probable bot</span>';
+    return '<span style="color:var(--muted)">Persona</span>';
 }
 
 // Fila de emisora con formulario de edición (contacto/observación/destacada/notas),
@@ -623,6 +635,7 @@ function emisora_abm_row(array $s, string $csrf): void {
       <td class="url" style="max-width:220px"><a href="<?= h($s['url']) ?>" target="_blank" rel="noopener"><?= h($s['url']) ?></a></td>
       <td><?= h($s['provincia'] ?? '—') ?></td>
       <td><?= $activa ? '<span class="badge-ok">Alta</span>' : '<span class="badge-err">Baja</span>' ?></td>
+      <td><?= salud_badge($s['estado'] ?? null) ?></td>
       <td style="font-size:12px"><?= h(date('d/m/Y', strtotime($s['created_at'] ?? 'now'))) ?></td>
       <td style="font-size:12px"><?= $s['ultimo_cambio'] ? h(date('d/m/Y H:i', strtotime($s['ultimo_cambio']))) : '—' ?></td>
       <td style="white-space:nowrap">
@@ -840,7 +853,8 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php if ($emisoras_todas): ?>
   <table id="dt-emisoras" class="dt">
     <thead><tr>
-      <th>Nombre</th><th data-nosort="1">URL</th><th>Provincia</th><th>Estado</th>
+      <th>Nombre</th><th data-nosort="1">URL</th><th data-group="Provincia">Provincia</th><th data-group="Alta/Baja">Estado</th>
+      <th data-group="Salud del stream">Salud</th>
       <th>Alta</th><th>Último cambio</th><th data-nosort="1">Acción</th>
     </tr></thead>
     <tbody>
@@ -1054,7 +1068,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   ?>
   <table id="dt-reproducciones" class="dt">
     <thead><tr>
-      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th>Duración</th><th data-group="Origen">Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)" data-nosort="1">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real" data-nosort="1">🤖</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th><th data-nosort="1">Sesión</th>
+      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Reproduciendo">Estado</th><th>Duración</th><th data-group="Origen">Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)" data-nosort="1">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real" data-group="Tipo de oyente">🤖</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th><th data-nosort="1">Sesión</th>
     </tr></thead>
     <tbody id="plays-body">
     <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
@@ -1063,20 +1077,27 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
       <td style="font-size:12px;white-space:nowrap">
         <?php if ($pl['is_active']): ?>
-          <span style="color:#22c55e">▶ <?= fmt_duration((int)$pl['duration_secs']) ?></span>
+          <span style="color:#22c55e">▶ Reproduciendo</span>
+        <?php else: ?>
+          <span style="color:var(--muted)">Terminada</span>
+        <?php endif; ?>
+      </td>
+      <td style="font-size:12px;white-space:nowrap">
+        <?php if ($pl['is_active']): ?>
+          <span style="color:#22c55e"><?= fmt_duration((int)$pl['duration_secs']) ?></span>
         <?php else: ?>
           <?= fmt_duration(isset($pl['duration_secs']) ? (int)$pl['duration_secs'] : null) ?>
         <?php endif; ?>
       </td>
       <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
       <td style="font-size:14px;text-align:center"><?= visitor_badge($pl['dias_activos'] ?? null) ?></td>
-      <td style="font-size:14px;text-align:center"><?= bot_badge($pl['hops_1h'] ?? 0) ?></td>
+      <td style="font-size:12px;text-align:center"><?= bot_badge($pl['hops_1h'] ?? 0) ?></td>
       <td style="font-size:12px;color:var(--muted)"><?= $pl['provincia'] ? '📍 ' . h($pl['provincia']) : '—' ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
     </tr>
     <?php endforeach; else: ?>
-    <tr><td colspan="8" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
+    <tr><td colspan="10" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>

@@ -4,6 +4,47 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0717 — 2026-08-26 — Agrupar/filtrar en Emisoras y Reproducciones (admin)
+
+A pedido de Carlos: agrupar por activas/no activas en Emisoras + otro grupo, y filtrar Reproducciones
+por "reproduciendo ahora" y por persona/bot/probable bot. Se reutilizó el mecanismo `data-group` que
+el `DT` (JS genérico de tablas del panel) ya tenía — agregar `data-group="Etiqueta"` a un `<th>` lo
+suma solo como opción de "Agrupar por" en el toolbar, agrupando por el texto visible de esa columna.
+No hizo falta JS nuevo, solo dar a esas columnas un texto agrupable.
+
+**Emisoras:**
+- Columna "Estado" (Alta/Baja) ahora agrupable (`data-group="Alta/Baja"`) — ya existía, solo faltaba
+  el atributo.
+- Columna nueva **"Salud"** (`data-group="Salud del stream"`): muestra `stream_status.estado` (OK /
+  Muerto / Timeout / Desconocido) — ese dato ya se traía en la query (`$emisoras_todas`) pero nunca se
+  mostraba. Es un eje independiente del alta/baja manual (una emisora puede estar "Alta" con el stream
+  caído, o "Baja" con el stream sano).
+- De paso, Provincia también quedó agrupable (ya tenía el dato, solo faltaba el atributo).
+
+**Reproducciones:**
+- Columna nueva **"Estado"** (`data-group="Reproduciendo"`): "▶ Reproduciendo" / "Terminada", separada
+  de "Duración" (antes el `▶` vivía pegado al tiempo, no se podía agrupar por eso).
+- Columna 🤖 ahora con texto agrupable en vez de solo emoji: "Persona" / "🤔 Probable bot" / "🤖 Bot"
+  (mismos umbrales ya existentes: `hops_1h` ≥12 bot, ≥6 probable bot). `bot_badge()` es la única función
+  que arma ese badge, usada solo acá — no se rompió ningún otro lugar.
+- Corregido de paso un `colspan` desactualizado (8→10) en la fila "Sin reproducciones" que ya estaba
+  mal antes de este cambio (bug preexistente menor, sin impacto visual real).
+
+**Antes de tocar nada:** confirmado con `git status`/`git fetch` que el repo ya estaba sincronizado, y
+backup físico de `admin.php` en `~/Escritorio/Backups/radio_admin_grupos_20260826_195335/`.
+
+**Probado local completo antes de desplegar** (mismo patrón de sesiones anteriores): PHP 8.2 + pdo_sqlite
++ mbstring descargados sin root (`apt-get download` + `dpkg-deb -x`), servidor `php -S` con copia real
+de la DB de producción, login real, verificado que ambas tablas renderizan con la cantidad correcta de
+columnas (8/8 en Emisoras, 10/10 en Reproducciones), badges con los conteos esperados (718 OK / 87
+Muerto / 455 Timeout; 18 reproduciendo / 182 terminadas; 172 persona / 9 probable bot / 19 bot) y cero
+warnings/errores PHP. Copia local de la DB borrada después de probar (no quedó rastro en git — `web/db/`
+no estaba cubierto por `.gitignore`, se verificó explícitamente que no quedara trackeada).
+
+Deploy: solo `web/admin.php` por FTP (no toca la base de datos ni ningún otro archivo).
+
+---
+
 ## ✅ TKT-0716 — 2026-08-26 — 200 emisoras nuevas de radio-browser.info, pendientes de aprobación
 
 A raíz del listado completo de TKT-0715, Carlos preguntó si esas emisoras se agregaron. Se corrió
