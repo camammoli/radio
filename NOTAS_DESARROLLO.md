@@ -4,6 +4,21 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0706 — 2026-08-26 — Fix real: put+mv+rm en una sola sesión lftp
+
+A pedido de Carlos, se implementó el fix que quedó pendiente de TKT-0703. Los 3 workflows que
+escriben la DB (`check-streams-v2.yml`, `dedupe-streamtheworld.yml`, `enrich-v2.yml`) hacían el
+`mv` del archivo nuevo en una sesión lftp y el `rm` del `-wal`/`-shm` viejo en **otra sesión FTP
+aparte** (reconexión completa: login de nuevo, con latencia real). Ahora los tres pasos van en la
+misma sesión lftp continua — `set cmd:fail-exit no` antes del `glob -a rm` para que no rompa si los
+archivos ya no existen (comportamiento equivalente al `|| true` que tenía antes a nivel bash).
+
+Validado con `yaml.safe_load` los 3 archivos antes de commitear. **Los 3 workflows siguen
+desactivados** (`disabled_manually`, desde TKT-0703) — el fix queda listo en GitHub pero no se
+reactivó nada todavía, sigue pendiente esa decisión (TKT-0707).
+
+---
+
 ## ✅ TKT-0705 — 2026-08-26 — Revisión de los hallazgos del competitor-scan del 24/8
 
 Carlos preguntó qué se hizo con el aviso de Telegram del 24/8 (`competitor-scan` vs myradioenvivo.ar).
