@@ -4,6 +4,30 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0716 — 2026-08-26 — 200 emisoras nuevas de radio-browser.info, pendientes de aprobación
+
+A raíz del listado completo de TKT-0715, Carlos preguntó si esas emisoras se agregaron. Se corrió
+`hunt_stations_v2.py` (ya existía, sin workflow activo hasta ahora) contra Argentina — encontró más
+de 200 candidatas nuevas (tope puesto en `--max 200`, puede haber más), verificó cada stream en vivo
+antes de insertar. Confirmado con Carlos (`AskUserQuestion`) antes de aplicar: eligió insertar las 200
+completas como `approved=0` — no se publican solas, quedan en la pestaña de revisión del admin para
+que las apruebe de a una o en tanda.
+
+**Aplicado:** `--apply` sobre copia local, `REINDEX` + `integrity_check` antes de subir, subida atómica
+(put+mv+rm en una sesión, patrón TKT-0706), verificado el sitio en 200 post-deploy.
+
+**Nota sobre la verificación post-subida:** aparecieron índices desincronizados (`idx_plays_*`,
+`idx_listeners_*`) en las 2 vueltas de verificación — mismo síntoma benigno ya visto en TKT-0703/0705
+(tráfico real escribiendo `plays`/`listeners` durante la ventana de subida de ~10-15 min que tardó
+todo el proceso). Se resolvió con `REINDEX` + resubida cada vez, sin pérdida de datos — la tabla
+`stations` en sí nunca se vio afectada. Esto es exactamente el síntoma que motiva TKT-0707 (evaluar
+migrar a escritura por API en vez de reemplazar el archivo entero).
+
+**Resultado:** de 1260 a 1468 emisoras en catálogo (208 con `approved=0` en total, incluyendo estas
+200 + algunas pendientes previas). Ninguna visible en el listado público todavía.
+
+---
+
 ## ✅ TKT-0715 — 2026-08-26 — competitor_scan.py ya no descarta el listado completo
 
 Carlos preguntó por el aviso de Telegram de radio-browser.info del 24/8 (115 posibles nuevas, 170
