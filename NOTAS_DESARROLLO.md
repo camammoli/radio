@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0715 — 2026-08-26 — competitor_scan.py ya no descarta el listado completo
+
+Carlos preguntó por el aviso de Telegram de radio-browser.info del 24/8 (115 posibles nuevas, 170
+URLs alternativas) — le preocupaba el "… y 95 más" / "… y 150 más" del final. Confirmado: `MAX_ITEMS
+= 20` trunca el mensaje de Telegram y el resto **no se guardaba en ningún lado** (ni DB, ni log — el
+`print()` de la lista completa solo corre en el fallback sin credenciales, nunca en producción). Ese
+lote específico del 24/8 quedó irrecuperable.
+
+**Solucionado en el momento:** re-consulté la API de radio-browser.info en vivo (26/8) y armé
+`Escritorio/Reportes/Competencia_RadioBrowser_2026-08-26.html` con el listado completo (116 nuevas /
+169 alternativas — los números varían un poco contra el 24/8 porque la fuente cambia día a día).
+
+**Fix de fondo:** `competitor_scan.py` ahora escribe `reports/competitor_scan_full.json` con el
+resultado completo de cada fuente (sin el recorte de `MAX_ITEMS`), y `competitor-scan.yml` lo sube
+como artifact del workflow (retención 90 días, `actions/upload-artifact@v4`). El Telegram sigue
+truncado a 20 (para no hacerlo ilegible) pero ahora el resto queda disponible para descargar desde
+GitHub Actions en vez de perderse. El script sigue sin escribir nada en la DB — se mantiene de solo
+lectura/notificación a propósito, igual que antes. De paso, `actions/checkout@v4` → `v5` en este
+workflow (quedaba desactualizado contra el resto).
+
+---
+
 ## ✅ TKT-0706 — 2026-08-26 — Fix real: put+mv+rm en una sola sesión lftp
 
 A pedido de Carlos, se implementó el fix que quedó pendiente de TKT-0703. Los 3 workflows que
