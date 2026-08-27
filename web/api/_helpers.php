@@ -230,3 +230,47 @@ function notify_active(PDO $db): bool {
     } catch (Exception $e) {}
     return defined('NOTIFY_OYENTES') && NOTIFY_OYENTES;
 }
+
+// ── Compartir en X (hashtags) ─────────────────────────────────────────────────
+
+// Texto libre (nombre de emisora, provincia) → hashtag válido en CamelCase,
+// sin acentos ni espacios. "Buenos Aires" -> "#BuenosAires".
+function radio_hashtag(string $texto): string {
+    $t = strtr($texto, [
+        'á'=>'a','é'=>'e','í'=>'i','ó'=>'o','ú'=>'u','Á'=>'A','É'=>'E','Í'=>'I','Ó'=>'O','Ú'=>'U','ñ'=>'n','Ñ'=>'N',
+    ]);
+    $words = preg_split('/[^a-zA-Z0-9]+/', $t, -1, PREG_SPLIT_NO_EMPTY);
+    return '#' . implode('', array_map(function ($w) {
+        // Preservar siglas ya en mayúsculas (CABA, AMBA, etc.) tal cual.
+        if (mb_strtoupper($w) === $w && mb_strlen($w) > 1) return $w;
+        return ucfirst(mb_strtolower($w));
+    }, $words));
+}
+
+/**
+ * Arma el texto para compartir en X con la mayor cantidad de hashtags que
+ * entren, en orden de prioridad. Presupuesto real de un tweet con link:
+ * 280 (máximo) - 23 (URL siempre acortada a t.co) - 1 (espacio) = 256
+ * caracteres para el texto — se deja margen (240) por el conteo "weighted"
+ * de X para emojis (cuentan como 2, no como 1).
+ */
+function radio_x_share_text(string $nombre, ?string $prov = null): string {
+    $base = '📻 Estoy escuchando ' . $nombre . ' en vivo';
+
+    $tags = ['#RadioArgentina'];
+    if ($prov) {
+        $provTag = radio_hashtag($prov);
+        if (mb_strlen($provTag) > 1) $tags[] = $provTag;
+    }
+    $tags[] = '#RadioEnVivo';
+    $tags[] = '#EscuchaRadio';
+    $tags[] = '#EnVivo';
+
+    $budget = 240;
+    $texto  = $base;
+    foreach ($tags as $tag) {
+        $candidato = $texto . ' ' . $tag;
+        if (mb_strlen($candidato) <= $budget) $texto = $candidato; else break;
+    }
+    return $texto;
+}

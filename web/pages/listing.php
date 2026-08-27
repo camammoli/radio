@@ -305,7 +305,7 @@ function playStation(el) {
   playerNp.textContent    = '';
   playerBar.classList.add('visible');
   btnVlc.style.display = 'none';
-  updateShare(slug, nombre);
+  updateShare(slug, nombre, prov);
   player.setStation(slug, url, nombre, logo);
 }
 
@@ -416,7 +416,46 @@ function pingShare(slug, channel) {
     .catch(function(){});
 }
 
-function updateShare(slug, nombre) {
+// Texto libre (nombre, provincia) → hashtag válido en CamelCase, sin acentos
+// ni espacios. "Buenos Aires" -> "#BuenosAires". Espejo de radio_hashtag() en
+// _helpers.php (PHP), usado acá porque listing.php arma el link de X en JS.
+function xHashtag(texto) {
+  var t = texto
+    .replace(/[áÁ]/g, 'a').replace(/[éÉ]/g, 'e').replace(/[íÍ]/g, 'i')
+    .replace(/[óÓ]/g, 'o').replace(/[úÚ]/g, 'u').replace(/[ñÑ]/g, 'n');
+  var words = t.split(/[^a-zA-Z0-9]+/).filter(function (w) { return w; });
+  return '#' + words.map(function (w) {
+    // Preservar siglas ya en mayúsculas (CABA, AMBA, etc.) tal cual.
+    if (w.toUpperCase() === w && w.length > 1) return w;
+    return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase();
+  }).join('');
+}
+
+// Arma el texto para compartir en X con la mayor cantidad de hashtags que
+// entren, en orden de prioridad. Presupuesto real de un tweet con link:
+// 280 (máximo) - 23 (URL siempre acortada a t.co) - 1 (espacio) = 256
+// caracteres para el texto — se deja margen (240) por el conteo "weighted"
+// de X para emojis (cuentan como 2, no como 1). Espejo de radio_x_share_text()
+// en _helpers.php.
+function buildXText(nombre, prov) {
+  var base = '📻 Estoy escuchando ' + nombre + ' en vivo';
+  var tags = ['#RadioArgentina'];
+  if (prov) {
+    var provTag = xHashtag(prov);
+    if (provTag.length > 1) tags.push(provTag);
+  }
+  tags.push('#RadioEnVivo', '#EscuchaRadio', '#EnVivo');
+
+  var budget = 240;
+  var texto = base;
+  for (var i = 0; i < tags.length; i++) {
+    var candidato = texto + ' ' + tags[i];
+    if (candidato.length <= budget) texto = candidato; else break;
+  }
+  return texto;
+}
+
+function updateShare(slug, nombre, prov) {
   shareRow.classList.add('visible');
   var url = stationUrl(slug);
 
@@ -432,7 +471,7 @@ function updateShare(slug, nombre) {
   btnWa.href = 'https://wa.me/?text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + '\n👉 ' + url);
   btnWa.onclick = function () { pingShare(slug, 'wa'); };
 
-  btnX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + ' en vivo') + '&url=' + encodeURIComponent(url);
+  btnX.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(buildXText(nombre, prov)) + '&url=' + encodeURIComponent(url);
   btnX.onclick = function () { pingShare(slug, 'x'); };
 
   btnTg.href = 'https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent('📻 Estoy escuchando ' + nombre + ' en vivo');

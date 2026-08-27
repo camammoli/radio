@@ -4,6 +4,28 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0719 — 2026-08-26 — Hashtags automáticos al compartir por X
+
+A pedido de Carlos: agregar hashtags "adecuados para atraer gente" al compartir por X, respetando el
+límite real de caracteres de un tweet.
+
+**Presupuesto real:** 280 (máximo) − 23 (la URL siempre se acorta a un link t.co de 23 caracteres,
+sin importar su longitud real) − 1 (espacio antes del link) = 256 caracteres para el texto. Se usa un
+presupuesto de 240 (margen de 16) porque X cuenta emojis como 2 caracteres ("weighted length"), no 1.
+
+**`radio_x_share_text()` / `radio_hashtag()`** (nuevas en `_helpers.php`, usadas por `station.php`) y
+su espejo en JS (`buildXText()`/`xHashtag()` en `listing.php`, porque ahí una sola página comparte
+distintas emisoras sin recargar): arman "📻 Estoy escuchando {nombre} en vivo" y van agregando
+hashtags de una lista de prioridad — `#RadioArgentina`, la provincia de la emisora si está cargada
+(`#BuenosAires`, `#CABA` preservando siglas ya en mayúsculas), `#RadioEnVivo`, `#EscuchaRadio`,
+`#EnVivo` — deteniéndose apenas el próximo no entra más en el presupuesto. Probado con nombres de
+emisora extremos (100+ caracteres) y coincide byte a byte entre la versión PHP y la JS.
+
+Solo cambia el botón de X — WhatsApp, Telegram, copiar link y QR quedan igual que antes (los hashtags
+solo tienen sentido de descubrimiento en X).
+
+---
+
 ## 🐛 TKT-0718 — 2026-08-26 — Fix real de TKT-0717: 2 bugs encontrados por Carlos ("no veo las nuevas" / "la agrupación no funciona bien")
 
 **Bug 1 — las 200 emisoras de TKT-0716 eran invisibles.** Se insertaron con `source='radio-browser'`,
