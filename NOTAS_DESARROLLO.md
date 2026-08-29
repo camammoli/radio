@@ -2344,3 +2344,52 @@ vez de 406 directo) — vale la pena tenerlo en cuenta si vuelve a aparecer.
 ### Archivos afectados
 - `web/contacto.php`, `web/suscribirse.php` (deploy directo, sin tocar la DB ni otros
   archivos).
+
+## 2026-08-29 (2) — Anti-spam en sugerir.php (Claude Code)
+
+### Contexto
+Cierre de la lista de la auditoría de formularios. `sugerir.php` no tenía honeypot,
+trampa de tiempo ni rate limit. Estaba parcialmente mitigado porque antes de guardar
+o notificar corre `check_stream()`, que le pega un HEAD/GET real a la URL — pero ese
+chequeo **no exige que sea un stream de audio**, solo que la URL responda 200-399.
+Cualquier sitio real pasa. La única protección genuina previa era que la sugerencia
+entra con `approved=0` (cola de moderación en `admin.php`, no se publica sola) — pero
+igual mandaba un Telegram real por cada sugerencia "válida" sin ningún filtro.
+
+### Cambios
+Mismo patrón que `contacto.php` (honeypot `web` + trampa de tiempo `ts`, ambos ya
+usados en ese archivo) + rate limit nuevo (5/hora por IP, clave `radio_sugerir_<ip>`).
+El rate limit se chequea **antes** de `check_stream()` a propósito — esa función hace
+requests salientes de verdad, tiene sentido cortar ahí antes de gastar esos recursos.
+
+### Validado
+Local con copia real de la DB (28MB): honeypot/trampa fingen éxito sin llamar a
+`check_stream()` ni guardar nada; rate limit probado con `nombre` vacío (falla la
+validación real siguiente sin llegar a hacer ningún request saliente ni guardar) —
+5 pasan, 6° bloqueado. Flujo legítimo completo probado con `TG_TOKEN` vaciado *solo en
+la copia local* (nunca se tocó `config.php` real) para confirmar que sigue guardando
+bien sin mandar un Telegram real durante la prueba. Confirmado también en producción
+(honeypot, con backup previo — sin drift entre prod y el repo antes de deployar).
+
+### Nota — falso positivo de integridad durante la verificación
+Al volver a bajar la DB después del test en producción para confirmar que no había
+quedado nada guardado, un primer `PRAGMA integrity_check` dio
+`row 1 missing from index idx_listeners_lastseen` (tabla `listeners`, no relacionada a
+`stations`). Se volvió a bajar la base unos segundos después y dio `ok` — fue un
+artefacto de descargar por FTP un SQLite en modo WAL mientras el servidor escribía en
+vivo (mismo mecanismo ya documentado en TKT-0701 sobre la corrupción recurrente), no
+algo causado por este cambio — la prueba de producción no hizo ningún `INSERT`, solo
+activó el honeypot.
+
+### Archivos afectados
+- `web/sugerir.php` (deploy directo, sin tocar la DB).
+
+### Estado de la auditoría de formularios (2026-08-20/29)
+Con esto quedan cerrados todos los ítems de Radio de la auditoría. Resumen del
+recorrido completo (otros proyectos, hecho en sesiones de Claude Code de estos días):
+mammoli.ar raíz / Finca / LU2MCA ya estaban completos desde el 20/8. Tienda de Juan
+(`api/pedido.php`) y QSLforge (`account/register.php`) se protegieron de cero. Radio
+(`contacto.php`, `suscribirse.php` incluyendo `send_link`, `sugerir.php`) sumó lo que
+le faltaba. Quedan de menor prioridad (mitigados por aprobación manual, sin tocar por
+ahora): QSL Manager registro, Alerta SOS, y el nombre de honeypot de Pelotudos
+(`website`, mal elegido según el propio estándar).

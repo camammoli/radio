@@ -111,6 +111,33 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
     $provincia = trim(strip_tags($src['provincia'] ?? ''));
     $contacto  = trim(strip_tags($src['contacto']  ?? ''));
 
+    // Honeypot: campo oculto para humanos, invisible por CSS. Trampa de
+    // tiempo: "ts" es el timestamp (server-side) de cuando se renderizó la
+    // página — un envío a menos de 2s es casi seguro un bot.
+    $honeypot  = trim($src['web'] ?? '');
+    $ts_render = (int) ($src['ts'] ?? 0);
+    $es_rapido = $ts_render <= 0 || (time() - $ts_render) < 2;
+
+    if ($honeypot !== '' || $es_rapido) {
+        // Bot: fingir éxito sin verificar el stream ni guardar ni notificar.
+        echo json_encode(['ok' => true, 'nombre' => $nombre]);
+        exit;
+    }
+
+    // Rate limit: 5 sugerencias por IP por hora, sin DB — antes de gastar
+    // una verificación real de stream (check_stream hace requests salientes
+    // de verdad). Este sí es un error real y visible.
+    $ip_clave = substr(hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'x'), 0, 16);
+    $archivo_limite = sys_get_temp_dir() . '/radio_sugerir_' . $ip_clave . '.json';
+    $marcas = file_exists($archivo_limite) ? (@json_decode(file_get_contents($archivo_limite), true) ?? []) : [];
+    $marcas = array_values(array_filter($marcas, fn($t) => $t > time() - 3600));
+    if (count($marcas) >= 5) {
+        echo json_encode(['ok' => false, 'error' => 'Demasiadas sugerencias en poco tiempo. Probá de nuevo en un rato.']);
+        exit;
+    }
+    $marcas[] = time();
+    @file_put_contents($archivo_limite, json_encode($marcas));
+
     $error = null;
 
     // Validaciones
@@ -166,6 +193,7 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     exit;
 }
+$render_ts = time(); // trampa de tiempo: momento en que se renderizó el form
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -199,6 +227,8 @@ body.light input,body.light select{background:#f9fafb}
 .btn:hover{opacity:.85}
 .btn:disabled{opacity:.5;cursor:not-allowed}
 .error{background:#2a0a0a;border:1px solid var(--red);border-radius:8px;padding:12px 14px;color:#ff8a8a;font-size:13px;margin-bottom:16px;line-height:1.5}
+/* Honeypot: fuera de pantalla, invisible pero completable por bots simples */
+.hp{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden}
 .success{background:#0a2e12;border:1px solid var(--green);border-radius:8px;padding:16px;color:#7dd49f;font-size:14px;line-height:1.6;text-align:center}
 .success strong{display:block;font-size:1.1rem;margin-bottom:6px}
 .spinner{display:none;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto}
@@ -222,6 +252,12 @@ body.light input,body.light select{background:#f9fafb}
   <div id="msg-area"></div>
 
   <form id="form-sug">
+    <input type="hidden" id="ts" value="<?= $render_ts ?>">
+    <div class="hp" aria-hidden="true">
+      <label for="web">No completar</label>
+      <input type="text" id="web" tabindex="-1" autocomplete="off">
+    </div>
+
     <label for="nombre">Nombre de la radio *</label>
     <input type="text" id="nombre" name="nombre" required maxlength="100" placeholder="Ej: FM La Nacional">
 
@@ -271,7 +307,9 @@ body.light input,body.light select{background:#f9fafb}
       nombre: document.getElementById('nombre').value,
       url: document.getElementById('url').value,
       provincia: document.getElementById('provincia').value,
-      contacto: document.getElementById('contacto').value
+      contacto: document.getElementById('contacto').value,
+      web: document.getElementById('web').value,
+      ts: document.getElementById('ts').value
     });
 
     fetch('sugerir.php?' + params.toString())
