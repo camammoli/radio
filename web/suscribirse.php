@@ -154,36 +154,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edita
     }
 }
 
-// POST: solicitar link de gestión
+// POST: solicitar link de gestión — sin proteger, mandaba mail/Telegram real
+// a quien esté registrado con ese contacto sin ningún filtro (mail-bombing
+// de terceros). Mismo honeypot+trampa de tiempo que el resto del sitio, más
+// rate limit — acá el error de límite se muestra igual que "completá el
+// campo" para no revelar nada nuevo sobre qué lo frenó.
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'send_link') {
+    $honeypot3  = trim($_POST['web3'] ?? '');
+    $ts_render3 = (int) ($_POST['ts2'] ?? 0);
+    $es_bot3    = $honeypot3 !== '' || $ts_render3 <= 0 || (time() - $ts_render3) < 2;
+
     $type  = in_array($_POST['type'] ?? '', ['telegram', 'email']) ? $_POST['type'] : '';
     $value = trim($_POST['value'] ?? '');
-    if ($type && $value) {
-        $st = $db->prepare("SELECT token, contact_type FROM subscribers WHERE contact_type=? AND contact_value=? LIMIT 1");
-        $st->execute([$type, $value]);
-        $found = $st->fetch(PDO::FETCH_ASSOC);
-        if ($found) {
-            $manage_url = 'https://mammoli.ar/radio/suscribirse.php?manage=' . $found['token'];
-            $baja_url   = 'https://mammoli.ar/radio/suscribirse.php?baja='   . $found['token'];
-            $tg_token   = defined('TG_TOKEN') ? TG_TOKEN : '';
-            if ($type === 'telegram') {
-                $msg = "📻 *Radio Argentina — Gestión de suscripción*\n\n"
-                     . "✏️ Editar preferencias: {$manage_url}\n"
-                     . "❌ Dar de baja: {$baja_url}";
-                @file_get_contents("https://api.telegram.org/bot{$tg_token}/sendMessage?" . http_build_query([
-                    'chat_id' => $value, 'text' => $msg, 'parse_mode' => 'Markdown'
-                ]));
-            } else {
-                $body = "Gestión de suscripción — Radio Argentina\n\n"
-                      . "✏️ Editar preferencias:\n{$manage_url}\n\n"
-                      . "❌ Dar de baja:\n{$baja_url}\n\n"
-                      . "Si no pediste esto, ignorá el mensaje.";
-                @mail($value, 'Gestión de suscripción — Radio Argentina', $body,
-                    "From: Radio Argentina <radio@mammoli.ar>\r\nContent-Type: text/plain; charset=UTF-8");
+
+    if ($es_bot3) {
+        $mode = 'link_sent'; // fingir éxito, no se toca la DB ni se manda nada
+    } elseif ($type && $value) {
+        // Rate limit: 5 pedidos de link por IP por hora, sin DB.
+        $ip_clave3 = substr(hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'x'), 0, 16);
+        $archivo_limite3 = sys_get_temp_dir() . '/radio_sendlink_' . $ip_clave3 . '.json';
+        $marcas3 = file_exists($archivo_limite3) ? (@json_decode(file_get_contents($archivo_limite3), true) ?? []) : [];
+        $marcas3 = array_values(array_filter($marcas3, fn($t) => $t > time() - 3600));
+        if (count($marcas3) >= 5) {
+            $err  = 'Demasiados intentos en poco tiempo. Probá de nuevo en un rato.';
+            $mode = 'baja_link';
+        } else {
+            $marcas3[] = time();
+            @file_put_contents($archivo_limite3, json_encode($marcas3));
+            $st = $db->prepare("SELECT token, contact_type FROM subscribers WHERE contact_type=? AND contact_value=? LIMIT 1");
+            $st->execute([$type, $value]);
+            $found = $st->fetch(PDO::FETCH_ASSOC);
+            if ($found) {
+                $manage_url = 'https://mammoli.ar/radio/suscribirse.php?manage=' . $found['token'];
+                $baja_url   = 'https://mammoli.ar/radio/suscribirse.php?baja='   . $found['token'];
+                $tg_token   = defined('TG_TOKEN') ? TG_TOKEN : '';
+                if ($type === 'telegram') {
+                    $msg = "📻 *Radio Argentina — Gestión de suscripción*\n\n"
+                         . "✏️ Editar preferencias: {$manage_url}\n"
+                         . "❌ Dar de baja: {$baja_url}";
+                    @file_get_contents("https://api.telegram.org/bot{$tg_token}/sendMessage?" . http_build_query([
+                        'chat_id' => $value, 'text' => $msg, 'parse_mode' => 'Markdown'
+                    ]));
+                } else {
+                    $body = "Gestión de suscripción — Radio Argentina\n\n"
+                          . "✏️ Editar preferencias:\n{$manage_url}\n\n"
+                          . "❌ Dar de baja:\n{$baja_url}\n\n"
+                          . "Si no pediste esto, ignorá el mensaje.";
+                    @mail($value, 'Gestión de suscripción — Radio Argentina', $body,
+                        "From: Radio Argentina <radio@mammoli.ar>\r\nContent-Type: text/plain; charset=UTF-8");
+                }
             }
+            // Mostrar siempre el mismo mensaje (no revelar si existe o no)
+            $mode = 'link_sent';
         }
-        // Mostrar siempre el mismo mensaje (no revelar si existe o no)
-        $mode = 'link_sent';
     } else {
         $err  = 'Completá el campo.';
         $mode = 'baja_link';
@@ -216,6 +239,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''),
     $honeypot  = trim($_POST['web2'] ?? '');
     $ts_render = (int) ($_POST['ts'] ?? 0);
     $es_bot    = $honeypot !== '' || $ts_render <= 0 || (time() - $ts_render) < 2;
+
+    // Rate limit: 5 intentos de suscripción por IP por hora, sin DB — solo
+    // se cuenta si ya pasó el filtro de bot (a un bot no le damos ni esa
+    // pista). Este sí es un error real y visible.
+    $limite_excedido = false;
+    if (!$es_bot) {
+        $ip_clave = substr(hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'x'), 0, 16);
+        $archivo_limite = sys_get_temp_dir() . '/radio_suscribir_' . $ip_clave . '.json';
+        $marcas = file_exists($archivo_limite) ? (@json_decode(file_get_contents($archivo_limite), true) ?? []) : [];
+        $marcas = array_values(array_filter($marcas, fn($t) => $t > time() - 3600));
+        if (count($marcas) >= 5) {
+            $limite_excedido = true;
+        } else {
+            $marcas[] = time();
+            @file_put_contents($archivo_limite, json_encode($marcas));
+        }
+    }
 
     $type  = in_array($_POST['type'] ?? '', ['telegram', 'email']) ? $_POST['type'] : '';
     $value = trim($_POST['value'] ?? '');
@@ -261,6 +301,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !in_array(($_POST['action'] ?? ''),
 
     if ($es_bot) {
         $pending_token = 'x'; // fingir éxito, no se toca la DB ni se envía nada
+    } elseif ($limite_excedido) {
+        $err = 'Demasiados intentos en poco tiempo. Probá de nuevo en un rato.';
     } elseif (!$type) {
         $err = 'Seleccioná un método de contacto.';
     } elseif (!$value) {
@@ -428,6 +470,11 @@ a{color:var(--accent)}
     </p>
     <form method="post">
       <input type="hidden" name="action" value="send_link">
+      <input type="hidden" name="ts2" value="<?= $render_ts ?>">
+      <div class="hp" aria-hidden="true">
+        <label for="web3">Dejar en blanco</label>
+        <input type="text" id="web3" name="web3" tabindex="-1" autocomplete="off">
+      </div>
       <div class="radio-group">
         <input type="radio" name="type" id="bl-tg" value="telegram" checked>
         <label for="bl-tg">📱 Telegram</label>

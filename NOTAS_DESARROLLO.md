@@ -2297,3 +2297,50 @@ Los 3 workflows que hacen swap de la DB por FTP (`check-streams-v2`, `dedupe-str
 - `web/admin.php`, `web/api/listeners.php` (deploy)
 - `db/radio_v2.sqlite` (restaurado en servidor)
 - Pendiente: `.github/workflows/check-streams-v2.yml`, `dedupe-streamtheworld.yml`, `enrich-v2.yml` (fusionar mv+rm en una sola sesión lftp, no aplicado aún)
+
+## 2026-08-29 — Anti-spam: rate limit en contacto.php y suscribirse.php (Claude Code)
+
+### Contexto
+Auditoría general de Carlos sobre todos sus formularios públicos contra el checklist
+estándar (`feedback_estandar_formularios_contacto`, 2026-08-20). `contacto.php` y
+`suscribirse.php` ya tenían honeypot y trampa de tiempo — les faltaba el rate limit.
+De paso, se encontró que la acción `send_link` de `suscribirse.php` (pedir el link de
+gestión por email/Telegram) no tenía NINGUNA protección — el más expuesto de los tres,
+porque manda un mensaje real (Telegram o mail) a quien esté registrado con el contacto
+buscado, sin ningún filtro.
+
+### Cambios
+- **`contacto.php`**: rate limit de 5 mensajes por IP por hora (archivo temporal JSON,
+  clave `radio_contacto_<ip>`), insertado después del honeypot/trampa de tiempo (ya
+  existentes) y antes de la validación real del mensaje — error real y visible si se
+  supera.
+- **`suscribirse.php`, alta nueva**: mismo patrón, clave `radio_suscribir_<ip>`, 5/hora.
+- **`suscribirse.php`, acción `send_link`**: se le agregó honeypot (`web3`) + trampa de
+  tiempo (`ts2`, mismo `$render_ts` de la página) + rate limit (`radio_sendlink_<ip>`,
+  5/hora) — no existía ninguno de los tres antes. Honeypot/trampa disparados muestran el
+  mismo mensaje "Listo" que un pedido real (no revela nada nuevo, ya era el
+  comportamiento normal no revelar si el contacto existe o no).
+
+### Validado
+Contra copia real de la DB de producción (28MB) bajada por FTP y corrida en local con
+`php-portable` (SQLite, no hace falta MySQL acá). Honeypot y trampa de tiempo:
+confirmado que siguen fingiendo éxito sin guardar nada en las 3 rutas. Rate limit:
+probado enviando intentos que pasan el honeypot/trampa pero fallan la validación real
+siguiente (mensaje muy corto / preferencias vacías / contacto sin match) — así se pudo
+confirmar el conteo y el bloqueo al 6° intento sin mandar ningún Telegram/email real
+durante la prueba. Confirmado también en producción (honeypot de las 2 páginas
+principales, con backup previo de los archivos) sin dejar rastro en la DB real.
+
+### Nota — falso positivo del WAF durante la verificación
+Al chequear `contacto.php` recién desplegado en producción, dio 409 con un mini-script
+que setea `document.cookie = "humans_21909=1"` y recarga — es el "Human Activity
+Detector" de Imunify360 reaccionando a la ráfaga de requests automatizados de la propia
+verificación, no un problema del deploy. Pasando esa cookie a mano, la página real
+carga en 200 sin cambios. Transparente para cualquier navegador real (ejecuta el JS
+solo). Mismo tipo de comportamiento ya documentado para este hosting en
+`feedback_waf_post_bloqueado`, pero con un mecanismo distinto (challenge JS/cookie en
+vez de 406 directo) — vale la pena tenerlo en cuenta si vuelve a aparecer.
+
+### Archivos afectados
+- `web/contacto.php`, `web/suscribirse.php` (deploy directo, sin tocar la DB ni otros
+  archivos).

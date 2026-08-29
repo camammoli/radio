@@ -56,6 +56,20 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
         echo json_encode(['ok' => true]);
         exit;
     }
+
+    // Rate limit: 5 mensajes por IP por hora, sin DB — este sí es un error
+    // real y visible, un humano de verdad casi nunca lo choca.
+    $ip_clave = substr(hash('sha256', $_SERVER['REMOTE_ADDR'] ?? 'x'), 0, 16);
+    $archivo_limite = sys_get_temp_dir() . '/radio_contacto_' . $ip_clave . '.json';
+    $marcas = file_exists($archivo_limite) ? (@json_decode(file_get_contents($archivo_limite), true) ?? []) : [];
+    $marcas = array_values(array_filter($marcas, fn($t) => $t > time() - 3600));
+    if (count($marcas) >= 5) {
+        echo json_encode(['ok' => false, 'error' => 'Demasiados mensajes en poco tiempo. Probá de nuevo en un rato.']);
+        exit;
+    }
+    $marcas[] = time();
+    @file_put_contents($archivo_limite, json_encode($marcas));
+
     if (strlen($mensaje) < 5) {
         echo json_encode(['ok' => false, 'error' => 'Contanos un poco más — el mensaje es muy corto.']);
         exit;
