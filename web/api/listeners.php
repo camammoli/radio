@@ -106,12 +106,20 @@ if ($action === 'ping') {
             'INSERT INTO listeners (sid, station_id, source) VALUES (?,?,?)'
         )->execute([$sid, $station_id, $source]);
 
-        // Registrar reproducción histórica
+        // Registrar reproducción histórica. En try/catch a propósito: esto es
+        // un registro de estadísticas, no debe tumbar el ping (que sí tiene
+        // que responder 200 para que el oyente siga contando como activo)
+        // si la tabla plays tiene un problema puntual (ver TKT corrupción
+        // recurrente de la DB).
         if ($station_id) {
-            $ip = client_ip();
-            $db->prepare(
-                'INSERT INTO plays (station_id, session_id, ip_hash, source, provincia) VALUES (?,?,?,?,?)'
-            )->execute([$station_id, $sid, ip_hash($ip), $source, geo_provincia($db, $ip)]);
+            try {
+                $ip = client_ip();
+                $db->prepare(
+                    'INSERT INTO plays (station_id, session_id, ip_hash, source, provincia) VALUES (?,?,?,?,?)'
+                )->execute([$station_id, $sid, ip_hash($ip), $source, geo_provincia($db, $ip)]);
+            } catch (Throwable $e) {
+                error_log('listeners.php: fallo al insertar en plays: ' . $e->getMessage());
+            }
         }
 
         // Notificación Telegram
