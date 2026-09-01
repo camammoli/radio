@@ -2393,3 +2393,129 @@ mammoli.ar raíz / Finca / LU2MCA ya estaban completos desde el 20/8. Tienda de 
 le faltaba. Quedan de menor prioridad (mitigados por aprobación manual, sin tocar por
 ahora): QSL Manager registro, Alerta SOS, y el nombre de honeypot de Pelotudos
 (`website`, mal elegido según el propio estándar).
+
+## 2026-09-01 — Investigación oyentes/SSH + recuperación DB (6ª vez) + fix real en listeners.php + prueba de los 7 workflows (Claude Code)
+
+### Contexto
+Carlos pidió verificar los oyentes (venían intentando por SSH el día anterior pero se
+cortaba), evaluar si migrar a MySQL resolvería la corrupción recurrente, y correr
+manualmente los jobs del repo (los 7 workflows llevaban desactivados desde TKT-0703,
+2026-08-26) para confirmar que no dan error.
+
+### SSH — diagnóstico (sin aplicar fix, falta info de Carlos)
+El puerto 22 de mammoli.ar responde y completa el handshake TCP/key-exchange sin
+problema (probado con paramiko, log completo). La autenticación con el usuario/clave de
+FTP (`carlos@mammoli.ar` + la clave de `.ftp.conf`) fallar limpio ("Authentication
+(password) failed") — no es la credencial correcta para SSH. Un intento anterior con
+logging detallado quedó colgado >120s sin completar el handshake, evidencia real de
+inestabilidad intermitente (coincide con "se desconectaba"). No se insistió con más
+intentos de contraseña para no arriesgar un bloqueo de la cuenta en el hosting
+compartido (afectaría también el FTP, usado para todo). **Pendiente de Carlos:**
+confirmar en cPanel si SSH está habilitado para la cuenta, cuál es el usuario real
+(probablemente distinto del login de FTP), y si conviene configurar autenticación por
+clave pública en vez de contraseña (más confiable, evita el problema de "se
+desconecta").
+
+### 🐛 Bug real encontrado y corregido: ping de oyentes nuevos tiraba 500 desde el 27/08
+Reproducido en vivo (`curl` directo a producción): cualquier sesión de oyente NUEVA
+(sid nunca visto) hacía que `api/listeners.php` devolviera 500. La sesión SÍ se
+registraba en `listeners` (primer INSERT, sin protección), pero el segundo INSERT (en
+`plays`, para el historial de reproducciones) fallaba con `database disk image is
+malformed` — **la tabla `plays` está corrupta puntualmente: pasa `PRAGMA
+integrity_check` limpio, pero cualquier INSERT le falla**, algo confirmado también con
+la CLI de sqlite3 directo, sin PHP de por medio. Esto explica por qué "oyentes en vivo"
+seguía funcionando con normalidad (hasta 22 concurrentes vistos) mientras el historial
+de reproducciones (`plays`, usado por estadísticas/top emisoras) quedó congelado en
+4776 filas desde el 27/08 — 5 días sin una sola reproducción nueva registrada, pese a
+tráfico real constante.
+
+**Causa de fondo:** la corrupción es la misma de TKT-0703 (26/08) — memoria decía
+explícitamente "la DB sigue corrupta, no se recuperó (pendiente de que Carlos decida)".
+Nadie la había recuperado en los 6 días siguientes; simplemente quedó rota y sin tocar
+todo ese tiempo (con los 7 workflows apagados, así que tampoco hay una "ventana de 6
+días sin corrupción" real que sirva de evidencia — la base ya estaba rota desde el
+primer día de esa ventana).
+
+**Fix de código (`web/api/listeners.php`):** el INSERT a `plays` se protegió con
+try/catch (con `error_log` del error real) — si vuelve a fallar, el ping sigue
+devolviendo 200 y el oyente cuenta igual; solo se pierde el registro puntual de esa
+reproducción en vez de tumbar todo el endpoint. Commit `66c7817`, desplegado y
+confirmado en producción (200 con sid nuevo) antes incluso de recuperar la DB.
+
+**Recuperación de la DB (autorizada explícitamente por Carlos):** mismo procedimiento
+ya usado 5 veces antes — `sqlite3` 3.45.1 oficial (el 3.40.1 del sistema falla
+`.recover` con "SQL logic error" en este tipo de corrupción, ya documentado) →
+`.recover` → sacar `CREATE TABLE sqlite_sequence` → reconstruir → validar. **Esta vez
+sin ninguna pérdida de datos** (1468 stations, 4776 plays, 5473 station_events, 215782
+stream_history — todo idéntico al original corrupto). Validación extra que no se había
+hecho antes en ningún incidente previo: probar el INSERT real que fallaba, no solo
+`integrity_check` — confirmó que el problema estaba resuelto antes de subir. Deploy
+atómico (put+mv+rm en una sola sesión lftp, patrón TKT-0706). Verificado post-deploy:
+`plays` volvió a crecer con timestamps reales (4776→4813 en la misma sesión), sitio/
+admin/estadisticas 200.
+
+### MySQL — evaluación pedida por Carlos: recomendación SÍ migrar
+
+Evidencia nueva de esta sesión que endurece la recomendación:
+- Se logró reproducir un archivo SQLite que pasa `PRAGMA integrity_check` limpio pero
+  falla de forma determinística en un INSERT real a una tabla específica — un patrón
+  de corrupción "silenciosa" que ni siquiera el chequeo estándar detecta, y que solo
+  se nota cuando algo intenta escribir ahí. Van 6 incidentes de corrupción documentados
+  desde julio (TKT-0687/0690/0693/0695/0701/0703) pese a múltiples fixes defensivos
+  (upload atómico, concurrency groups, fusión put+mv+rm).
+- El patrón de fondo (muchos escritores concurrentes — tráfico real, cron cPanel de
+  `icy_refresh.php` cada 10min, 2 endpoints cron vía HTTP, y hasta hace poco 3
+  workflows de GitHub Actions reemplazando el archivo entero por FTP) sobre un
+  filesystem de hosting compartido es exactamente el escenario que SQLite en modo WAL
+  no soporta bien — la documentación oficial de SQLite desaconseja explícitamente
+  usarlo sobre almacenamiento de red, porque el locking POSIX que necesita para
+  coordinar escritores no siempre se respeta ahí.
+- MySQL (ya usado en este mismo hosting para `mammoli_gestion`/`mammoli_qsl`, sin
+  ningún incidente de corrupción) elimina esta clase de problema de raíz: un solo
+  proceso `mysqld` coordina todos los accesos internamente — no hay "archivo que se
+  reemplaza por FTP" ni locks de filesystem de por medio.
+- Contras honestos: es una migración real, no un fix rápido — hay que portar `_db.php`
+  (PDO singleton), ajustar SQL específico de SQLite (`datetime('now')`, `PRAGMA`,
+  `ON CONFLICT`, semántica de `AUTOINCREMENT`), y los crawlers Python (usan el módulo
+  `sqlite3` directo, no la API PHP) necesitan un cliente MySQL. No es algo para hacer
+  en una sesión suelta — conviene planificarla aparte si Carlos decide seguir adelante.
+
+### Prueba de los 7 workflows manuales (pedido explícito de Carlos)
+Los 7 estaban `disabled_manually` desde TKT-0703. Se habilitaron y dispararon los 7 con
+`gh workflow run` (esto también reactiva sus schedules automáticos — **pendiente
+decisión de Carlos si dejarlos así o volver a desactivarlos**, ver mensaje enviado).
+Resultado, con la DB ya recuperada:
+- ✅ **5 éxito limpio:** Aprender patrones de programas, Sincronizar gist de emisoras,
+  Competitor Scan, Cerrar sesiones huérfanas, Verificar streams v2.
+- ⚠️ **1 cancelado:** Enriquecer emisoras v2 — se disparó casi al mismo tiempo que
+  otro workflow del mismo `concurrency: group: radio-db-write`, y GitHub lo canceló
+  antes de arrancar ningún job. Es el comportamiento correcto y esperado de esa
+  protección (evita que 2 escrituras de DB se pisen) — en operación normal (horarios
+  distintos por cron) esto no pasaría; fue un artefacto de dispararlos todos juntos
+  para la prueba.
+- ⚠️ **1 falló:** Deduplicar streamtheworld — el paso final (`rm` del `-wal`/`-shm`
+  viejo) falló con "No such file or directory" porque esos archivos ya no existían
+  (los había limpiado yo mismo minutos antes en la recuperación manual de la DB) — el
+  `put`/`mv` de arriba no mostró confirmación explícita de éxito en el log en el poco
+  tiempo entre pasos, pero la verificación final de la DB (después de las 7 corridas)
+  dio íntegra y con los datos esperados, así que no hubo impacto real. Vale la pena
+  igual endurecer ese paso (`glob -a rm` no debería fallar todo el job si no hay nada
+  que borrar) — no aplicado en esta sesión, queda como mejora menor.
+
+**Verificación final tras las 7 corridas:** `integrity_check` ok, INSERT de prueba
+exitoso, 1468 stations (sin pérdida), `plays` siguió creciendo con tráfico real, sitio/
+admin/estadisticas 200.
+
+### Limpieza adicional (a pedido de Carlos)
+4 líneas del crontab local (`crawler_radio_browser.py`, `dedup_emisoras.py`,
+`verificar_urls.sh`, `recuperar_caidas.py`) apuntaban a scripts V1 ya archivados —
+fallaban en cada corrida (varias veces por semana) ensuciando los logs sin tocar nada
+real. Eliminadas del crontab (`trafico_github.py`, que sí existe y funciona, se
+conservó). Backup del crontab anterior en `/tmp/crontab_backup_20260901.txt`.
+
+### Archivos afectados
+- `web/api/listeners.php` (deploy + commit `66c7817`)
+- `db/radio_v2.sqlite` (recuperado y subido a producción, sin pérdida de datos)
+- Crontab local del usuario (4 líneas rotas eliminadas)
+- 7 workflows de GitHub Actions: quedaron **habilitados** (antes deshabilitados) —
+  pendiente confirmación de Carlos si dejarlos así.
