@@ -2597,11 +2597,100 @@ hecho de verdad (el fix se hizo después de esa subida y no se volvió a despleg
    flip de `RADIO_DB_ENGINE` a `'mysql'` en `config.php`, verificación completa, dejar
    la SQLite de respaldo varios días.
 
-### Archivos afectados (deploy directo por FTP, sin commit todavía)
+### Archivos afectados (deploy por FTP + commit `fd6ac5b`)
 `web/admin.php`, `web/admin_stats.php`, `web/api/_db.php`, `web/api/_helpers.php`,
 `web/api/ayuda_toast.php`, `web/api/listeners.php`, `web/api/nowplaying.php`,
 `web/api/share.php`, `web/api/stations.php`, `web/api/survey.php`, `web/contacto.php`,
 `web/estadisticas.php`, `web/pages/station.php`, `web/sugerir.php`,
 `web/suscribirse.php`, `crawlers/icy_refresh.php`, `crawlers/learn_patterns.php`,
-`crawlers/notify_subscribers.php`. Nuevo (no deployado, solo referencia local):
-`db/mysql_schema.sql`.
+`crawlers/notify_subscribers.php`, `db/mysql_schema.sql`.
+
+## 2026-09-02 — Migración a MySQL, paso 6-7 (parcial): api/crawler_ingest.php + check_streams_v2.py vía API HTTP (TKT-0721, Claude Code)
+
+### Contexto
+Continuación directa de TKT-0720, misma sesión. Los crawlers Python corren en
+GitHub Actions, que no puede conectar a `mammoli_radio` (MySQL) directo — Remote
+MySQL del hosting no acepta IPs sin whitelistear y los runners no tienen IP fija
+(mismo motivo por el que la migración planeaba desde el principio una API de
+ingesta en vez de acceso directo, ver `Radio_v5_Roadmap.html`).
+
+### Qué se hizo
+- **Nuevo `api/crawler_ingest.php`**: endpoint autenticado (header
+  `X-Crawler-Token` o `?token=`, contra `CRAWLER_TOKEN` en `config.php`) con
+  acciones de lectura (`stations_check_context`, `stations_full`) y escritura
+  (`check_streams_report`, `crawler_run_log`). Hace TODOS los INSERT/UPSERT
+  server-side, en el motor activo — los crawlers ya no arman SQL, solo mandan
+  resultados.
+- **Nuevo `db/radio_api.py`**: cliente HTTP Python (`get()`/`post()`) que
+  reemplaza a `db/radio_db.py` para los crawlers que corren en GitHub Actions.
+- **`crawlers/check_streams_v2.py` reescrito**: ya no toca SQLite directo, solo
+  hace el trabajo de red (chequeo HTTP + lectura ICY) y postea a la API.
+- **`check-streams-v2.yml` simplificado**: se sacó todo el `lftp`/descarga-sube
+  del `.sqlite` completo — ya no hace falta, ni el `concurrency: group:
+  radio-db-write` (no hay más archivo que se pise).
+- Secret nuevo en GitHub: `CRAWLER_TOKEN` (repo `camammoli/radio`).
+
+### 🐛 Incidente real durante las pruebas — datos falsos en producción, corregidos
+Probando el endpoint nuevo con datos de prueba (antes de tener el pipeline
+completo armado) se posteó un lote sintético ("todo ok", 1267 filas) que quedó
+escrito en la SQLite de producción. Detectado enseguida al notar que el conteo
+de eventos no cerraba con la realidad. Identificadas con precisión las filas
+afectadas por ventana exacta de timestamp (`stream_history` inserta con
+`checked_at` = hora real del request, no la fecha falsa del payload — eso
+permitió aislarlas sin ambigüedad): 1267 en `stream_history`, 728 en
+`station_events`, 5 en `crawler_runs`. Borradas con un script temporal
+(subido → corrido una vez → borrado, mismo patrón de siempre), sin tocar
+ninguna fila real. Corrida una verificación real después que dejó
+`stream_status`/`icy_cache` con datos correctos (confirmado: coincide exacto
+con una verificación HTTP directa hecha en paralelo). `PRAGMA integrity_check`
+limpio después de la limpieza.
+
+### 🐛 Bug real corregido de paso: sin transacción, ~5000 escrituras por corrida
+`check_streams_report` hacía 1 SELECT + hasta 4 INSERT/UPDATE por emisora
+(1267 emisoras) sin transacción — cada uno hacía commit individual. Fix:
+precarga de todo el estado previo en una sola query (antes 1 SELECT por fila)
++ `beginTransaction()`/`commit()` alrededor del loop completo. Bajó de varios
+segundos a ~1.2s para las 1267 emisoras. No era la causa del 406 de abajo,
+pero es una mejora real de rendimiento que se queda.
+
+### 🐛 Causa real del 406 de ModSecurity — no era tiempo, tamaño ni contenido: el User-Agent
+El diagnóstico más largo de la sesión: el POST a `crawler_ingest.php` fallaba
+con 406 de forma intermitente y difícil de reproducir (el GET del mismo
+endpoint siempre funcionaba). Se descartaron por bisección real contra
+producción, en orden: tamaño de body (payloads de 150KB+ pasaban bien con
+contenido sintético), rate-limit (payloads idénticos a veces pasaban y a veces
+no, con pausas de por medio), lentitud de la transacción (ya arreglada arriba,
+pero el 406 seguía apareciendo incluso en requests rápidas de <1s), y
+finalmente contenido específico de los títulos ICY reales (probado con el
+payload real capturado — funcionaba bien vía `curl` simple, pero fallaba
+siempre pasando por `db/radio_api.py`). Aislada la diferencia real entre
+ambos: `radio_api.py` mandaba un `User-Agent` de Chrome falso (agregado en un
+intento anterior de esquivar lo que se creía que era el mismo problema de
+[[feedback_waf_post_bloqueado]] documentado en `sugerir.php`/`admin.php`) —
+el WAF detecta que el UA dice ser un navegador real pero le faltan el resto
+de las señales típicas de uno (`Accept`, `Accept-Language`, `Sec-Fetch-*`,
+etc.) y lo bloquea como "impersonación", sin importar tamaño/contenido del
+body. Confirmado de forma exhaustiva probando el mismo payload exacto,
+alternando solo el header `User-Agent`. Fix: UA propio y honesto
+(`radio-ar-crawler/1.0 (+https://mammoli.ar/radio)`), documentado en memoria
+como una tercera causa distinta de bloqueos WAF en este hosting (las otras
+dos: `navigator.webdriver` en automatización de navegador real, y el patrón
+de formularios nativos ya migrados a GET+fetch).
+
+**Verificación final, de punta a punta en GitHub Actions real** (no solo local):
+run exitosa, 718 ok / 458 timeout / 91 muertos, 15 eventos detectados,
+notificados correctamente por Telegram.
+
+### Pendiente
+Los otros 5 crawlers Python (`competitor_scan.py`, `dedupe_streamtheworld_v2.py`,
+`enrich_v2.py`, `gist_sync.py`, `hunt_stations_v2.py`) siguen tocando SQLite
+directo — mismo patrón a aplicar (usar `db/radio_api.py`), menor prioridad
+porque corren semanal/mensual, no cada 6hs. Después de eso: pasos 8-9 del plan
+(testing final + corte real).
+
+### Archivos afectados
+`web/api/crawler_ingest.php` (nuevo), `db/radio_api.py` (nuevo),
+`crawlers/check_streams_v2.py`, `.github/workflows/check-streams-v2.yml`.
+Commits `8fba78a`, `cfff185`, `cbc6e62`. Secret de GitHub `CRAWLER_TOKEN`
+(repo `camammoli/radio`) + constante `CRAWLER_TOKEN` en `config.php` de
+producción.
