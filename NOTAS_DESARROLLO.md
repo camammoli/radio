@@ -2768,3 +2768,71 @@ real — avisar a Carlos explícitamente antes de tocarlo.**
 `crawlers/hunt_stations_v2.py`, `web/api/crawler_ingest.php` (nuevas
 acciones), `.github/workflows/{dedupe-streamtheworld,enrich-v2,
 competitor-scan,gist-sync}.yml`. Commit `0c2783a`.
+
+## 2026-09-02 — Migración a MySQL, paso 8 completo: testing integral + fix real de LIMIT (TKT-0723, Claude Code)
+
+### Contexto
+Misma sesión, continuación de TKT-0722. Paso 8 del plan: probar todo de
+punta a punta contra MySQL real ANTES del corte, sin tocar `config.php` de
+producción (que sigue en SQLite todo este tiempo).
+
+### Cómo se probó sin tocar producción
+`RADIO_DB_ENGINE` se define con `define()` al principio de un script de
+prueba — como es una constante de PHP, solo existe durante ESE proceso/
+request puntual, nunca se persiste ni afecta a ningún otro visitante real.
+Se subió un script temporal (mismo patrón de siempre: subir → correr por
+HTTP con token secreto → borrar) que fuerza ese engine y después `include`
+cada página/endpoint real, uno por uno. Importante: cada caso corrió en su
+**propia request HTTP separada** — varias páginas reales llaman `exit()` en
+ciertos flujos (ej. `station.php` en el 404), y eso no se puede atrapar con
+try/catch; si todos los casos hubieran corrido en el mismo proceso, un solo
+`exit()` habría cortado el resto del batch sin avisar (pasó en el primer
+intento, con `pages/station.php`).
+
+**Casos probados, los 14 con éxito:** conexión básica, `pages/listing.php`
+(1194 emisoras, coincide con el conteo ya verificado en la migración de
+datos), `pages/station.php` (ficha completa), `sugerir.php`/`contacto.php`/
+`suscribirse.php` (GET), `estadisticas.php`, `admin.php` completo (4MB de
+HTML), `admin_stats.php`, `api/listeners.php?action=top`, `api/stations.php`
+(paginación), y dos escrituras reales de prueba (`surveys`, `shares`
+insertadas y borradas de inmediato para no dejar basura).
+
+### 🐛 Bug real encontrado: `LIMIT ?` con `execute([$n])` falla en MySQL en este hosting
+En SQLite, pasar un entero por el array corto de `execute([$limit])` para un
+`LIMIT ?` funciona sin problema — así está escrito en varios lugares del
+código desde siempre. En MySQL (este hosting, PDO), ese mismo patrón manda
+el valor como string cotizado, y `LIMIT '10'` es un error de sintaxis para
+MySQL. Nunca se había notado porque SQLite lo tolera. Afectaba dos endpoints
+reales: `api/listeners.php` (`action=top`) y `api/stations.php`
+(paginación, que además mezclaba placeholders de filtros de texto con
+LIMIT/OFFSET en el mismo `execute()`). El tercer caso conocido
+(`admin_stats.php`, query de "plays por mes") ya usaba
+`bindValue(':lim', $rango, PDO::PARAM_INT)` desde que se escribió — por eso
+no falló, y sirvió de pista para encontrar el fix correcto.
+
+**Fix:** `bindValue(1, $limit, PDO::PARAM_INT)` explícito en
+`listeners.php`; en `stations.php`, interpolación directa de
+`(int)$limit`/`(int)$offset` en el SQL (ya validados por `int_param()`, sin
+riesgo de inyección) en vez de placeholders, ya que ese `execute()` mezclaba
+tipos distintos. También se agregó `PDO::ATTR_EMULATE_PREPARES => true` a la
+conexión MySQL en `_db.php` — no resultó ser la causa real de este bug
+puntual (con o sin esa opción el error persistía; lo que realmente arregla
+esto es tipar el bind explícitamente), pero se dejó como buena práctica
+general.
+
+**Lección para el futuro:** cualquier `LIMIT`/`OFFSET` parametrizado nuevo
+en este proyecto debe usar `bindValue(..., PDO::PARAM_INT)` explícito (o
+interpolar un valor ya casteado a `(int)` en PHP), nunca `execute([$n])` a
+secas — SQLite no lo va a delatar, MySQL sí.
+
+### Con esto: paso 8 del plan completo
+Único pendiente: **paso 9, el corte real** (pausa breve de escrituras, sync
+final de datos SQLite→MySQL, flip de `RADIO_DB_ENGINE` a `'mysql'` en
+`config.php` de producción, verificación completa en vivo, backup
+automático de `mammoli_radio` en cPanel). Requiere autorización explícita
+de Carlos antes de tocarlo — es el único paso de todo el plan con
+downtime/riesgo real.
+
+### Archivos afectados
+`web/api/_db.php`, `web/api/listeners.php`, `web/api/stations.php`.
+Commit `11b14f6`.
