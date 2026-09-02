@@ -74,15 +74,22 @@ if ($accion === 'check_streams_report') {
 
     $DOWN_AFTER = 2;
 
-    $selPrev = $db->prepare(
-        "SELECT COALESCE(ss.estado,'unknown') AS prev_estado,
+    // Precarga de estado previo en UNA sola query (antes era 1 SELECT por fila
+    // — con ~1270 emisoras eso son miles de round-trips y el request tardaba
+    // lo suficiente como para chocar con algún timeout del proxy del hosting,
+    // que lo cortaba con una página de error genérica de ModSecurity).
+    $prevByStation = [];
+    foreach ($db->query(
+        "SELECT s.id,
+                COALESCE(ss.estado,'unknown') AS prev_estado,
                 COALESCE(ss.consecutive_failures,0) AS prev_fails,
                 COALESCE(ic.supported,0) AS prev_icy
          FROM stations s
          LEFT JOIN stream_status ss ON ss.station_id = s.id
-         LEFT JOIN icy_cache     ic ON ic.station_id = s.id
-         WHERE s.id = ?"
-    );
+         LEFT JOIN icy_cache     ic ON ic.station_id = s.id"
+    ) as $row) {
+        $prevByStation[(int)$row['id']] = $row;
+    }
 
     $sqlStatusUpsert = db_engine() === 'mysql'
         ? "INSERT INTO stream_status
@@ -160,12 +167,15 @@ if ($accion === 'check_streams_report') {
     $events_detected = 0;
     $errors = 0;
 
+    // Todas las escrituras en UNA transacción — antes cada INSERT/UPDATE hacía
+    // commit individual (miles de fsyncs), la causa real de la lentitud/timeout.
+    $db->beginTransaction();
+
     foreach ($results as $r) {
         $sid = (int)($r['station_id'] ?? 0);
         if (!$sid) { $errors++; continue; }
 
-        $selPrev->execute([$sid]);
-        $prevRow = $selPrev->fetch();
+        $prevRow = $prevByStation[$sid] ?? null;
         if (!$prevRow) { $errors++; continue; }
 
         $prev_estado = $prevRow['prev_estado'];
@@ -210,6 +220,8 @@ if ($accion === 'check_streams_report') {
         $stream_title = $icy_titles[(string)$sid] ?? $icy_titles[$sid] ?? null;
         $stmtIcy->execute([$sid, $cur_icy, $icy_name, $stream_title]);
     }
+
+    $db->commit();
 
     $db->prepare(
         "INSERT INTO crawler_runs (crawler, started_at, finished_at, stations_checked, changes_detected, errors)
