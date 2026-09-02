@@ -2694,3 +2694,77 @@ porque corren semanal/mensual, no cada 6hs. Después de eso: pasos 8-9 del plan
 Commits `8fba78a`, `cfff185`, `cbc6e62`. Secret de GitHub `CRAWLER_TOKEN`
 (repo `camammoli/radio`) + constante `CRAWLER_TOKEN` en `config.php` de
 producción.
+
+## 2026-09-02 — Migración a MySQL, paso 6-7 completo: los 5 crawlers Python restantes (TKT-0722, Claude Code)
+
+### Contexto
+Misma sesión, continuación de TKT-0721. Con `check_streams_v2.py` ya migrado
+y el patrón de `db/radio_api.py` + `api/crawler_ingest.php` probado y
+funcionando, se migraron los 5 crawlers Python restantes al mismo patrón.
+
+### Qué se hizo, por crawler
+- **`gist_sync.py`**: era el más simple — solo lee la DB (`SELECT` de
+  emisoras aprobadas), nunca escribe. Cambio mínimo: `load_stations()` pasa
+  a usar `get("stations_full")` en vez de `sqlite3` directo. Sin cambios en
+  la lógica de armado del TSV ni en la llamada a la API de GitHub (gist).
+- **`competitor_scan.py`**: mismo caso — de solo lectura (compara contra
+  Radio Browser + sitios de competencia, manda Telegram, guarda un JSON
+  local de reporte completo). Cambio mínimo: `load_db_stations()` vía API.
+- **`dedupe_streamtheworld_v2.py`**: sí escribe (`approved=0` en las
+  variantes duplicadas + evento `dedup_hidden`). Nueva acción
+  `dedupe_apply` en `crawler_ingest.php` (transacción: UPDATE + INSERT
+  station_events por cada duplicado, más el log en `crawler_runs`).
+- **`enrich_v2.py`**: el más grande de los 5 — cruza con Radio Browser
+  (logo/tags/homepage/codec/bitrate/rb_uuid/votes/clicks) y opcionalmente
+  verifica ICY para las que no matchean. Nueva acción `enrich_report`
+  (recibe `stations` con los campos nullable a aplicar vía `COALESCE`, y
+  `icy` aparte para detectar eventos `icy_gained`/`icy_lost` comparando
+  contra el estado previo — que ahora viene de `stations_check_context`,
+  ya que `stations_full` no trae ese dato).
+- **`hunt_stations_v2.py`**: descubre emisoras nuevas en Radio Browser e
+  inserta (`approved=0` por defecto, `--approve` para aprobar directo). El
+  cálculo de slug único (`unique_slug()`) pasó de consultar la DB en cada
+  candidata a hacerse en memoria, contra el catálogo completo leído una
+  sola vez al principio (`stations_full`, trae `slug`) — evita N consultas
+  y N round-trips. Nueva acción `hunt_stations_apply` (INSERT por fila con
+  su propia transacción — si una fila choca con una fila real insertada
+  por otro proceso en el medio, se saltea esa sola, no aborta el lote).
+  No tiene workflow de GitHub Actions activo (ya era así antes de esta
+  sesión — se corre manual cuando hace falta), pero queda listo con el
+  mismo patrón.
+
+### Verificación
+Todo probado contra producción real (no solo local): `gist_sync.py`
+dry-run (1267 emisoras cargadas correctamente desde la API), 
+`dedupe_streamtheworld_v2.py` dry-run real (detectó el caso conocido LAPOPU,
+2 variantes de redirección — el mismo hallazgo que ya se sabía, confirma
+que el matching sigue funcionando igual), `enrich_v2.py` corrida real sin
+`--force` (578 emisoras sin `rb_uuid` actualizadas vía la API, confirmado
+en el conteo de respuesta), `competitor_scan.py` corrida real completa
+(comparación contra 1234 emisoras de Radio Browser, reporte armado
+correctamente), `hunt_stations_v2.py` con una inserción real de 2 emisoras
+nuevas (`--max 2 --apply`) — confirmado bajando la DB después y viendo las
+2 filas nuevas con `approved=0, source='radio-browser'`.
+
+### Con esto: paso 6-7 del plan completo
+Los 6 crawlers (`check_streams_v2.py` de la corrida anterior + estos 5) ya
+no tocan SQLite/MySQL directo — todos hablan con `api/crawler_ingest.php`.
+Los workflows de GitHub Actions (`dedupe-streamtheworld.yml`,
+`enrich-v2.yml`, `competitor-scan.yml`, `gist-sync.yml`) se simplificaron
+sacando el `lftp`/FTP swap completo y el `concurrency: group:
+radio-db-write` (ya no hace falta — no hay más archivo que se pise entre
+corridas simultáneas).
+
+### Pendiente
+Paso 8 (testing final integral, todo el flujo de punta a punta antes del
+corte) y paso 9 (corte real: pausa breve, sync final de datos, flip de
+`RADIO_DB_ENGINE` a `'mysql'` en `config.php`, verificación completa, dejar
+SQLite de respaldo). **El paso 9 es el único que implica downtime/riesgo
+real — avisar a Carlos explícitamente antes de tocarlo.**
+
+### Archivos afectados
+`gist_sync.py`, `crawlers/dedupe_streamtheworld_v2.py`,
+`crawlers/enrich_v2.py`, `crawlers/competitor_scan.py`,
+`crawlers/hunt_stations_v2.py`, `web/api/crawler_ingest.php` (nuevas
+acciones), `.github/workflows/{dedupe-streamtheworld,enrich-v2,
+competitor-scan,gist-sync}.yml`. Commit `0c2783a`.
