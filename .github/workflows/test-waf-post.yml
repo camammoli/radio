@@ -1,0 +1,19 @@
+name: Test WAF POST
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test GET
+        run: |
+          curl -s -o /dev/null -w "GET: %{http_code}\n" "https://mammoli.ar/radio/api/crawler_ingest.php?accion=stations_check_context&token=4O0euEnXi9txC7JPTBX38vMtIIWe9hVYM8dDAQLcGD0"
+      - name: Test POST chico (curl)
+        run: |
+          curl -s -o /tmp/r1.txt -w "POST curl chico: %{http_code}\n" -X POST "https://mammoli.ar/radio/api/crawler_ingest.php" \
+            -H "X-Crawler-Token: 4O0euEnXi9txC7JPTBX38vMtIIWe9hVYM8dDAQLcGD0" \
+            -H "Content-Type: application/json" \
+            -d '{"accion":"crawler_run_log","crawler":"test-waf","started_at":"2026-09-02 18:00:00","stations_checked":0,"changes_detected":0,"errors":0,"notes":"test github actions ip"}'
+          cat /tmp/r1.txt
+      - name: Mostrar IP del runner
+        run: curl -s https://api.ipify.org
