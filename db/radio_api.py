@@ -29,17 +29,15 @@ import urllib.request
 BASE_URL = os.environ.get("RADIO_API_BASE", "https://mammoli.ar/radio/api/crawler_ingest.php")
 TOKEN    = os.environ.get("CRAWLER_TOKEN", "")
 
-# Al probar este endpoint se vieron 406 de ModSecurity en varios POST seguidos
-# en poco tiempo (mismo patrón de fondo que sugerir.php/contacto.php/admin.php,
-# ver memoria feedback_waf_post_bloqueado) — no se pudo aislar si es por ráfaga
-# (rate/anomaly scoring) o por el cliente HTTP en sí: con pausas entre intentos,
-# tanto un POST real de ~1270 resultados (156KB) como uno chico pasaron bien
-# por `curl`. Se dejó `curl` (subprocess) en vez de urllib.request para el POST
-# por ser lo que se probó funcionando de punta a punta contra producción; si
-# vuelve a fallar con 406 en uso real (no en pruebas en ráfaga), revisar de
-# nuevo — puede no ser el cliente sino simplemente repetir el intento.
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36")
+# Causa real del 406 de ModSecurity, encontrada por bisección (2026-09-02):
+# un User-Agent que DICE ser Chrome, sin el resto de las señales de un
+# navegador real (Accept, Accept-Language, Sec-Fetch-*, etc.), dispara la
+# detección de "browser impersonation" del WAF — probado exhaustivamente:
+# el mismo payload exacto pasa siempre con UA honesto (curl default, o un
+# UA de bot declarado) y falla siempre con UA de navegador falso, con o sin
+# --http1.1, con cualquier tamaño de body. Lección: para un cliente que NO
+# es un navegador, nunca fingir que lo es — declarar qué es en realidad.
+UA = "radio-ar-crawler/1.0 (+https://mammoli.ar/radio)"
 
 
 class RadioApiError(RuntimeError):

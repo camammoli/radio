@@ -253,8 +253,6 @@ def main():
             "icy_supported": res["icy_supported"],
             "icy_name": res["icy_name"],
         })
-        if row["nombre"]:
-            pass  # nombre solo se usa para logging local abajo
 
     log("Enviando resultados a la API...")
     out = post(
