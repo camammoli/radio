@@ -2,7 +2,12 @@
 """
 check_streams_v2.py — verifica los streams de la DB y detecta cambios de estado.
 
-Detecta y registra en station_events:
+Desde TKT-0720 (migración a MySQL) este script ya NO toca la base directo —
+solo hace el trabajo de red (chequear cada URL, leer ICY) y manda el resultado
+a api/crawler_ingest.php, que es quien escribe (mismo motor que usa el resto
+del sitio). Ver db/radio_api.py.
+
+Detecta y registra en station_events (server-side, en el endpoint):
   - went_down   (ok/timeout → muerto, después de N fallos consecutivos)
   - came_back   (muerto → ok)
   - icy_gained  (icy_supported 0 → 1)
@@ -15,6 +20,8 @@ USO:
   python3 crawlers/check_streams_v2.py --timeout 7     # segundos por URL (default 5)
   python3 crawlers/check_streams_v2.py --quiet         # sin output
   python3 crawlers/check_streams_v2.py --icy           # también verifica ICY metadata
+
+Variables de entorno requeridas: CRAWLER_TOKEN (+ opcional RADIO_API_BASE).
 """
 
 import sys
@@ -26,14 +33,12 @@ import argparse
 import urllib.request
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 
-# Importar helper de DB desde el directorio padre
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from db.radio_db import get_db
+from db.radio_api import get, post
 
 UA          = "radio-checker/2.0 (mammoli.ar)"
-DOWN_AFTER  = 2   # fallos consecutivos para marcar went_down
 
 
 # ── HTTP check ────────────────────────────────────────────────────────────────
@@ -86,7 +91,6 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
         host, port_s, path = m.group(1), m.group(2), m.group(3)
         port = int(port_s) if port_s else 80
 
-        # Timeout mínimo de 15s: a 48 kbps un bloque de 16 KB tarda ~2.7s
         icy_timeout = max(timeout, 15)
         s = socket.create_connection((host, port), timeout=icy_timeout)
         req = (
@@ -98,7 +102,6 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
         )
         s.sendall(req.encode())
 
-        # Leer headers
         buf = b""
         while b"\r\n\r\n" not in buf:
             chunk = s.recv(4096)
@@ -119,7 +122,6 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
             s.close()
             return None
 
-        # Leer bloques de metadata hasta encontrar StreamTitle (máx 4 intentos)
         audio_buf = buf.split(b"\r\n\r\n", 1)[1]
         for _ in range(4):
             needed = metaint - len(audio_buf)
@@ -136,7 +138,6 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
                 s.close()
                 return None
 
-            # Guardar bytes sobrantes para el siguiente ciclo
             audio_buf = audio_buf[metaint:]
 
             meta_len_byte = s.recv(1)
@@ -146,7 +147,7 @@ def _read_icy_title(url: str, timeout: int) -> str | None:
             meta_len = meta_len_byte[0] * 16
 
             if meta_len == 0:
-                continue  # bloque vacío — probar el siguiente
+                continue
 
             meta_buf = b""
             while len(meta_buf) < meta_len:
@@ -193,212 +194,84 @@ def main():
     parser.add_argument("--notify",   action="store_true", help="Enviar eventos a Telegram")
     parser.add_argument("--icy",      action="store_true", help="Leer StreamTitle ICY")
     parser.add_argument("--quiet",    action="store_true")
-    parser.add_argument("--db",       default=None, help="Ruta alternativa a radio_v2.sqlite")
     args = parser.parse_args()
 
     def log(msg=""):
         if not args.quiet:
             print(msg)
 
+    started_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
     log(f"=== check_streams_v2.py  {datetime.now():%Y-%m-%d %H:%M} ===")
 
-    db = get_db(args.db)
-
-    # Cargar config de Telegram desde entorno o config.py
     tg_token   = os.environ.get("TG_TOKEN", "")
     tg_chat_id = os.environ.get("TG_CHAT_ID", "")
-    try:
-        conf_path = os.path.join(os.path.dirname(__file__), "..", "web", "config.php")
-        if os.path.exists(conf_path):
-            with open(conf_path) as f:
-                for line in f:
-                    if "TG_TOKEN" in line and not tg_token:
-                        m = re.search(r"'([^']+)'", line.split("TG_TOKEN")[1])
-                        if m:
-                            tg_token = m.group(1)
-                    if "TG_CHAT_ID" in line and not tg_chat_id:
-                        m = re.search(r"'([^']+)'", line.split("TG_CHAT_ID")[1])
-                        if m:
-                            tg_chat_id = m.group(1)
-    except Exception:
-        pass
 
-    # Registrar inicio de run
-    run_id = db.execute(
-        "INSERT INTO crawler_runs (crawler, started_at) VALUES (?, datetime('now'))",
-        ("check-streams",)
-    ).lastrowid
-    db.commit()
-
-    # Cargar emisoras
-    rows = db.execute("""
-        SELECT s.id, s.slug, s.nombre, s.url,
-               COALESCE(ss.estado, 'unknown')         AS prev_estado,
-               COALESCE(ss.consecutive_failures, 0)   AS prev_fails,
-               COALESCE(ic.supported, 0)              AS prev_icy
-        FROM stations s
-        LEFT JOIN stream_status ss ON ss.station_id = s.id
-        LEFT JOIN icy_cache     ic ON ic.station_id = s.id
-        WHERE s.approved = 1
-        ORDER BY s.id
-    """).fetchall()
-
+    rows = get("stations_check_context")
     log(f"Emisoras a verificar: {len(rows)}")
 
     # Verificar en paralelo
-    results = {}
+    results_by_id = {}
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         futs = {ex.submit(check_url, r["url"], args.timeout): r for r in rows}
         done = 0
         for f in as_completed(futs):
             row = futs[f]
-            results[row["id"]] = f.result()
+            results_by_id[row["id"]] = f.result()
             done += 1
             if done % 100 == 0:
                 log(f"  {done}/{len(rows)}...")
 
-    log(f"Verificación HTTP completa.")
+    log("Verificación HTTP completa.")
 
-    # Procesar resultados
-    ts = datetime.utcnow().isoformat(timespec="seconds")
+    # Leer ICY StreamTitle donde corresponda (secuencial — ya son pocas: solo
+    # las que dieron icy_supported=1 en el check HTTP)
+    icy_titles = {}
+    if args.icy:
+        for row in rows:
+            res = results_by_id.get(row["id"])
+            if res and res["icy_supported"]:
+                title = _read_icy_title(row["url"], args.timeout)
+                if title:
+                    icy_titles[row["id"]] = title
+
+    # Armar payload de resultados
+    api_results = []
     count_ok = count_dead = count_timeout = 0
-    events_detected = 0
-    errors = 0
-
     for row in rows:
-        sid   = row["id"]
-        res   = results.get(sid, {"estado": "timeout", "http_code": None, "ms": 0,
-                                   "icy_supported": 0, "icy_name": None})
+        res = results_by_id.get(row["id"], {"estado": "timeout", "http_code": None,
+                                             "ms": 0, "icy_supported": 0, "icy_name": None})
         nuevo = res["estado"]
-        prev  = row["prev_estado"]
-        prev_fails = row["prev_fails"]
-        prev_icy   = row["prev_icy"]
+        if nuevo == "ok": count_ok += 1
+        elif nuevo == "timeout": count_timeout += 1
+        else: count_dead += 1
 
-        if nuevo == "ok":
-            count_ok += 1
-            new_fails = 0
-        elif nuevo == "timeout":
-            count_timeout += 1
-            new_fails = prev_fails + 1
-        else:
-            count_dead += 1
-            new_fails = prev_fails + 1
+        api_results.append({
+            "station_id": row["id"],
+            "estado": nuevo,
+            "http_code": res["http_code"],
+            "response_ms": res["ms"],
+            "icy_supported": res["icy_supported"],
+            "icy_name": res["icy_name"],
+        })
+        if row["nombre"]:
+            pass  # nombre solo se usa para logging local abajo
 
-        # UPSERT stream_status
-        try:
-            db.execute("""
-                INSERT INTO stream_status
-                    (station_id, estado, http_code, response_ms, consecutive_failures,
-                     last_checked, last_ok, updated_at)
-                VALUES (?, ?, ?, ?, ?, datetime('now'), ?, datetime('now'))
-                ON CONFLICT(station_id) DO UPDATE SET
-                    estado               = excluded.estado,
-                    http_code            = excluded.http_code,
-                    response_ms          = excluded.response_ms,
-                    consecutive_failures = excluded.consecutive_failures,
-                    last_checked         = excluded.last_checked,
-                    last_ok              = CASE WHEN excluded.estado = 'ok'
-                                               THEN excluded.last_ok
-                                               ELSE stream_status.last_ok END,
-                    updated_at           = excluded.updated_at
-            """, (
-                sid, nuevo, res["http_code"], res["ms"], new_fails,
-                ts if nuevo == "ok" else None
-            ))
-
-            # stream_history
-            db.execute("""
-                INSERT INTO stream_history
-                    (station_id, checked_at, estado, http_code, response_ms, icy_supported, icy_name)
-                VALUES (?, datetime('now'), ?, ?, ?, ?, ?)
-            """, (sid, nuevo, res["http_code"], res["ms"],
-                  res["icy_supported"], res["icy_name"]))
-
-        except Exception as e:
-            errors += 1
-            log(f"  [!] Error DB para {row['slug']}: {e}")
-            continue
-
-        # ── Detectar evento de estado ─────────────────────────────────────────
-        ev = None
-        if nuevo == "ok" and prev in ("muerto", "unknown"):
-            ev = ("came_back", prev, nuevo)
-        elif nuevo == "muerto" and new_fails >= DOWN_AFTER and prev != "muerto":
-            ev = ("went_down", prev, nuevo)
-
-        if ev:
-            db.execute("""
-                INSERT INTO station_events (station_id, event_type, old_value, new_value)
-                VALUES (?, ?, ?, ?)
-            """, (sid, ev[0], ev[1], ev[2]))
-            events_detected += 1
-            log(f"  ► {ev[0]:12s}  {row['nombre']}")
-
-        # ── Detectar cambio ICY ───────────────────────────────────────────────
-        cur_icy = res["icy_supported"]
-
-        # Si el check HTTP ya dio icy_supported, actualizar icy_cache
-        if cur_icy != prev_icy:
-            ev_icy = "icy_gained" if cur_icy else "icy_lost"
-            db.execute("""
-                INSERT INTO station_events (station_id, event_type, old_value, new_value)
-                VALUES (?, ?, ?, ?)
-            """, (sid, ev_icy, str(prev_icy), str(cur_icy)))
-            events_detected += 1
-            log(f"  ► {ev_icy:12s}  {row['nombre']}")
-
-        # UPSERT icy_cache
-        stream_title = None
-        if args.icy and cur_icy:
-            stream_title = _read_icy_title(row["url"], args.timeout)
-
-        db.execute("""
-            INSERT INTO icy_cache (station_id, supported, icy_name, stream_title, last_checked)
-            VALUES (?, ?, ?, ?, datetime('now'))
-            ON CONFLICT(station_id) DO UPDATE SET
-                supported    = excluded.supported,
-                icy_name     = excluded.icy_name,
-                stream_title = CASE WHEN excluded.stream_title IS NOT NULL
-                                    THEN excluded.stream_title
-                                    ELSE icy_cache.stream_title END,
-                last_title_change = CASE
-                    WHEN excluded.stream_title IS NOT NULL
-                     AND excluded.stream_title != icy_cache.stream_title
-                    THEN datetime('now')
-                    ELSE icy_cache.last_title_change END,
-                last_checked = excluded.last_checked
-        """, (sid, cur_icy, res["icy_name"], stream_title))
-
-    db.commit()
-
-    # Cerrar run
-    db.execute("""
-        UPDATE crawler_runs
-        SET finished_at = datetime('now'),
-            stations_checked = ?,
-            changes_detected = ?,
-            errors = ?
-        WHERE id = ?
-    """, (len(rows), events_detected, errors, run_id))
-    db.commit()
+    log("Enviando resultados a la API...")
+    out = post(
+        "check_streams_report",
+        started_at=started_at,
+        results=api_results,
+        icy_titles=icy_titles,
+    )
 
     log()
-    log(f"OK: {count_ok}  |  Timeout: {count_timeout}  |  Muertos: {count_dead}")
-    log(f"Eventos detectados: {events_detected}  |  Errores DB: {errors}")
+    log(f"OK: {out['ok_count']}  |  Timeout: {out['timeout_count']}  |  Muertos: {out['dead_count']}")
+    log(f"Eventos detectados: {out['events_detected']}  |  Errores DB: {out['errors']}")
 
-    # Notificar eventos pendientes vía Telegram
     if args.notify and tg_token and tg_chat_id:
-        pending = db.execute("""
-            SELECT se.event_type, s.nombre, se.old_value, se.new_value
-            FROM station_events se
-            JOIN stations s ON s.id = se.station_id
-            WHERE se.notified = 0
-            ORDER BY se.detected_at DESC
-            LIMIT 20
-        """).fetchall()
-
+        pending = out.get("pending_notify") or []
         if pending:
-            lines = [f"📡 Radio AR — {len(pending)} cambio{'s' if len(pending)>1 else ''}:"]
+            lines = [f"📡 Radio AR — {len(pending)} cambio{'s' if len(pending) > 1 else ''}:"]
             icons = {
                 "came_back":  "✅",
                 "went_down":  "❌",
@@ -409,16 +282,7 @@ def main():
                 icon = icons.get(ev["event_type"], "•")
                 lines.append(f"{icon} {ev['nombre']} ({ev['event_type']})")
             _send_telegram(tg_token, tg_chat_id, "\n".join(lines))
-
-            db.execute("UPDATE station_events SET notified = 1 WHERE notified = 0")
-            db.commit()
             log(f"✓ Telegram: {len(pending)} eventos notificados")
-
-    # Forzar checkpoint WAL antes de cerrar: garantiza que el archivo .sqlite
-    # tenga todos los cambios integrados (sin depender del WAL) para poder
-    # subirlo al servidor de forma segura.
-    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-    db.close()
 
 
 if __name__ == "__main__":

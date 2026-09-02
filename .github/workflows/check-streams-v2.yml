@@ -5,11 +5,6 @@ on:
     - cron: '0 */6 * * *'   # cada 6 horas
   workflow_dispatch:
 
-# Un solo job a la vez escribe la DB — evita corrupción por uploads simultáneos
-concurrency:
-  group: radio-db-write
-  cancel-in-progress: false
-
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -18,86 +13,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Instalar lftp
-        run: sudo apt-get install -y lftp
-
-      - name: Descargar DB del servidor (con WAL si existe, con reintentos)
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          mkdir -p db
-          for attempt in 1 2 3; do
-            rm -f db/radio_v2.sqlite db/radio_v2.sqlite-wal db/radio_v2.sqlite-shm
-            lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar -e "
-              set ssl:verify-certificate no
-              get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
-              get /radio/db/radio_v2.sqlite-wal -o db/radio_v2.sqlite-wal
-              get /radio/db/radio_v2.sqlite-shm -o db/radio_v2.sqlite-shm
-              bye
-            " 2>&1 || true
-
-            if python3 -c "
-          import sqlite3, sys, os
-          db = 'db/radio_v2.sqlite'
-          if not os.path.exists(db):
-              sys.exit(1)
-          try:
-              c = sqlite3.connect(db)
-              ok = c.execute('PRAGMA integrity_check').fetchone()[0]
-              c.close()
-              sys.exit(0 if ok == 'ok' else 1)
-          except Exception:
-              sys.exit(1)
-          "; then
-              echo "DB OK (intento $attempt)"
-              break
-            fi
-
-            echo "Intento $attempt: DB no válida"
-            if [ "$attempt" = "3" ]; then
-              echo "ERROR: no se pudo obtener una copia válida de la DB tras 3 intentos"
-              exit 1
-            fi
-            sleep 5
-          done
-
-          # Checkpoint WAL antes de trabajar con la DB
-          python3 -c "
-          import sqlite3
-          c = sqlite3.connect('db/radio_v2.sqlite')
-          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-          c.close()
-          print('DB checkpointeada')
-          "
-
       - name: Verificar streams y detectar cambios
         env:
-          TG_TOKEN:   ${{ secrets.TG_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_TOKEN:       ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID:     ${{ secrets.TG_CHAT_ID }}
+          CRAWLER_TOKEN:  ${{ secrets.CRAWLER_TOKEN }}
         run: |
           python3 crawlers/check_streams_v2.py --notify --icy --workers 40
-
-      - name: Checkpoint WAL y subir DB al servidor (upload atómico)
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          # Forzar checkpoint para que todo quede en el archivo principal
-          python3 -c "
-          import sqlite3
-          c = sqlite3.connect('db/radio_v2.sqlite')
-          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-          c.execute('PRAGMA journal_mode = DELETE')
-          c.close()
-          "
-          # put+mv+rm en UNA sola sesion lftp — antes el rm del wal/shm viejo iba
-          # en una sesion FTP aparte, dejando una ventana real (reconexion) donde
-          # el archivo principal ya era el nuevo pero el wal/shm viejo seguia en
-          # disco. Ver TKT-0703/TKT-0706.
-          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
-          set ssl:verify-certificate no
-          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
-          mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
-          set cmd:fail-exit no
-          glob -a rm /radio/db/radio_v2.sqlite-wal /radio/db/radio_v2.sqlite-shm
-          bye
-          LFTP
