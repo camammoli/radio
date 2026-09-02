@@ -39,10 +39,10 @@ import sys
 import os
 import re
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from db.radio_db import get_db
+from db.radio_api import get, post
 
 REDIRECT_RE = re.compile(r'livestream-redirect/([A-Za-z0-9_]+)', re.I)
 FIXED_EDGE_RE = re.compile(r'streamtheworld\.com(?::\d+)?/([A-Za-z0-9_]+)', re.I)
@@ -112,7 +112,6 @@ def main():
     parser.add_argument("--apply",  action="store_true", help="Aplica los casos seguros (default: dry-run)")
     parser.add_argument("--notify", action="store_true", help="Envía resumen a Telegram")
     parser.add_argument("--quiet",  action="store_true")
-    parser.add_argument("--db",     default=None, help="Ruta alternativa a radio_v2.sqlite")
     args = parser.parse_args()
 
     def log(msg=""):
@@ -121,17 +120,9 @@ def main():
 
     log(f"=== dedupe_streamtheworld_v2.py  {datetime.now():%Y-%m-%d %H:%M} ===")
 
-    db = get_db(args.db)
+    started_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    run_id = db.execute(
-        "INSERT INTO crawler_runs (crawler, started_at) VALUES (?, datetime('now'))",
-        ("dedupe-streamtheworld",)
-    ).lastrowid
-    db.commit()
-
-    rows = db.execute(
-        "SELECT id, slug, nombre, url FROM stations WHERE approved = 1"
-    ).fetchall()
+    rows = [r for r in get("stations_full") if r["approved"]]
     log(f"Emisoras aprobadas: {len(rows)}")
 
     groups = find_groups(rows)
@@ -172,32 +163,30 @@ def main():
 
     applied = []
     if args.apply and auto_hidden:
-        for e, keep in auto_hidden:
-            db.execute(
-                "UPDATE stations SET approved = 0, updated_at = datetime('now') WHERE id = ?",
-                (e['id'],)
-            )
-            db.execute(
-                """INSERT INTO station_events (station_id, event_type, old_value, new_value, detected_at)
-                   VALUES (?, 'dedup_hidden', ?, ?, datetime('now'))""",
-                (e['id'], e['url'], keep['slug'])
-            )
-            applied.append((e, keep))
-        db.commit()
-        log(f"\nAplicado: {len(applied)} emisoras ocultadas.")
-    elif auto_hidden:
-        log("\n(dry-run: no se aplicó nada. Usar --apply para ocultar las de arriba)")
-
-    db.execute("""
-        UPDATE crawler_runs
-        SET finished_at = datetime('now'),
-            stations_checked = ?,
-            changes_detected = ?,
-            notes = ?
-        WHERE id = ?
-    """, (len(rows), len(applied), f"{len(needs_review)} grupos pendientes de revisión manual", run_id))
-    db.commit()
-    db.close()
+        hidden_payload = [
+            {"station_id": e["id"], "url": e["url"], "keep_slug": keep["slug"]}
+            for e, keep in auto_hidden
+        ]
+        out = post(
+            "dedupe_apply",
+            started_at=started_at,
+            hidden=hidden_payload,
+            stations_checked=len(rows),
+            notes=f"{len(needs_review)} grupos pendientes de revisión manual",
+        )
+        applied = auto_hidden
+        log(f"\nAplicado: {out['applied']} emisoras ocultadas.")
+    else:
+        if auto_hidden:
+            log("\n(dry-run: no se aplicó nada. Usar --apply para ocultar las de arriba)")
+        post(
+            "crawler_run_log",
+            crawler="dedupe-streamtheworld",
+            started_at=started_at,
+            stations_checked=len(rows),
+            changes_detected=0,
+            notes=f"{len(needs_review)} grupos pendientes de revisión manual",
+        )
 
     if args.notify and (applied or needs_review or broken_names):
         tg_token, tg_chat_id = load_telegram_config()

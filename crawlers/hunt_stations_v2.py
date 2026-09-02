@@ -20,10 +20,10 @@ import argparse
 import unicodedata
 import urllib.request
 import urllib.error
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from db.radio_db import get_db
+from db.radio_api import get, post
 
 UA         = "emisoras-crawler/2.0 (mammoli.ar)"
 COUNTRIES  = ["AR", "UY"]
@@ -45,12 +45,13 @@ def _slug(nombre: str) -> str:
     return nombre.strip("-")
 
 
-def unique_slug(db, base: str) -> str:
+def unique_slug(base: str, existing_slugs: set) -> str:
     slug = base
     n = 2
-    while db.execute("SELECT 1 FROM stations WHERE slug = ?", (slug,)).fetchone():
+    while slug in existing_slugs:
         slug = f"{base}-{n}"
         n += 1
+    existing_slugs.add(slug)
     return slug
 
 
@@ -106,7 +107,6 @@ def main():
     parser.add_argument("--no-verify", action="store_true")
     parser.add_argument("--max",       type=int, default=DEFAULT_MAX)
     parser.add_argument("--quiet",     action="store_true")
-    parser.add_argument("--db",        default=None)
     args = parser.parse_args()
 
     do_insert  = args.apply or args.approve
@@ -118,19 +118,11 @@ def main():
 
     log(f"=== hunt_stations_v2.py  {datetime.now():%Y-%m-%d %H:%M} ===")
 
-    db = get_db(args.db)
+    started_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    run_id = db.execute(
-        "INSERT INTO crawler_runs (crawler, started_at) VALUES (?, datetime('now'))",
-        ("hunt-stations",)
-    ).lastrowid
-    db.commit()
-
-    # URLs ya en DB
-    existing = {
-        norm_url(r["url"])
-        for r in db.execute("SELECT url FROM stations").fetchall()
-    }
+    catalogo = get("stations_full")
+    existing = {norm_url(r["url"]) for r in catalogo}
+    existing_slugs = {r["slug"] for r in catalogo}
     log(f"URLs ya en DB: {len(existing)}")
 
     # Descargar de Radio Browser
@@ -159,14 +151,13 @@ def main():
 
     if not candidates:
         log("Nada nuevo. Saliendo.")
-        db.execute("UPDATE crawler_runs SET finished_at = datetime('now'), notes = 'sin candidatas' WHERE id = ?", (run_id,))
-        db.commit()
-        db.close()
+        post("crawler_run_log", crawler="hunt-stations", started_at=started_at, notes="sin candidatas")
         return
 
-    # Verificar y insertar
+    # Verificar y armar el lote a insertar
     nuevas   = 0
     fallidas = 0
+    to_insert = []
 
     for s in candidates:
         if nuevas >= args.max:
@@ -192,51 +183,42 @@ def main():
                 fallidas += 1
                 continue
 
-        slug = unique_slug(db, _slug(nombre))
+        slug = unique_slug(_slug(nombre), existing_slugs)
         log(f"  + {nombre} ({prov}) → {slug}")
 
         if do_insert:
-            try:
-                db.execute("""
-                    INSERT INTO stations
-                        (slug, nombre, url, provincia, tags, logo, homepage,
-                         codec, bitrate, rb_uuid, rb_votes, rb_clicks,
-                         source, approved)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'radio-browser', ?)
-                """, (slug, nombre, url, prov,
-                      json.dumps(tags[:6], ensure_ascii=False),
-                      logo, homepage, codec, bitrate,
-                      rb_uuid, rb_votes, rb_clicks, approved))
-                station_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-
-                # icy_cache inicial
-                if icy_sup:
-                    db.execute("""
-                        INSERT INTO icy_cache (station_id, supported, last_checked)
-                        VALUES (?, 1, datetime('now'))
-                    """, (station_id,))
-
-                db.commit()
-            except Exception as e:
-                log(f"    [!] Error insert: {e}")
-                continue
+            to_insert.append({
+                "slug": slug, "nombre": nombre, "url": url, "provincia": prov,
+                "tags": tags[:6], "logo": logo, "homepage": homepage,
+                "codec": codec, "bitrate": bitrate, "rb_uuid": rb_uuid or None,
+                "rb_votes": rb_votes, "rb_clicks": rb_clicks,
+                "approved": approved, "icy_supported": icy_sup,
+            })
 
         nuevas += 1
 
-    db.execute("""
-        UPDATE crawler_runs
-        SET finished_at = datetime('now'),
-            stations_checked = ?,
-            changes_detected = ?,
-            errors = ?
-        WHERE id = ?
-    """, (len(candidates), nuevas, fallidas, run_id))
-    db.commit()
-    db.close()
+    inserted = 0
+    if do_insert and to_insert:
+        out = post(
+            "hunt_stations_apply",
+            started_at=started_at,
+            stations=to_insert,
+            candidates=len(candidates),
+            fallidas=fallidas,
+        )
+        inserted = out["inserted"]
+    else:
+        post(
+            "crawler_run_log",
+            crawler="hunt-stations", started_at=started_at,
+            stations_checked=len(candidates), changes_detected=nuevas, errors=fallidas,
+        )
 
     log()
-    log(f"Nuevas {'insertadas' if do_insert else '(dry-run)'}: {nuevas}  |  Fallidas: {fallidas}")
-    if not do_insert:
+    if do_insert:
+        log(f"Nuevas insertadas: {inserted}  |  Fallidas: {fallidas}")
+    else:
+        log(f"Nuevas (dry-run): {nuevas}  |  Fallidas: {fallidas}")
         log("Pasá --apply para insertar (approved=0) o --approve para aprobar directamente.")
 
 

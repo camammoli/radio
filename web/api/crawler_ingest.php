@@ -249,6 +249,195 @@ if ($accion === 'check_streams_report') {
     ]);
 }
 
+if ($accion === 'hunt_stations_apply') {
+    // Para hunt_stations_v2.py --apply/--approve: inserta emisoras nuevas
+    // descubiertas en Radio Browser. El cliente ya calculó slugs únicos
+    // localmente (contra el catálogo leído antes) — acá solo se inserta,
+    // con try/catch por fila (si hubo una colisión real de por medio, se
+    // saltea esa fila en vez de abortar todo el lote).
+    api_method('POST');
+    $body     = json_body();
+    $stations = $body['stations'] ?? [];
+    $started_at = $body['started_at'] ?? gmdate('Y-m-d H:i:s');
+    $candidates = (int)($body['candidates'] ?? count($stations));
+    $fallidas   = (int)($body['fallidas'] ?? 0);
+
+    if (!is_array($stations)) api_error('stations debe ser un array', 400);
+
+    $ahora = sql_now();
+    $stmtInsert = $db->prepare("
+        INSERT INTO stations
+            (slug, nombre, url, provincia, tags, logo, homepage,
+             codec, bitrate, rb_uuid, rb_votes, rb_clicks,
+             source, approved, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'radio-browser', ?, $ahora, $ahora)
+    ");
+    $stmtIcy = $db->prepare(
+        "INSERT INTO icy_cache (station_id, supported, last_checked) VALUES (?, 1, " . sql_now() . ")"
+    );
+
+    $inserted = 0;
+    foreach ($stations as $s) {
+        try {
+            $db->beginTransaction();
+            $stmtInsert->execute([
+                $s['slug'], $s['nombre'], $s['url'], $s['provincia'] ?? null,
+                json_encode($s['tags'] ?? [], JSON_UNESCAPED_UNICODE),
+                $s['logo'] ?? null, $s['homepage'] ?? null,
+                $s['codec'] ?? null, $s['bitrate'] ?? null,
+                $s['rb_uuid'] ?? null, (int)($s['rb_votes'] ?? 0), (int)($s['rb_clicks'] ?? 0),
+                (int)($s['approved'] ?? 0),
+            ]);
+            $stationId = (int)$db->lastInsertId();
+            if (!empty($s['icy_supported'])) {
+                $stmtIcy->execute([$stationId]);
+            }
+            $db->commit();
+            $inserted++;
+        } catch (Exception $e) {
+            if ($db->inTransaction()) $db->rollBack();
+        }
+    }
+
+    $db->prepare(
+        "INSERT INTO crawler_runs (crawler, started_at, finished_at, stations_checked, changes_detected, errors)
+         VALUES (?, ?, " . sql_now() . ", ?, ?, ?)"
+    )->execute(['hunt-stations', $started_at, $candidates, $inserted, $fallidas]);
+
+    api_response(['inserted' => $inserted]);
+}
+
+if ($accion === 'enrich_report') {
+    // Para enrich_v2.py: aplica metadata de Radio Browser + chequeo ICY en una
+    // sola transacción. $stations: campos nullable = COALESCE (no pisa lo que
+    // ya había si RB no trajo dato); $icy: aparte porque compara contra el
+    // estado previo para detectar eventos icy_gained/icy_lost.
+    api_method('POST');
+    $body     = json_body();
+    $stations = $body['stations'] ?? [];
+    $icy      = $body['icy'] ?? [];
+    $started_at = $body['started_at'] ?? gmdate('Y-m-d H:i:s');
+    $notes    = $body['notes'] ?? null;
+
+    if (!is_array($stations) || !is_array($icy)) api_error('stations/icy deben ser arrays', 400);
+
+    $stmtStation = $db->prepare("
+        UPDATE stations
+        SET logo = COALESCE(?, logo),
+            tags = CASE WHEN ? != '[]' THEN ? ELSE tags END,
+            homepage = COALESCE(?, homepage),
+            codec = COALESCE(?, codec),
+            bitrate = COALESCE(?, bitrate),
+            rb_uuid = COALESCE(?, rb_uuid),
+            rb_votes = ?,
+            rb_clicks = ?,
+            updated_at = " . sql_now() . "
+        WHERE id = ?
+    ");
+    $stmtCodec = $db->prepare("
+        UPDATE stations
+        SET codec = COALESCE(codec, ?), bitrate = COALESCE(bitrate, ?), updated_at = " . sql_now() . "
+        WHERE id = ?
+    ");
+    $sqlIcyUpsert = db_engine() === 'mysql'
+        ? "INSERT INTO icy_cache (station_id, supported, icy_name, last_checked)
+           VALUES (?, ?, ?, " . sql_now() . ")
+           ON DUPLICATE KEY UPDATE
+                supported    = VALUES(supported),
+                icy_name     = COALESCE(VALUES(icy_name), icy_cache.icy_name),
+                last_checked = VALUES(last_checked)"
+        : "INSERT INTO icy_cache (station_id, supported, icy_name, last_checked)
+           VALUES (?, ?, ?, " . sql_now() . ")
+           ON CONFLICT(station_id) DO UPDATE SET
+                supported    = excluded.supported,
+                icy_name     = COALESCE(excluded.icy_name, icy_cache.icy_name),
+                last_checked = excluded.last_checked";
+    $stmtIcy   = $db->prepare($sqlIcyUpsert);
+    $stmtEvent = $db->prepare(
+        "INSERT INTO station_events (station_id, event_type, old_value, new_value) VALUES (?, ?, ?, ?)"
+    );
+
+    $db->beginTransaction();
+
+    foreach ($stations as $s) {
+        $sid = (int)($s['id'] ?? 0);
+        if (!$sid) continue;
+        $tagsJson = json_encode($s['tags'] ?? [], JSON_UNESCAPED_UNICODE);
+        $stmtStation->execute([
+            $s['logo'] ?? null, $tagsJson, $tagsJson,
+            $s['homepage'] ?? null, $s['codec'] ?? null, $s['bitrate'] ?? null,
+            $s['rb_uuid'] ?? null, (int)($s['rb_votes'] ?? 0), (int)($s['rb_clicks'] ?? 0),
+            $sid,
+        ]);
+    }
+
+    $events_detected = 0;
+    foreach ($icy as $it) {
+        $sid = (int)($it['id'] ?? 0);
+        if (!$sid) continue;
+        $cur_icy  = !empty($it['icy_supported']) ? 1 : 0;
+        $prev_icy = !empty($it['prev_icy']) ? 1 : 0;
+
+        $stmtIcy->execute([$sid, $cur_icy, $it['icy_name'] ?? null]);
+
+        if ($cur_icy !== $prev_icy) {
+            $stmtEvent->execute([$sid, $cur_icy ? 'icy_gained' : 'icy_lost', (string)$prev_icy, (string)$cur_icy]);
+            $events_detected++;
+        }
+        if (!empty($it['codec']) || !empty($it['bitrate'])) {
+            $stmtCodec->execute([$it['codec'] ?? null, $it['bitrate'] ?? null, $sid]);
+        }
+    }
+
+    $db->commit();
+
+    $db->prepare(
+        "INSERT INTO crawler_runs (crawler, started_at, finished_at, stations_checked, changes_detected, notes)
+         VALUES (?, ?, " . sql_now() . ", ?, ?, ?)"
+    )->execute(['enrich', $started_at, count($stations), $events_detected, $notes]);
+
+    api_response(['stations_updated' => count($stations), 'events_detected' => $events_detected]);
+}
+
+if ($accion === 'dedupe_apply') {
+    // Para dedupe_streamtheworld_v2.py --apply: oculta duplicados (approved=0),
+    // registra el evento y deja constancia en crawler_runs, todo en una transacción.
+    api_method('POST');
+    $body    = json_body();
+    $items   = $body['hidden'] ?? []; // [{station_id, url, keep_slug}]
+    $started_at = $body['started_at'] ?? gmdate('Y-m-d H:i:s');
+
+    if (!is_array($items)) api_error('hidden debe ser un array', 400);
+
+    $stmtHide  = $db->prepare("UPDATE stations SET approved = 0, updated_at = " . sql_now() . " WHERE id = ?");
+    $stmtEvent = $db->prepare(
+        "INSERT INTO station_events (station_id, event_type, old_value, new_value)
+         VALUES (?, 'dedup_hidden', ?, ?)"
+    );
+
+    $db->beginTransaction();
+    $applied = 0;
+    foreach ($items as $it) {
+        $sid = (int)($it['station_id'] ?? 0);
+        if (!$sid) continue;
+        $stmtHide->execute([$sid]);
+        $stmtEvent->execute([$sid, $it['url'] ?? '', $it['keep_slug'] ?? '']);
+        $applied++;
+    }
+    $db->commit();
+
+    $db->prepare(
+        "INSERT INTO crawler_runs (crawler, started_at, finished_at, stations_checked, changes_detected, notes)
+         VALUES (?, ?, " . sql_now() . ", ?, ?, ?)"
+    )->execute([
+        'dedupe-streamtheworld', $started_at,
+        (int)($body['stations_checked'] ?? 0), $applied,
+        $body['notes'] ?? null,
+    ]);
+
+    api_response(['applied' => $applied]);
+}
+
 if ($accion === 'crawler_run_log') {
     // Genérico para crawlers que no necesitan un endpoint dedicado (competitor
     // scan, gist sync, etc.) — solo dejan constancia en crawler_runs.

@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from db.radio_db import get_db
+from db.radio_api import get
 
 FORK_GIST_ID   = '21ce6e3ba07486bcd16a28cda967f0d9'   # camammoli fork
 FORK_FILENAME  = 'radios_argentinas_mammoli.txt'
@@ -30,14 +30,19 @@ FORK_FILENAME  = 'radios_argentinas_mammoli.txt'
 MAMMOLI_RADIO  = 'https://mammoli.ar/radio'
 
 
-def load_stations(db) -> list[dict]:
-    rows = db.execute("""
-        SELECT nombre, url, COALESCE(provincia, 'Argentina') AS provincia
-        FROM stations
-        WHERE approved = 1
-        ORDER BY provincia, nombre
-    """).fetchall()
-    return [dict(r) for r in rows]
+def load_stations() -> list[dict]:
+    rows = get("stations_full")
+    return sorted(
+        [
+            {
+                "nombre": r["nombre"],
+                "url": r["url"],
+                "provincia": r["provincia"] or "Argentina",
+            }
+            for r in rows if r["approved"]
+        ],
+        key=lambda s: (s["provincia"], s["nombre"]),
+    )
 
 
 
@@ -97,7 +102,6 @@ def gh_api(method: str, path: str, body: dict = None, token: str = '') -> dict |
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--dry-run', action='store_true')
-    parser.add_argument('--db', default=None, help='Ruta a radio_v2.sqlite')
     args = parser.parse_args()
 
     token = os.environ.get('GITHUB_TOKEN') or os.environ.get('GITHUB_PAT') or ''
@@ -110,10 +114,8 @@ def main():
     if not token:
         print('⚠ Sin GITHUB_TOKEN — se salta la parte de API.', file=sys.stderr)
 
-    db = get_db(args.db)
-
-    # ── 1. Cargar emisoras desde DB ───────────────────────────────────────────
-    stations = load_stations(db)
+    # ── 1. Cargar emisoras desde la API ───────────────────────────────────────
+    stations = load_stations()
     print(f'{len(stations)} emisoras aprobadas en DB')
 
     # ── 2. Actualizar fork ────────────────────────────────────────────────────
@@ -134,8 +136,6 @@ def main():
             print('  ✗ Error actualizando fork')
     else:
         print('  (sin token, saltando)')
-
-    db.close()
 
 
 if __name__ == '__main__':

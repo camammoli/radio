@@ -12,13 +12,15 @@ Uso local:
     python3 crawlers/competitor_scan.py [--db path/to/radio_v2.sqlite]
 """
 
-import re, sys, os, base64, sqlite3, unicodedata, json, time
+import re, sys, os, base64, unicodedata, json, time
 import urllib.request, urllib.parse
 from datetime import datetime
 
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from db.radio_api import get
+
 # ── Config ────────────────────────────────────────────────────────────────────
 
-DB_PATH    = os.getenv('RADIO_DB_PATH', 'db/radio_v2.sqlite')
 TG_TOKEN   = os.getenv('TG_TOKEN', '')
 TG_CHAT_ID = os.getenv('TG_CHAT_ID', '')
 
@@ -225,14 +227,12 @@ def load_site_targets() -> list[dict]:
 
 # ── Comparación ───────────────────────────────────────────────────────────────
 
-def load_db_stations(db_path: str) -> list[dict]:
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(
-        'SELECT id, nombre, url, slug FROM stations WHERE approved=1 AND url IS NOT NULL'
-    ).fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+def load_db_stations() -> list[dict]:
+    rows = get('stations_full')
+    return [
+        {'id': r['id'], 'nombre': r['nombre'], 'url': r['url'], 'slug': r['slug']}
+        for r in rows if r['approved'] and r['url']
+    ]
 
 
 def compare(competitor: list[dict], db_stations: list[dict]) -> dict:
@@ -355,15 +355,9 @@ def save_full_report(full_results: dict):
 
 
 def main():
-    db_path = DB_PATH
-    if '--db' in sys.argv:
-        db_path = sys.argv[sys.argv.index('--db') + 1]
-    if not os.path.exists(db_path):
-        print(f'ERROR: DB no encontrada en {db_path}'); sys.exit(1)
-
     full_results = {}
 
-    db_stations = load_db_stations(db_path)
+    db_stations = load_db_stations()
     print(f'DB: {len(db_stations)} emisoras aprobadas')
 
     known_domains = {urllib.parse.urlparse(s['url']).netloc.lower() for s in db_stations}

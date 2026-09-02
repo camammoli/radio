@@ -14,22 +14,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Instalar lftp
-        run: sudo apt-get install -y lftp
-
-      - name: Descargar DB del servidor
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          mkdir -p db
-          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
-          set ssl:verify-certificate no
-          get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
-          bye
-          LFTP
-
       - name: Sincronizar gist
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_PAT }}
+          GITHUB_TOKEN:  ${{ secrets.GITHUB_PAT }}
+          CRAWLER_TOKEN: ${{ secrets.CRAWLER_TOKEN }}
         run: |
           python3 gist_sync.py

@@ -21,10 +21,10 @@ import argparse
 import urllib.request
 import urllib.error
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from db.radio_db import get_db
+from db.radio_api import get, post
 
 UA         = "emisoras-enricher/2.0 (mammoli.ar)"
 COUNTRIES  = ["AR", "UY"]
@@ -130,7 +130,6 @@ def main():
     parser.add_argument("--workers", type=int, default=10)
     parser.add_argument("--force",   action="store_true", help="Re-enrich todas, incluso con rb_uuid")
     parser.add_argument("--quiet",   action="store_true")
-    parser.add_argument("--db",      default=None)
     args = parser.parse_args()
 
     def log(msg=""):
@@ -139,19 +138,17 @@ def main():
 
     log(f"=== enrich_v2.py  {datetime.now():%Y-%m-%d %H:%M} ===")
 
-    db = get_db(args.db)
+    started_at = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
 
-    run_id = db.execute(
-        "INSERT INTO crawler_runs (crawler, started_at) VALUES (?, datetime('now'))",
-        ("enrich",)
-    ).lastrowid
-    db.commit()
+    # stations_check_context trae prev_icy; stations_full no lo tiene, así que
+    # se combinan: la lista de emisoras sale de stations_full (tiene rb_uuid),
+    # y prev_icy de stations_check_context (misma llave station_id).
+    all_stations = [s for s in get("stations_full") if s["approved"]]
+    prev_icy_by_id = {r["id"]: r["prev_icy"] for r in get("stations_check_context")}
 
-    # Cargar emisoras del DB
-    query = "SELECT s.id, s.slug, s.nombre, s.url, s.rb_uuid, COALESCE(ic.supported, 0) AS prev_icy FROM stations s LEFT JOIN icy_cache ic ON ic.station_id = s.id WHERE s.approved = 1"
-    if not args.force:
-        query += " AND (s.rb_uuid IS NULL OR s.rb_uuid = '')"
-    rows = db.execute(query).fetchall()
+    rows = all_stations if args.force else [s for s in all_stations if not s.get("rb_uuid")]
+    for r in rows:
+        r["prev_icy"] = prev_icy_by_id.get(r["id"], 0)
     log(f"Emisoras a enriquecer: {len(rows)}")
 
     # Radio Browser
@@ -167,7 +164,7 @@ def main():
 
     matched = unmatched = 0
     events_detected = 0
-    updates = 0
+    stations_payload = []
 
     for row in rows:
         key = norm_url(row["url"])
@@ -182,37 +179,20 @@ def main():
             rb_uuid   = rb.get("stationuuid", "")
             rb_votes  = int(rb.get("votes", 0))
             rb_clicks = int(rb.get("clickcount", 0))
-            icy_info  = {"icy_supported": 1 if rb.get("hls") else 0, "icy_name": None}
             matched  += 1
         else:
             tags = []
             logo = homepage = codec = rb_uuid = None
             bitrate = rb_votes = rb_clicks = 0
-            icy_info = {"icy_supported": 0, "icy_name": None}
             unmatched += 1
 
-        # Actualizar stations
-        try:
-            db.execute("""
-                UPDATE stations
-                SET logo = COALESCE(?, logo),
-                    tags = CASE WHEN ? != '[]' THEN ? ELSE tags END,
-                    homepage = COALESCE(?, homepage),
-                    codec = COALESCE(?, codec),
-                    bitrate = COALESCE(?, bitrate),
-                    rb_uuid = COALESCE(?, rb_uuid),
-                    rb_votes = ?,
-                    rb_clicks = ?,
-                    updated_at = datetime('now')
-                WHERE id = ?
-            """, (logo, json.dumps(tags, ensure_ascii=False),
-                  json.dumps(tags, ensure_ascii=False) if tags else '[]',
-                  homepage, codec, bitrate,
-                  rb_uuid, rb_votes, rb_clicks,
-                  row["id"]))
-            updates += 1
-        except Exception as e:
-            log(f"  [!] Error update {row['slug']}: {e}")
+        stations_payload.append({
+            "id": row["id"], "logo": logo, "tags": tags, "homepage": homepage,
+            "codec": codec, "bitrate": bitrate, "rb_uuid": rb_uuid or None,
+            "rb_votes": rb_votes, "rb_clicks": rb_clicks,
+        })
+    updates = len(stations_payload)
+    icy_payload = []
 
     # ICY check para los sin match (o todos con --icy)
     icy_targets = [r for r in rows if not rb_idx.get(norm_url(r["url"]))] if not args.force else list(rows)
@@ -233,55 +213,30 @@ def main():
             ic = icy_results.get(row["id"], {})
             if not ic:
                 continue
-            cur_icy  = ic.get("icy_supported", 0)
-            prev_icy = row["prev_icy"]
-
-            db.execute("""
-                INSERT INTO icy_cache (station_id, supported, icy_name, last_checked)
-                VALUES (?, ?, ?, datetime('now'))
-                ON CONFLICT(station_id) DO UPDATE SET
-                    supported    = excluded.supported,
-                    icy_name     = COALESCE(excluded.icy_name, icy_cache.icy_name),
-                    last_checked = excluded.last_checked
-            """, (row["id"], cur_icy, ic.get("icy_name")))
-
-            # Detectar cambio ICY
-            if cur_icy != prev_icy:
-                ev = "icy_gained" if cur_icy else "icy_lost"
-                db.execute("""
-                    INSERT INTO station_events (station_id, event_type, old_value, new_value)
-                    VALUES (?, ?, ?, ?)
-                """, (row["id"], ev, str(prev_icy), str(cur_icy)))
+            icy_payload.append({
+                "id": row["id"],
+                "icy_supported": ic.get("icy_supported", 0),
+                "icy_name": ic.get("icy_name"),
+                "prev_icy": row["prev_icy"],
+                "codec": ic.get("codec"),
+                "bitrate": ic.get("bitrate"),
+            })
+            if bool(ic.get("icy_supported", 0)) != bool(row["prev_icy"]):
+                ev = "icy_gained" if ic.get("icy_supported") else "icy_lost"
                 events_detected += 1
                 log(f"  ► {ev:12s}  {row['nombre']}")
 
-            # Actualizar codec/bitrate si ICY lo detectó
-            if ic.get("codec") or ic.get("bitrate"):
-                db.execute("""
-                    UPDATE stations
-                    SET codec   = COALESCE(codec, ?),
-                        bitrate = COALESCE(bitrate, ?),
-                        updated_at = datetime('now')
-                    WHERE id = ?
-                """, (ic.get("codec"), ic.get("bitrate"), row["id"]))
-
-    db.commit()
-
-    db.execute("""
-        UPDATE crawler_runs
-        SET finished_at = datetime('now'),
-            stations_checked = ?,
-            changes_detected = ?,
-            notes = ?
-        WHERE id = ?
-    """, (len(rows), events_detected, f"Match RB: {matched}, sin match: {unmatched}", run_id))
-    db.commit()
-    db.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-    db.close()
+    out = post(
+        "enrich_report",
+        started_at=started_at,
+        stations=stations_payload,
+        icy=icy_payload,
+        notes=f"Match RB: {matched}, sin match: {unmatched}",
+    )
 
     log()
     log(f"Match RB: {matched}  |  Sin match: {unmatched}")
-    log(f"Actualizaciones: {updates}  |  Eventos ICY: {events_detected}")
+    log(f"Actualizaciones: {out['stations_updated']}  |  Eventos ICY: {out['events_detected']}")
 
 
 if __name__ == "__main__":

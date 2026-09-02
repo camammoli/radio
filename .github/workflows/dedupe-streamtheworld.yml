@@ -5,11 +5,6 @@ on:
     - cron: '30 11 * * 1'   # Todos los lunes 11:30 UTC (08:30 AR), después de competitor-scan
   workflow_dispatch:
 
-# Un solo job a la vez escribe la DB — evita corrupción por uploads simultáneos
-concurrency:
-  group: radio-db-write
-  cancel-in-progress: false
-
 jobs:
   dedupe:
     runs-on: ubuntu-latest
@@ -18,62 +13,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Instalar lftp
-        run: sudo apt-get install -y lftp
-
-      - name: Descargar DB del servidor (con WAL si existe)
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          mkdir -p db
-          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP' || true
-          set ssl:verify-certificate no
-          get /radio/db/radio_v2.sqlite -o db/radio_v2.sqlite
-          get /radio/db/radio_v2.sqlite-wal -o db/radio_v2.sqlite-wal || true
-          get /radio/db/radio_v2.sqlite-shm -o db/radio_v2.sqlite-shm || true
-          bye
-          LFTP
-          python3 -c "
-          import sqlite3, sys, os
-          db = 'db/radio_v2.sqlite'
-          if not os.path.exists(db):
-              print('ERROR: DB no descargada'); sys.exit(1)
-          c = sqlite3.connect(db)
-          ok = c.execute('PRAGMA integrity_check').fetchone()[0]
-          if ok != 'ok':
-              print(f'ERROR: DB corrupta — {ok}'); sys.exit(1)
-          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-          c.close()
-          print('DB OK')
-          "
-
       - name: Deduplicar emisoras streamtheworld
         env:
-          TG_TOKEN:   ${{ secrets.TG_TOKEN }}
-          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+          TG_TOKEN:      ${{ secrets.TG_TOKEN }}
+          TG_CHAT_ID:    ${{ secrets.TG_CHAT_ID }}
+          CRAWLER_TOKEN: ${{ secrets.CRAWLER_TOKEN }}
         run: |
-          python3 crawlers/dedupe_streamtheworld_v2.py --apply --notify --db db/radio_v2.sqlite
-
-      - name: Checkpoint WAL y subir DB al servidor (upload atómico)
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          python3 -c "
-          import sqlite3
-          c = sqlite3.connect('db/radio_v2.sqlite')
-          c.execute('PRAGMA wal_checkpoint(TRUNCATE)')
-          c.execute('PRAGMA journal_mode = DELETE')
-          c.close()
-          "
-          # put+mv+rm en UNA sola sesion lftp — antes el rm del wal/shm viejo iba
-          # en una sesion FTP aparte, dejando una ventana real (reconexion) donde
-          # el archivo principal ya era el nuevo pero el wal/shm viejo seguia en
-          # disco. Ver TKT-0703/TKT-0706.
-          lftp -u "carlos@mammoli.ar,$FTP_PASS" mammoli.ar << 'LFTP'
-          set ssl:verify-certificate no
-          put db/radio_v2.sqlite -o /radio/db/radio_v2.sqlite.new
-          mv /radio/db/radio_v2.sqlite.new /radio/db/radio_v2.sqlite
-          set cmd:fail-exit no
-          glob -a rm /radio/db/radio_v2.sqlite-wal /radio/db/radio_v2.sqlite-shm
-          bye
-          LFTP
+          python3 crawlers/dedupe_streamtheworld_v2.py --apply --notify

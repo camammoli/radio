@@ -15,21 +15,11 @@ jobs:
         with:
           ref: master
 
-      - name: Download DB from FTP
-        env:
-          FTP_PASS: ${{ secrets.FTP_PASS }}
-        run: |
-          curl --ftp-ssl -k \
-            -u "carlos@mammoli.ar:${FTP_PASS}" \
-            "ftp://mammoli.ar/radio/db/radio_v2.sqlite" \
-            -o db/radio_v2.sqlite
-          echo "DB size: $(du -sh db/radio_v2.sqlite | cut -f1)"
-
       - name: Run competitor scan
         env:
           TG_TOKEN:      ${{ secrets.TG_TOKEN }}
           TG_CHAT_ID:    ${{ secrets.TG_CHAT_ID }}
-          RADIO_DB_PATH: db/radio_v2.sqlite
+          CRAWLER_TOKEN: ${{ secrets.CRAWLER_TOKEN }}
         run: python3 crawlers/competitor_scan.py
 
       # El Telegram trunca a 20 items por seccion — esto sube el listado
