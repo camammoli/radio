@@ -114,6 +114,12 @@ $count_stmt->execute($params);
 $total_filtered = (int)$count_stmt->fetchColumn();
 
 // Resultados
+// LIMIT/OFFSET interpolados directo (ya son (int) vía int_param(), sin riesgo
+// de inyección) en vez de placeholders — en MySQL (este hosting) un entero
+// pasado por execute([...]) se manda como string cotizado y LIMIT '50' es un
+// error de sintaxis; SQLite lo tolera, por eso no se notó hasta el paso 8.
+$limitInt  = (int)$limit;
+$offsetInt = (int)$offset;
 $data_stmt = $db->prepare(
     "SELECT id, n, slug, nombre, url, provincia, tags, codec, bitrate,
             homepage, logo, estado, icy_supported, icy_name, stream_title,
@@ -125,9 +131,9 @@ $data_stmt = $db->prepare(
        total_plays DESC,
        rb_votes DESC,
        n ASC
-     LIMIT ? OFFSET ?"
+     LIMIT $limitInt OFFSET $offsetInt"
 );
-$data_stmt->execute([...$params, $limit, $offset]);
+$data_stmt->execute($params);
 
 $stations = array_map('station_row', $data_stmt->fetchAll());
 

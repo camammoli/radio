@@ -24,6 +24,7 @@ function radio_db(): PDO {
             [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => true,
             ]
         );
         // El esquema y la vista v_stations (misma versión v4 que en SQLite) ya

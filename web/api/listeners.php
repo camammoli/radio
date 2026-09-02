@@ -53,6 +53,10 @@ if ($slug !== '') {
 // ── Top ───────────────────────────────────────────────────────────────────────
 
 if ($action === 'top') {
+    // LIMIT vía bindValue(PARAM_INT) explícito, no execute([$limit]): en MySQL
+    // (este hosting) un entero pasado por el array corto de execute() se manda
+    // como string cotizado y LIMIT '10' es un error de sintaxis — SQLite lo
+    // tolera, por eso no se notó hasta probar contra MySQL (paso 8).
     $limit = int_param('limit', 10, 1, 50);
     $stmt  = $db->prepare(
         'SELECT s.nombre, s.slug, COUNT(p.id) AS plays
@@ -61,7 +65,8 @@ if ($action === 'top') {
          ORDER BY plays DESC
          LIMIT ?'
     );
-    $stmt->execute([$limit]);
+    $stmt->bindValue(1, $limit, PDO::PARAM_INT);
+    $stmt->execute();
     api_response($stmt->fetchAll());
 }
 
