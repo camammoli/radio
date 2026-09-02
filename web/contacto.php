@@ -85,16 +85,16 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
 
     try {
         $db = radio_db();
-        $db->exec('CREATE TABLE IF NOT EXISTS contacto_mensajes (
+        sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS contacto_mensajes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nombre TEXT,
             email TEXT,
             mensaje TEXT NOT NULL,
             created_at TEXT NOT NULL
-        )');
+        )'));
         $db->prepare(
             'INSERT INTO contacto_mensajes (nombre, email, mensaje, created_at) VALUES (?, ?, ?, ?)'
-        )->execute([$nombre ?: null, $email ?: null, $mensaje, date('c')]);
+        )->execute([$nombre ?: null, $email ?: null, $mensaje, gmdate('Y-m-d H:i:s')]);
 
         $quien = $nombre ?: 'Anónimo';
         $contacto_linea = $email ? "\nContacto: {$email}" : '';

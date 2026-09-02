@@ -23,7 +23,7 @@ if ($slug === '')                          api_error('slug requerido');
 $db = radio_db();
 
 // Migración: agregar columna location si no existe (noop si ya está)
-try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'));
 
 $r = $db->prepare('SELECT id FROM stations WHERE slug = ? OR nombre = ? LIMIT 1');
 $r->execute([$slug, $slug]);

@@ -21,7 +21,7 @@ require_once $dbf;
 $db = radio_db();
 
 // Asegurar tablas (idempotente)
-$db->exec('CREATE TABLE IF NOT EXISTS subscribers (
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contact_type TEXT NOT NULL,
     contact_value TEXT NOT NULL,
@@ -30,8 +30,8 @@ $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     token TEXT UNIQUE NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     last_notified TEXT
-)');
-$db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
+)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subscriber_id INTEGER,
     station_id INTEGER,
@@ -39,7 +39,7 @@ $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
     first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
     match_count INTEGER DEFAULT 1,
     notified INTEGER DEFAULT 0
-)');
+)'));
 
 $now = date('Y-m-d H:i:s');
 $log = function(string $msg) { echo date('[H:i:s] ') . $msg . "\n"; };
@@ -50,10 +50,11 @@ if (!$subscribers) { $log("Sin suscriptores activos."); exit(0); }
 
 // ── Cargar ICY reciente (últimos 30 min) ──────────────────────────────────────
 // Los registros de icy_history de los últimos 30 minutos, agrupados por estación
+$desde30min = sql_now_offset(-30, 'MINUTE');
 $recent_icy = $db->query("
     SELECT station_id, title, seen_at
     FROM icy_history
-    WHERE seen_at >= datetime('now', '-30 minutes')
+    WHERE seen_at >= $desde30min
     ORDER BY station_id, seen_at DESC
 ")->fetchAll(PDO::FETCH_ASSOC);
 
@@ -74,10 +75,11 @@ if ($icy_by_station) {
 }
 
 // ── Cooldown — cargar notificaciones recientes (últimas 4 horas) ──────────────
+$desde4h = sql_now_offset(-4, 'HOUR');
 $cooldown_raw = $db->query("
     SELECT subscriber_id, station_id, MAX(first_seen) AS last
     FROM subscriber_matches
-    WHERE notified=1 AND first_seen >= datetime('now', '-4 hours')
+    WHERE notified=1 AND first_seen >= $desde4h
     GROUP BY subscriber_id, station_id
 ")->fetchAll(PDO::FETCH_ASSOC);
 $cooldowns = [];
@@ -302,6 +304,7 @@ foreach ($upcoming_patterns as $pat) {
 }
 
 // ── Limpiar matches viejos (>48h) ─────────────────────────────────────────────
-$db->exec("DELETE FROM subscriber_matches WHERE first_seen < datetime('now', '-48 hours')");
+$limite48h = sql_now_offset(-48, 'HOUR');
+$db->exec("DELETE FROM subscriber_matches WHERE first_seen < $limite48h");
 
 $log("Fin. Notificaciones enviadas: {$total_notified}");

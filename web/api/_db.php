@@ -1,7 +1,12 @@
 <?php
 /**
- * _db.php — Conexión PDO a radio_v2.sqlite.
+ * _db.php — Conexión PDO a la base de Radio AR (SQLite o MySQL).
  * Retorna un singleton. No incluir directamente desde la web — prefijo _ lo protege.
+ *
+ * Motor controlado por la constante RADIO_DB_ENGINE en config.php ('sqlite' por
+ * defecto si no está definida — así este archivo se puede desplegar sin cambiar
+ * el comportamiento actual). El corte real a MySQL (TKT v5) es solo cambiar esa
+ * constante en config.php, no un deploy de código.
  */
 
 require_once __DIR__ . '/_helpers.php';
@@ -9,6 +14,26 @@ require_once __DIR__ . '/_helpers.php';
 function radio_db(): PDO {
     static $pdo = null;
     if ($pdo) return $pdo;
+
+    $engine = defined('RADIO_DB_ENGINE') ? RADIO_DB_ENGINE : 'sqlite';
+
+    if ($engine === 'mysql') {
+        $pdo = new PDO(
+            'mysql:host=' . MYSQL_HOST . ';dbname=' . MYSQL_DB . ';charset=utf8mb4',
+            MYSQL_USER, MYSQL_PASS,
+            [
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            ]
+        );
+        // El esquema y la vista v_stations (misma versión v4 que en SQLite) ya
+        // están creados por la migración — no hay lógica de auto-migración acá,
+        // a diferencia de la rama SQLite. Cambios de esquema futuros en MySQL se
+        // aplican con un deploy explícito, no en cada request.
+        return $pdo;
+    }
+
+    // ---------- Rama SQLite (comportamiento actual, sin cambios) ----------
 
     // RADIO_DB definido en config.php (requerido en producción: __DIR__ de config + /db/radio_v2.sqlite)
     $path = defined('RADIO_DB') ? RADIO_DB : __DIR__ . '/../db/radio_v2.sqlite';
@@ -33,7 +58,12 @@ function radio_db(): PDO {
     // recrea sola. La migración vive en _db.php (no solo en admin.php) porque
     // station.php/listing.php pueden recibir tráfico antes de que se cargue el
     // panel admin.
-    $v_stations_version = 4; // v4: oculta del público las muertas hace 14+ días
+    // v5: agrega respeto por baja manual (activa=0) — antes este archivo se había
+    // quedado en v4 mientras admin.php ya migraba a v5, y como ambos compiten por
+    // recrear la vista en cada request, terminaban pisándose entre sí (quedaba en
+    // v4 la mayor parte del tiempo, ocultando el filtro de "de baja" del listado
+    // público). Corregido 2026-09-02 — ver [[project_radio_mysql_migracion]].
+    $v_stations_version = 5;
     $v_stations_sql = "
             CREATE VIEW v_stations AS
             -- v_stations_version:$v_stations_version
@@ -57,6 +87,7 @@ function radio_db(): PDO {
                 SELECT station_id, COUNT(*) AS total_plays FROM plays GROUP BY station_id
             ) p ON p.station_id = s.id
             WHERE s.approved = 1
+              AND COALESCE(s.activa, 1) = 1
               -- Oculta del listado público las que llevan 14+ días muertas
               -- (siguen en la DB y visibles en el panel admin, solo no se
               -- muestran a los visitantes). 'timeout' no se oculta: es una

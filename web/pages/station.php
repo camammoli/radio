@@ -224,12 +224,12 @@ if ($prov) {
            ->execute([(int)$s['id'], 'Reporte de caída desde la ficha pública']);
     } catch (Exception $e) {
         try {
-            $db->exec('CREATE TABLE IF NOT EXISTS reportes (
+            sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS reportes (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 station_id INTEGER REFERENCES stations(id),
                 mensaje TEXT,
                 created_at TEXT DEFAULT CURRENT_TIMESTAMP
-            )');
+            )'));
             $db->prepare('INSERT INTO reportes (station_id, mensaje) VALUES (?, ?)')
                ->execute([(int)$s['id'], 'Reporte de caída desde la ficha pública']);
         } catch (Exception $e2) {}

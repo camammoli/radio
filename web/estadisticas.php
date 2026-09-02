@@ -9,8 +9,8 @@ require_once __DIR__ . '/api/_db.php';
 
 $db = radio_db();
 
-// Índice de performance (solo corre una vez)
-$db->exec("CREATE INDEX IF NOT EXISTS idx_history_date ON stream_history(checked_at)");
+// Índice de performance (solo corre una vez; en MySQL ya está creado por la migración)
+sqlite_lazy_migration($db, fn($db) => $db->exec("CREATE INDEX IF NOT EXISTS idx_history_date ON stream_history(checked_at)"));
 
 // Filtros disponibles: 7d, 30d, 90d
 $rango = in_array($_GET['rango'] ?? '', ['7d','30d','90d']) ? $_GET['rango'] : '7d';
@@ -40,26 +40,54 @@ $ts_last = $ultimo && $ultimo['ts']
     : '—';
 
 // ── Historial diario desde stream_history (91 días para comparativas + chart) ─
-// Por cada día, toma el último estado de cada estación (ROW_NUMBER window function)
-$history_raw = $db->query("
-    WITH latest AS (
-        SELECT station_id, estado, date(checked_at) AS day,
-               ROW_NUMBER() OVER (
-                   PARTITION BY station_id, date(checked_at)
-                   ORDER BY checked_at DESC
-               ) AS rn
-        FROM stream_history
-        WHERE checked_at >= date('now', '-91 days')
-    )
-    SELECT day,
-           SUM(CASE WHEN estado='ok'      THEN 1 ELSE 0 END) AS ok,
-           SUM(CASE WHEN estado='muerto'  THEN 1 ELSE 0 END) AS muertos,
-           SUM(CASE WHEN estado='timeout' THEN 1 ELSE 0 END) AS timeout,
-           COUNT(*) AS total
-    FROM latest WHERE rn = 1
-    GROUP BY day
-    ORDER BY day
-")->fetchAll(PDO::FETCH_ASSOC);
+// Por cada día, toma el último estado de cada estación. En SQLite usa ROW_NUMBER()
+// (window function); MySQL 5.7.44 no las soporta, así que ahí se arma el "último
+// por grupo" con un self-join contra el MAX(checked_at) de cada (station_id, día).
+$desde91 = sql_now_offset(-91, 'DAY');
+if (db_engine() === 'mysql') {
+    $history_raw = $db->query("
+        SELECT x.day,
+               SUM(CASE WHEN x.estado='ok'      THEN 1 ELSE 0 END) AS ok,
+               SUM(CASE WHEN x.estado='muerto'  THEN 1 ELSE 0 END) AS muertos,
+               SUM(CASE WHEN x.estado='timeout' THEN 1 ELSE 0 END) AS timeout,
+               COUNT(*) AS total
+        FROM (
+            SELECT sh.station_id, sh.estado, DATE(sh.checked_at) AS day
+            FROM stream_history sh
+            JOIN (
+                SELECT station_id, DATE(checked_at) AS day, MAX(checked_at) AS max_checked
+                FROM stream_history
+                WHERE checked_at >= $desde91
+                GROUP BY station_id, DATE(checked_at)
+            ) latest ON latest.station_id = sh.station_id
+                     AND DATE(sh.checked_at) = latest.day
+                     AND sh.checked_at = latest.max_checked
+            WHERE sh.checked_at >= $desde91
+        ) x
+        GROUP BY x.day
+        ORDER BY x.day
+    ")->fetchAll(PDO::FETCH_ASSOC);
+} else {
+    $history_raw = $db->query("
+        WITH latest AS (
+            SELECT station_id, estado, date(checked_at) AS day,
+                   ROW_NUMBER() OVER (
+                       PARTITION BY station_id, date(checked_at)
+                       ORDER BY checked_at DESC
+                   ) AS rn
+            FROM stream_history
+            WHERE checked_at >= $desde91
+        )
+        SELECT day,
+               SUM(CASE WHEN estado='ok'      THEN 1 ELSE 0 END) AS ok,
+               SUM(CASE WHEN estado='muerto'  THEN 1 ELSE 0 END) AS muertos,
+               SUM(CASE WHEN estado='timeout' THEN 1 ELSE 0 END) AS timeout,
+               COUNT(*) AS total
+        FROM latest WHERE rn = 1
+        GROUP BY day
+        ORDER BY day
+    ")->fetchAll(PDO::FETCH_ASSOC);
+}
 
 // Indexar por fecha para lookups de comparativa
 $history_by_day = [];

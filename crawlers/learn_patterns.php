@@ -18,7 +18,7 @@ require_once $dbf;
 $db  = radio_db();
 $log = function(string $msg) { echo date('[H:i:s] ') . $msg . "\n"; };
 
-$db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER,
     keyword TEXT NOT NULL,
@@ -28,21 +28,25 @@ $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
     occurrences INTEGER DEFAULT 0,
     last_seen TEXT,
     UNIQUE(station_id, keyword, day_of_week, hour)
-)');
+)'));
 
 $log("Leyendo icy_history de los últimos 60 días...");
 
 // Leer historial ICY (últimos 60 días)
 // Extraemos "programa" del título: si el título tiene separadores tipo " - " o "| " tomamos la segunda parte
 // como posible nombre de programa. Para artistas tomamos la parte antes del " - ".
+$dow  = db_engine() === 'mysql' ? '(DAYOFWEEK(seen_at - INTERVAL 3 HOUR) - 1)' : "CAST(strftime('%w', datetime(seen_at, '-3 hours')) AS INTEGER)";
+$hour = sql_hour_local('seen_at', -3);
+$day  = sql_date_local('seen_at', -3);
+$desde = sql_now_offset(-60, 'DAY');
 $rows = $db->query("
     SELECT station_id,
            title,
-           CAST(strftime('%w', datetime(seen_at, '-3 hours')) AS INTEGER) AS dow,
-           CAST(strftime('%H', datetime(seen_at, '-3 hours')) AS INTEGER) AS hour,
-           date(datetime(seen_at, '-3 hours')) AS day
+           $dow AS dow,
+           $hour AS hour,
+           $day AS day
     FROM icy_history
-    WHERE seen_at >= datetime('now', '-60 days')
+    WHERE seen_at >= $desde
       AND title IS NOT NULL AND title != ''
     ORDER BY station_id, seen_at
 ")->fetchAll(PDO::FETCH_ASSOC);
@@ -127,7 +131,8 @@ foreach ($patterns as $sid => $dows) {
 }
 
 // Limpiar patrones viejos (no vistos en más de 45 días)
-$db->exec("DELETE FROM program_patterns WHERE last_seen < date('now', '-45 days')");
+$limite45 = sql_now_offset(-45, 'DAY');
+$db->exec("DELETE FROM program_patterns WHERE last_seen < $limite45");
 
 $total = (int)$db->query("SELECT COUNT(*) FROM program_patterns")->fetchColumn();
 $log("Insertados: {$inserted} | Actualizados: {$updated} | Total en DB: {$total}");

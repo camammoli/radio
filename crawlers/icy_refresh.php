@@ -17,13 +17,13 @@ require_once $_base . '/api/_db.php';
 
 $db = radio_db();
 
-$db->exec('CREATE TABLE IF NOT EXISTS icy_history (
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS icy_history (
     id         INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER NOT NULL REFERENCES stations(id),
     title      TEXT    NOT NULL,
     seen_at    TEXT    NOT NULL
-)');
-$db->exec('CREATE INDEX IF NOT EXISTS idx_icy_hist_station ON icy_history(station_id, seen_at DESC)');
+)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE INDEX IF NOT EXISTS idx_icy_hist_station ON icy_history(station_id, seen_at DESC)'));
 
 $rows = $db->query(
     "SELECT s.id, s.slug, s.url
@@ -124,14 +124,23 @@ function icy_make_handle(string $url, int $timeout): ?array {
 // ── Sentencias DB ─────────────────────────────────────────────────────────────
 
 $stmtUpdate = $db->prepare(
-    'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
-     VALUES (?,1,?,?,?)
-     ON CONFLICT(station_id) DO UPDATE SET
-       supported=1, stream_title=excluded.stream_title,
-       last_checked=excluded.last_checked,
-       last_title_change=CASE WHEN excluded.stream_title != stream_title
-                              THEN excluded.last_title_change
-                              ELSE last_title_change END'
+    db_engine() === 'mysql'
+    ? 'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
+       VALUES (?,1,?,?,?)
+       ON DUPLICATE KEY UPDATE
+         supported=1, stream_title=VALUES(stream_title),
+         last_checked=VALUES(last_checked),
+         last_title_change=CASE WHEN VALUES(stream_title) != stream_title
+                                THEN VALUES(last_title_change)
+                                ELSE last_title_change END'
+    : 'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
+       VALUES (?,1,?,?,?)
+       ON CONFLICT(station_id) DO UPDATE SET
+         supported=1, stream_title=excluded.stream_title,
+         last_checked=excluded.last_checked,
+         last_title_change=CASE WHEN excluded.stream_title != stream_title
+                                THEN excluded.last_title_change
+                                ELSE last_title_change END'
 );
 $stmtPrev    = $db->prepare('SELECT stream_title FROM icy_cache WHERE station_id = ?');
 $stmtHistory = $db->prepare('INSERT INTO icy_history (station_id, title, seen_at) VALUES (?,?,?)');

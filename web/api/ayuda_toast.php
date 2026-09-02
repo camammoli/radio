@@ -17,15 +17,13 @@ if (!in_array($tipo, $tipos_validos, true)) api_error('tipo inválido');
 
 $db = radio_db();
 
-try {
-    $db->exec("CREATE TABLE IF NOT EXISTS ayuda_toast_eventos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tipo TEXT NOT NULL,
-        ip_hash TEXT,
-        provincia TEXT,
-        created_at TEXT DEFAULT CURRENT_TIMESTAMP
-    )");
-} catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec("CREATE TABLE IF NOT EXISTS ayuda_toast_eventos (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo TEXT NOT NULL,
+    ip_hash TEXT,
+    provincia TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+)"));
 
 $ip = client_ip();
 $db->prepare('INSERT INTO ayuda_toast_eventos (tipo, ip_hash, provincia) VALUES (?, ?, ?)')

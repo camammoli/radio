@@ -23,7 +23,7 @@ if (!$slug) api_error('slug requerido', 400);
 $db = radio_db();
 
 // Migración: tabla shares
-try { $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
 
 $r = $db->prepare('SELECT id, nombre FROM stations WHERE slug = ? LIMIT 1');
 $r->execute([$slug]);

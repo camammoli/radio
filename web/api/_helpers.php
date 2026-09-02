@@ -85,11 +85,9 @@ const AR_REGION_CODE_A_PROVINCIA = [
 function geo_provincia(PDO $db, string $ip): ?string {
     $hash = ip_hash($ip);
 
-    try {
-        $db->exec("CREATE TABLE IF NOT EXISTS ip_geo_cache (
-            ip_hash TEXT PRIMARY KEY, provincia TEXT, updated_at TEXT DEFAULT (datetime('now'))
-        )");
-    } catch (Exception $e) {}
+    sqlite_lazy_migration($db, fn($db) => $db->exec("CREATE TABLE IF NOT EXISTS ip_geo_cache (
+        ip_hash TEXT PRIMARY KEY, provincia TEXT, updated_at TEXT DEFAULT (datetime('now'))
+    )"));
 
     $stmt = $db->prepare('SELECT provincia FROM ip_geo_cache WHERE ip_hash = ?');
     $stmt->execute([$hash]);
@@ -119,8 +117,7 @@ function geo_provincia(PDO $db, string $ip): ?string {
     }
 
     try {
-        $db->prepare('INSERT OR REPLACE INTO ip_geo_cache (ip_hash, provincia, updated_at) VALUES (?, ?, datetime("now"))')
-           ->execute([$hash, $provincia]);
+        sql_upsert($db, 'ip_geo_cache', ['ip_hash' => $hash, 'provincia' => $provincia, 'updated_at' => gmdate('Y-m-d H:i:s')]);
     } catch (Exception $e) {}
 
     return $provincia;
@@ -128,6 +125,117 @@ function geo_provincia(PDO $db, string $ip): ?string {
 
 function ip_hash(string $ip): string {
     return substr(hash('sha256', $ip), 0, 16);
+}
+
+// ── Compatibilidad SQLite/MySQL ──────────────────────────────────────────────
+// Motor real controlado por RADIO_DB_ENGINE en config.php (ver _db.php). Estas
+// funciones dejan que el mismo código arme la sintaxis de fecha/upsert correcta
+// para el motor activo, sin duplicar queries por archivo.
+
+function db_engine(): string {
+    return (defined('RADIO_DB_ENGINE') && RADIO_DB_ENGINE === 'mysql') ? 'mysql' : 'sqlite';
+}
+
+// "ahora" como expresión SQL.
+function sql_now(): string {
+    return db_engine() === 'mysql' ? 'NOW()' : "datetime('now')";
+}
+
+// $expr (columna o expresión SQL) desplazada $n unidades ($unit: SECOND/MINUTE/HOUR/DAY).
+function sql_offset(string $expr, int $n, string $unit): string {
+    $op  = $n < 0 ? '-' : '+';
+    $abs = abs($n);
+    if (db_engine() === 'mysql') {
+        return "($expr $op INTERVAL $abs $unit)";
+    }
+    $u = strtolower($unit) . 's';
+    return "datetime($expr,'$op$abs $u')";
+}
+
+// "ahora" desplazado $n unidades.
+function sql_now_offset(int $n, string $unit): string {
+    return db_engine() === 'mysql'
+        ? sql_offset('NOW()', $n, $unit)
+        : sql_offset("'now'", $n, $unit);
+}
+
+// Fecha (sin hora) de $col, con corrimiento horario fijo (para agrupar "día"
+// según un huso horario distinto al de la DB — este proyecto usa -3hs).
+function sql_date_local(string $col, int $hoursOffset = 0): string {
+    if (db_engine() === 'mysql') {
+        $expr = $hoursOffset ? sql_offset($col, $hoursOffset, 'HOUR') : $col;
+        return "DATE($expr)";
+    }
+    $sign = $hoursOffset < 0 ? '-' : '+';
+    $arg  = $hoursOffset ? "$col,'$sign" . abs($hoursOffset) . " hours'" : $col;
+    return "date($arg)";
+}
+
+// "YYYY-MM" de $col, mismo corrimiento horario que sql_date_local().
+function sql_month_local(string $col, int $hoursOffset = 0): string {
+    if (db_engine() === 'mysql') {
+        $expr = $hoursOffset ? sql_offset($col, $hoursOffset, 'HOUR') : $col;
+        return "DATE_FORMAT($expr, '%Y-%m')";
+    }
+    $sign = $hoursOffset < 0 ? '-' : '+';
+    $arg  = $hoursOffset ? "$col,'$sign" . abs($hoursOffset) . " hours'" : $col;
+    return "strftime('%Y-%m',$arg)";
+}
+
+// Hora (0-23, entero) de $col, mismo corrimiento horario.
+function sql_hour_local(string $col, int $hoursOffset = 0): string {
+    if (db_engine() === 'mysql') {
+        $expr = $hoursOffset ? sql_offset($col, $hoursOffset, 'HOUR') : $col;
+        return "HOUR($expr)";
+    }
+    $sign = $hoursOffset < 0 ? '-' : '+';
+    $arg  = $hoursOffset ? "$col,'$sign" . abs($hoursOffset) . " hours'" : $col;
+    return "CAST(strftime('%H',$arg) AS INTEGER)";
+}
+
+// Diferencia entre dos datetimes, en segundos o minutos ($to puede ser 'now'/NOW()).
+function sql_seconds_diff(string $from, string $to): string {
+    if (db_engine() === 'mysql') return "TIMESTAMPDIFF(SECOND, $from, $to)";
+    $toExpr = $to === 'NOW()' ? "'now'" : $to;
+    return "ROUND((julianday($toExpr)-julianday($from))*86400)";
+}
+function sql_minutes_diff(string $from, string $to): string {
+    if (db_engine() === 'mysql') return "TIMESTAMPDIFF(MINUTE, $from, $to)";
+    $toExpr = $to === 'NOW()' ? "'now'" : $to;
+    return "ROUND((julianday($toExpr)-julianday($from))*1440)";
+}
+
+// Segundos transcurridos desde $col hasta ahora (equivalente a
+// strftime('%s','now') - strftime('%s', $col), usado para "edad" de un timestamp).
+function sql_age_seconds(string $col): string {
+    if (db_engine() === 'mysql') return "TIMESTAMPDIFF(SECOND, $col, NOW())";
+    return "(strftime('%s','now') - strftime('%s', $col))";
+}
+
+// INSERT ... ON DUPLICATE KEY UPDATE / INSERT OR REPLACE genérico (upsert simple,
+// sin lógica condicional — para eso armar el SQL a mano por motor, ver nowplaying.php).
+function sql_upsert(PDO $db, string $table, array $data): void {
+    $cols         = array_keys($data);
+    // Backticks siempre (no solo en MySQL): protege contra columnas que son
+    // palabra reservada ahí (ej. `key` en settings) — SQLite las acepta igual
+    // como cita de identificador, así que no hace falta ramificar por motor.
+    $colsSql      = implode(',', array_map(fn($c) => "`$c`", $cols));
+    $placeholders = implode(',', array_fill(0, count($cols), '?'));
+    if (db_engine() === 'mysql') {
+        $updates = implode(', ', array_map(fn($c) => "`$c`=VALUES(`$c`)", $cols));
+        $sql = "INSERT INTO `$table` ($colsSql) VALUES ($placeholders) ON DUPLICATE KEY UPDATE $updates";
+    } else {
+        $sql = "INSERT OR REPLACE INTO `$table` ($colsSql) VALUES ($placeholders)";
+    }
+    $db->prepare($sql)->execute(array_values($data));
+}
+
+// Migraciones "al vuelo" (CREATE TABLE IF NOT EXISTS / ALTER TABLE ADD COLUMN)
+// solo tienen sentido en SQLite — en MySQL el esquema ya está creado por la
+// migración y los cambios futuros van por deploy explícito, no por request.
+function sqlite_lazy_migration(PDO $db, callable $fn): void {
+    if (db_engine() === 'mysql') return;
+    try { $fn($db); } catch (Exception $e) {}
 }
 
 // ── Provincia ─────────────────────────────────────────────────────────────────
@@ -203,18 +311,20 @@ function normalizar_provincia(?string $raw): ?string {
  * para que también corra sin tráfico).
  */
 function cerrar_sesiones_expiradas(PDO $db): array {
-    try { $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'); } catch (Exception $e) {}
+    sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'));
+
+    $limite = sql_now_offset(-90, 'SECOND');
 
     $cerradas = 0;
     try {
         $cerradas = $db->exec(
             "UPDATE plays SET ended_at = (SELECT last_seen FROM listeners WHERE sid = plays.session_id)
-             WHERE session_id IN (SELECT sid FROM listeners WHERE last_seen < datetime('now', '-90 seconds'))
+             WHERE session_id IN (SELECT sid FROM listeners WHERE last_seen < $limite)
              AND ended_at IS NULL"
         );
     } catch (Exception $e) {}
 
-    $expiradas = (int)$db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
+    $expiradas = (int)$db->exec("DELETE FROM listeners WHERE last_seen < $limite");
 
     return ['plays_cerradas' => (int)$cerradas, 'listeners_expirados' => $expiradas];
 }
@@ -222,9 +332,9 @@ function cerrar_sesiones_expiradas(PDO $db): array {
 // ── Configuración dinámica ────────────────────────────────────────────────────
 
 function notify_active(PDO $db): bool {
+    sqlite_lazy_migration($db, fn($db) => $db->exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)"));
     try {
-        $db->exec("CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)");
-        $r = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1");
+        $r = $db->query("SELECT value FROM settings WHERE `key`='notify_oyentes' LIMIT 1");
         $v = $r ? $r->fetchColumn() : false;
         if ($v !== false) return $v === '1';
     } catch (Exception $e) {}

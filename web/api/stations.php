@@ -56,14 +56,7 @@ if ($slug !== '') {
     // Cerrar plays huérfanos antes de borrar (mismo criterio que listeners.php —
     // acá faltaba, dejaba sesiones "reproduciendo" para siempre si esta era la
     // primera ruta en detectar el vencimiento del heartbeat).
-    try {
-        $db->exec(
-            "UPDATE plays SET ended_at = (SELECT last_seen FROM listeners WHERE sid = plays.session_id)
-             WHERE session_id IN (SELECT sid FROM listeners WHERE last_seen < datetime('now', '-90 seconds'))
-             AND ended_at IS NULL"
-        );
-    } catch (Exception $e) {}
-    $db->exec("DELETE FROM listeners WHERE last_seen < datetime('now', '-90 seconds')");
+    cerrar_sesiones_expiradas($db);
     $active = $db->prepare(
         'SELECT COUNT(*) FROM listeners l
          JOIN stations s ON s.id = l.station_id

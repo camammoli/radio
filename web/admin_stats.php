@@ -27,37 +27,43 @@ if ($modo === 'mes') $rango = in_array($rango, [6, 12, 24]) ? $rango : 12;
 
 // ─── Queries ──────────────────────────────────────────────────────────────────
 
+// "Hoy" en hora local Argentina (UTC-3), como expresión SQL reutilizable.
+$hoyExpr = sql_date_local(db_engine() === 'mysql' ? 'NOW()' : "'now'", -3);
+$diaExpr = sql_date_local('played_at', -3);
+
 // Totales
 $total_plays   = (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn();
 $total_oyentes = (int)$db->query('SELECT COUNT(DISTINCT ip_hash) FROM plays')->fetchColumn();
 $plays_hoy     = (int)$db->query(
-    "SELECT COUNT(*) FROM plays WHERE date(datetime(played_at, '-3 hours')) = date(datetime('now', '-3 hours'))"
+    "SELECT COUNT(*) FROM plays WHERE $diaExpr = $hoyExpr"
 )->fetchColumn();
 $oyentes_hoy   = (int)$db->query(
-    "SELECT COUNT(DISTINCT ip_hash) FROM plays WHERE date(datetime(played_at, '-3 hours')) = date(datetime('now', '-3 hours'))"
+    "SELECT COUNT(DISTINCT ip_hash) FROM plays WHERE $diaExpr = $hoyExpr"
 )->fetchColumn();
 
 // Pico de concurrencia (máx listeners registrados en un rango de 5 min)
+$rango5min = sql_offset('l1.started_at', 5, 'MINUTE');
 $pico = (int)$db->query("
     SELECT MAX(cnt) FROM (
         SELECT COUNT(*) AS cnt
         FROM listeners l1
-        JOIN listeners l2 ON l2.started_at BETWEEN l1.started_at AND datetime(l1.started_at, '+5 minutes')
+        JOIN listeners l2 ON l2.started_at BETWEEN l1.started_at AND $rango5min
         GROUP BY l1.sid
-    )
+    ) x
 ")->fetchColumn();
 
 // Plays por día (rango seleccionado, en hora local ARG = UTC-3)
+$desde_dia = (new DateTime('now', new DateTimeZone('UTC')))->modify('-3 hours')->modify("-{$rango} days")->format('Y-m-d');
 $stmt = $db->prepare("
-    SELECT date(datetime(played_at, '-3 hours')) AS d,
+    SELECT $diaExpr AS d,
            COUNT(*) AS plays,
            COUNT(DISTINCT ip_hash) AS uniq
     FROM plays
-    WHERE date(datetime(played_at, '-3 hours')) >= date(datetime('now', '-3 hours'), :offset)
+    WHERE $diaExpr >= :desde
     GROUP BY d
     ORDER BY d
 ");
-$stmt->execute([':offset' => "-{$rango} days"]);
+$stmt->execute([':desde' => $desde_dia]);
 $plays_dia = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 // Completar días faltantes en el rango (para que el eje sea continuo)
@@ -73,8 +79,9 @@ foreach ($plays_dia as $r) {
 ksort($dia_map);
 
 // Plays por mes (rango seleccionado)
+$mesExpr = sql_month_local('played_at', -3);
 $stmt = $db->prepare("
-    SELECT strftime('%Y-%m', datetime(played_at, '-3 hours')) AS mes,
+    SELECT $mesExpr AS mes,
            COUNT(*) AS plays,
            COUNT(DISTINCT ip_hash) AS uniq
     FROM plays
@@ -100,8 +107,9 @@ foreach ($plays_mes as $r) {
 }
 
 // Por hora del día (todo el tiempo, en hora local)
+$horaExpr = sql_hour_local('played_at', -3);
 $hora_raw = $db->query("
-    SELECT CAST(strftime('%H', datetime(played_at, '-3 hours')) AS INTEGER) AS hora,
+    SELECT $horaExpr AS hora,
            COUNT(*) AS plays
     FROM plays
     GROUP BY hora
@@ -114,11 +122,12 @@ $hora_labels = [];
 for ($h = 0; $h < 24; $h++) $hora_labels[] = sprintf('%02d:00', $h);
 
 // Top emisoras
+$duracion = sql_seconds_diff('p.played_at', 'p.ended_at');
 $top_emisoras = $db->query("
     SELECT s.nombre, s.slug, COUNT(*) AS plays,
            COUNT(DISTINCT p.ip_hash) AS oyentes,
            SUM(CASE WHEN p.ended_at IS NOT NULL
-                    THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
+                    THEN $duracion
                     ELSE 0 END) AS total_secs
     FROM plays p
     JOIN stations s ON s.id = p.station_id
@@ -129,7 +138,7 @@ $top_emisoras = $db->query("
 
 // Día más activo
 $dia_top = $db->query("
-    SELECT date(datetime(played_at, '-3 hours')) AS d, COUNT(*) AS n
+    SELECT $diaExpr AS d, COUNT(*) AS n
     FROM plays GROUP BY d ORDER BY n DESC LIMIT 1
 ")->fetch(PDO::FETCH_ASSOC);
 
@@ -138,8 +147,9 @@ $hora_max = 0; $hora_max_plays = 0;
 foreach ($hora_map as $h => $n) { if ($n > $hora_max_plays) { $hora_max_plays = $n; $hora_max = $h; } }
 
 // Duración media (solo registros con ended_at)
+$duracionMedia = sql_seconds_diff('played_at', 'ended_at');
 $dur_media = (int)$db->query("
-    SELECT AVG((julianday(ended_at)-julianday(played_at))*86400)
+    SELECT AVG($duracionMedia)
     FROM plays WHERE ended_at IS NOT NULL
 ")->fetchColumn();
 

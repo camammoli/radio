@@ -28,7 +28,7 @@ $slug   = str_param('station', 100);   // ahora recibe slug (no nombre)
 $source = str_param('source', 30, 'web-listing');
 
 // Migración: columna provincia en plays (safe, idempotente)
-try { $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'); } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'));
 
 // Limpiar expirados: primero cerrar plays con el último heartbeat, luego borrar
 cerrar_sesiones_expiradas($db);
@@ -76,7 +76,7 @@ if ($action === 'count' || ($action !== 'ping' && $action !== 'stop')) {
 
 if ($action === 'stop') {
     if (!$sid) api_error('sid requerido', 400);
-    try { $db->prepare("UPDATE plays SET ended_at = datetime('now') WHERE session_id = ? AND ended_at IS NULL")->execute([$sid]); } catch (Exception $e) {}
+    try { $db->prepare("UPDATE plays SET ended_at = " . sql_now() . " WHERE session_id = ? AND ended_at IS NULL")->execute([$sid]); } catch (Exception $e) {}
     $db->prepare('DELETE FROM listeners WHERE sid = ?')->execute([$sid]);
     $count = (int)$db->query('SELECT COUNT(*) FROM listeners')->fetchColumn();
     api_response(['count' => $count]);
@@ -139,7 +139,7 @@ if ($action === 'ping') {
         }
     } else {
         $db->prepare(
-            "UPDATE listeners SET last_seen = datetime('now') WHERE sid = ?"
+            "UPDATE listeners SET last_seen = " . sql_now() . " WHERE sid = ?"
         )->execute([$sid]);
     }
 

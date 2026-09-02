@@ -2519,3 +2519,89 @@ conservó). Backup del crontab anterior en `/tmp/crontab_backup_20260901.txt`.
 - Crontab local del usuario (4 líneas rotas eliminadas)
 - 7 workflows de GitHub Actions: quedaron **habilitados** (antes deshabilitados) —
   pendiente confirmación de Carlos si dejarlos así.
+
+## 2026-09-02 — Migración a MySQL, pasos 4-5: `_db.php` dual-engine + auditoría SQL completa (TKT-0720, Claude Code)
+
+### Contexto
+Continuación de la migración a MySQL planificada en `Radio_v5_Roadmap.html` (ver sesión
+anterior el mismo día: esquema traducido a MySQL 5.7.44 y datos migrados a
+`mammoli_radio`, verificados fila por fila). Esta sesión ejecutó los pasos 4 y 5 del
+plan: hacer que la app pueda correr sobre MySQL sin tocar el comportamiento actual
+(sigue en SQLite hasta el corte real).
+
+### Paso 4 — `_db.php` dual-engine
+`radio_db()` ahora rama según la constante `RADIO_DB_ENGINE` en `config.php`
+(`'sqlite'` por defecto si no está definida → cero cambio de comportamiento). Rama
+`mysql`: conecta directo a `mammoli_radio` (host/user/pass ya en `config.php` desde la
+sesión anterior), sin la lógica de auto-migración de la rama SQLite (ese esquema ya
+está creado completo por la migración). Rama `sqlite`: sin cambios, salvo la corrección
+de versión de `v_stations` (ver bug abajo).
+
+### Paso 5 — Auditoría y reescritura de SQL específico de SQLite
+Se agregaron helpers de compatibilidad en `api/_helpers.php`: `db_engine()`,
+`sql_now()`, `sql_offset()`, `sql_now_offset()`, `sql_date_local()`,
+`sql_month_local()`, `sql_hour_local()`, `sql_seconds_diff()`, `sql_minutes_diff()`,
+`sql_age_seconds()`, `sql_upsert()`, `sqlite_lazy_migration()` — arman la sintaxis
+correcta de fecha/upsert para el motor activo, un solo camino de código para ambos.
+
+Archivos reescritos (todo lo que usaba `datetime()`, `julianday`, `strftime`,
+`PRAGMA`, `ON CONFLICT`, `INSERT OR REPLACE`, `ALTER TABLE`/`CREATE TABLE IF NOT
+EXISTS` con `AUTOINCREMENT` al vuelo, `COLLATE NOCASE`, o CTE con `WITH`):
+`api/_db.php`, `api/_helpers.php`, `api/nowplaying.php`, `api/stations.php`,
+`api/listeners.php`, `api/share.php`, `api/ayuda_toast.php`, `api/survey.php`,
+`contacto.php`, `suscribirse.php`, `sugerir.php`, `pages/station.php`,
+`estadisticas.php` (incluye la reescritura del `WITH latest...` a self-join, ya que
+MySQL 5.7.44 no soporta CTE ni window functions), `admin_stats.php`, `admin.php`,
+`crawlers/learn_patterns.php`, `crawlers/notify_subscribers.php`,
+`crawlers/icy_refresh.php`.
+
+### Verificación
+- Local: PHP 8.2 + extensiones (bajadas sin sudo, `apt-get download` + `dpkg-deb -x`)
+  contra copia real de la SQLite de producción — render completo de `admin.php` y
+  `admin_stats.php` sin errores fatales, valores coherentes (duraciones de sesión,
+  picos horarios, top emisoras — nada en cero).
+- MySQL real (`mammoli_radio`): scripts temporales de verificación (mismo patrón que
+  la sesión de migración: subir por FTP → correr una vez por HTTP con token secreto →
+  borrar) confirmaron que la reescritura de `estadisticas.php` sin CTE/window function
+  da EXACTAMENTE los mismos números que SQLite para los mismos días, y que los
+  upserts/joins con offsets de fecha funcionan igual en ambos motores.
+- Todos los deploys a producción se hicieron con el motor todavía en SQLite (sin
+  flip) — comportamiento idéntico al de antes, cero downtime.
+
+### 🐛 Bug real encontrado y corregido de rebote: vista `v_stations` pisándose entre v4 y v5
+`admin.php` migraba la vista a v5 (con filtro `COALESCE(activa,1)=1`, feature de
+TKT-0735 para ocultar del listado público las emisoras dadas de baja) pero `_db.php`
+seguía comparando contra v4 (sin ese filtro) y la recreaba como v4 en cada request que
+no pasara primero por `admin.php`. Los dos archivos competían por recrear la misma
+vista con versiones distintas — **en producción estaba en v4 al momento de
+encontrarlo**, es decir, la baja manual de emisoras NO se estaba ocultando del listado
+público pese a que el panel decía que sí. Fix: la migración de versión de
+`v_stations` vive ahora solo en `_db.php` (única fuente de verdad para ambos
+motores); se quitó el bloque duplicado de `admin.php`. Confirmado en la SQLite de
+producción: la vista quedó en v5 con el filtro aplicado.
+
+### ⚠️ Lección operativa: OPcache del hosting sirve bytecode viejo tras un deploy
+Ver memoria `feedback_opcache_hosting` para el detalle — subir un `.php` corregido no
+garantiza que el próximo request lo use de inmediato (OPcache multi-worker, se
+autorresuelve en un par de minutos/requests). Hay que verificar el efecto real del
+deploy (releer el dato que debería haber cambiado), no asumir que "subí el archivo" =
+"ya corre". Así se detectó que el primer deploy del fix de `_db.php` nunca se había
+hecho de verdad (el fix se hizo después de esa subida y no se volvió a desplegar).
+
+### Pendiente (pasos 6-9 del plan)
+6. Nuevo `api/crawler_ingest.php` con token, para que los crawlers Python dejen de
+   tocar SQLite directo.
+7. Reescribir los 7 crawlers Python para postear a esa API.
+8. Testing local final antes de tocar producción con el flip real.
+9. Corte: pausa breve de escrituras, sync final de datos (repetir la migración),
+   flip de `RADIO_DB_ENGINE` a `'mysql'` en `config.php`, verificación completa, dejar
+   la SQLite de respaldo varios días.
+
+### Archivos afectados (deploy directo por FTP, sin commit todavía)
+`web/admin.php`, `web/admin_stats.php`, `web/api/_db.php`, `web/api/_helpers.php`,
+`web/api/ayuda_toast.php`, `web/api/listeners.php`, `web/api/nowplaying.php`,
+`web/api/share.php`, `web/api/stations.php`, `web/api/survey.php`, `web/contacto.php`,
+`web/estadisticas.php`, `web/pages/station.php`, `web/sugerir.php`,
+`web/suscribirse.php`, `crawlers/icy_refresh.php`, `crawlers/learn_patterns.php`,
+`crawlers/notify_subscribers.php`. Nuevo (no deployado, solo referencia local):
+`db/mysql_schema.sql`.

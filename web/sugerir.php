@@ -165,7 +165,7 @@ if (isset($_GET['enviar']) || $_SERVER['REQUEST_METHOD'] === 'POST') {
                 if ($dup_row) {
                     $error = 'Esta URL ya está en el directorio como "' . $dup_row['nombre'] . '". ¡Gracias de todas formas!';
                 } else {
-                    try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
+                    sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'));
 
                     $slug = _sugerir_slug($nombre, $provincia, $db);
                     $db->prepare(

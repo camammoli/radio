@@ -14,7 +14,7 @@ $pending_token = '';
 $mode = 'register'; // register | manage | baja_ok | baja_link
 
 // Asegurar tablas
-try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contact_type TEXT NOT NULL,
     contact_value TEXT NOT NULL,
@@ -23,7 +23,7 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     token TEXT UNIQUE NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     last_notified TEXT
-)'); } catch (Exception $e) {}
+)'));
 
 // Top artistas desde icy_history (para chips de selección)
 $noise_artistas = ['classic hits','variados','mix','desconocido','various','unknown',

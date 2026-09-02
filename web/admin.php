@@ -44,13 +44,14 @@ if (empty($_SESSION['radio_admin'])) {
 $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(16));
 $db   = radio_db();
 
-// Migraciones
-try { $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'); } catch (Exception $e) {}
-try { $db->exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
-try { $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'); } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'); } catch (Exception $e) {}
+// Migraciones (solo aplican en SQLite — en MySQL el esquema ya está creado
+// completo por la migración v5, ver [[project_radio_mysql_migracion]])
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT, updated_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE plays ADD COLUMN ended_at TEXT'));
 // v3: suscriptores y patrones de programas
-try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     contact_type TEXT NOT NULL,
     contact_value TEXT NOT NULL,
@@ -59,8 +60,8 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS subscribers (
     token TEXT UNIQUE NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     last_notified TEXT
-)'); } catch (Exception $e) {}
-try { $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
+)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     subscriber_id INTEGER REFERENCES subscribers(id) ON DELETE CASCADE,
     station_id INTEGER REFERENCES stations(id),
@@ -68,8 +69,8 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS subscriber_matches (
     first_seen TEXT DEFAULT CURRENT_TIMESTAMP,
     match_count INTEGER DEFAULT 1,
     notified INTEGER DEFAULT 0
-)'); } catch (Exception $e) {}
-try { $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
+)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER REFERENCES stations(id),
     keyword TEXT NOT NULL,
@@ -79,73 +80,45 @@ try { $db->exec('CREATE TABLE IF NOT EXISTS program_patterns (
     occurrences INTEGER DEFAULT 0,
     last_seen TEXT,
     UNIQUE(station_id, keyword, day_of_week, hour)
-)'); } catch (Exception $e) {}
+)'));
 // Metadata de gestión de emisoras (contacto, destacada, seguimiento)
-try { $db->exec('ALTER TABLE stations ADD COLUMN en_observacion INTEGER DEFAULT 0') ; } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0') ; } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT') ; } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE stations ADD COLUMN contacto_privado TEXT') ; } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE stations ADD COLUMN notas_privadas TEXT') ; } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN en_observacion INTEGER DEFAULT 0'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN destacada INTEGER DEFAULT 0'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN contacto_publico TEXT'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN contacto_privado TEXT'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN notas_privadas TEXT'));
 // ABM de emisoras (TKT pendiente de numerar): nunca se borran, solo se marcan de baja.
 // activa=1 (alta) / activa=0 (de baja) — ultimo_cambio se toca SOLO al hacer alta/baja,
 // a diferencia de updated_at que cambia con cualquier edición.
-try { $db->exec('ALTER TABLE stations ADD COLUMN activa INTEGER DEFAULT 1') ; } catch (Exception $e) {}
-try { $db->exec('ALTER TABLE stations ADD COLUMN ultimo_cambio TEXT') ; } catch (Exception $e) {}
-$v_stations_sql = $db->query("SELECT sql FROM sqlite_master WHERE type='view' AND name='v_stations'")->fetchColumn();
-if ($v_stations_sql === false || strpos($v_stations_sql, 'v_stations_version:5') === false) {
-    $db->exec('DROP VIEW IF EXISTS v_stations');
-    $db->exec("CREATE VIEW v_stations AS
-        -- v_stations_version:5 (agrega respeto por baja manual, activa=0)
-        SELECT
-            s.id, s.n, s.slug, s.nombre, s.url, s.provincia, s.tags,
-            s.codec, s.bitrate, s.homepage, s.logo, s.source,
-            s.rb_uuid, s.rb_votes, s.rb_clicks,
-            s.contacto_publico, s.destacada,
-            COALESCE(ss.estado, 'unknown')          AS estado,
-            ss.http_code, ss.response_ms,
-            ss.consecutive_failures,
-            ss.last_checked, ss.last_ok,
-            COALESCE(ic.supported, 0)               AS icy_supported,
-            ic.icy_name, ic.stream_title,
-            ic.last_checked                         AS icy_last_checked,
-            COALESCE(p.total_plays, 0)              AS total_plays
-        FROM stations s
-        LEFT JOIN stream_status  ss ON ss.station_id = s.id
-        LEFT JOIN icy_cache      ic ON ic.station_id = s.id
-        LEFT JOIN (
-            SELECT station_id, COUNT(*) AS total_plays FROM plays GROUP BY station_id
-        ) p ON p.station_id = s.id
-        WHERE s.approved = 1
-          AND COALESCE(s.activa, 1) = 1
-          AND NOT (
-                ss.estado = 'muerto'
-                AND (ss.last_ok IS NULL OR ss.last_ok < datetime('now','-14 days'))
-          )");
-}
-try { $db->exec('CREATE TABLE IF NOT EXISTS reportes (
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN activa INTEGER DEFAULT 1'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN ultimo_cambio TEXT'));
+// v_stations v5 — la migración de versión vive SOLO en _db.php (ver
+// [[project_radio_mysql_migracion]]: antes este bloque y _db.php competían por
+// recrear la vista con versiones distintas en cada request y se pisaban entre
+// sí; ahora _db.php es la única fuente de verdad para esto, en ambos motores.
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS reportes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     station_id INTEGER REFERENCES stations(id),
     mensaje TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
-)'); } catch (Exception $e) {}
-try { $db->exec('CREATE INDEX IF NOT EXISTS idx_plays_iphash ON plays(ip_hash)'); } catch (Exception $e) {}
-try { $db->exec("CREATE TABLE IF NOT EXISTS ip_geo_cache (ip_hash TEXT PRIMARY KEY, provincia TEXT, updated_at TEXT DEFAULT (datetime('now')))"); } catch (Exception $e) {}
+)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE INDEX IF NOT EXISTS idx_plays_iphash ON plays(ip_hash)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec("CREATE TABLE IF NOT EXISTS ip_geo_cache (ip_hash TEXT PRIMARY KEY, provincia TEXT, updated_at TEXT DEFAULT (datetime('now')))"));
 
 // ── Acciones sobre sugerencias ────────────────────────────────────────────────
 
 if ($act === 'toggle_notify' && ($_POST['csrf'] ?? '') === $csrf) {
-    $current = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1")->fetchColumn();
+    $current = $db->query("SELECT value FROM settings WHERE `key`='notify_oyentes' LIMIT 1")->fetchColumn();
     if ($current === false) {
         $current = defined('NOTIFY_OYENTES') && NOTIFY_OYENTES ? '1' : '0';
     }
     $new = $current === '1' ? '0' : '1';
-    $db->prepare("INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES ('notify_oyentes', ?, datetime('now'))")
-       ->execute([$new]);
+    sql_upsert($db, 'settings', ['key' => 'notify_oyentes', 'value' => $new, 'updated_at' => gmdate('Y-m-d H:i:s')]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#telegram');
     exit;
 }
 if ($act === 'approve' && ($_POST['csrf'] ?? '') === $csrf) {
-    $db->prepare("UPDATE stations SET approved=1, updated_at=datetime('now') WHERE id=? AND source IN ('sugerencia','radio-browser') AND approved=0")
+    $db->prepare("UPDATE stations SET approved=1, updated_at=" . sql_now() . " WHERE id=? AND source IN ('sugerencia','radio-browser') AND approved=0")
        ->execute([(int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#sugerencias');
     exit;
@@ -159,7 +132,7 @@ if ($act === 'reject' && ($_POST['csrf'] ?? '') === $csrf) {
 if ($act === 'set_activa' && ($_POST['csrf'] ?? '') === $csrf) {
     // Alta/baja manual — NUNCA borra la fila, solo togglea activa y toca ultimo_cambio.
     $nueva = !empty($_POST['activa']) ? 1 : 0;
-    $db->prepare('UPDATE stations SET activa=?, ultimo_cambio=datetime("now") WHERE id=?')
+    $db->prepare('UPDATE stations SET activa=?, ultimo_cambio=' . sql_now() . ' WHERE id=?')
        ->execute([$nueva, (int)($_POST['id'] ?? 0)]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#emisoras');
     exit;
@@ -175,9 +148,10 @@ if ($act === 'crear_emisora' && ($_POST['csrf'] ?? '') === $csrf) {
         $alta_err = 'Nombre, URL y slug son obligatorios.';
     } else {
         try {
-            $db->prepare('INSERT INTO stations
+            $ahora = sql_now();
+            $db->prepare("INSERT INTO stations
                     (slug, nombre, url, provincia, homepage, source, approved, activa, created_at, updated_at, ultimo_cambio)
-                  VALUES (?, ?, ?, ?, ?, "manual", 1, 1, datetime("now"), datetime("now"), datetime("now"))')
+                  VALUES (?, ?, ?, ?, ?, 'manual', 1, 1, $ahora, $ahora, $ahora)")
                ->execute([
                     $slug, $nombre, $url,
                     trim($_POST['provincia'] ?? '') ?: null,
@@ -193,7 +167,7 @@ if ($act === 'crear_emisora' && ($_POST['csrf'] ?? '') === $csrf) {
     }
 }
 if ($act === 'editar_emisora' && ($_POST['csrf'] ?? '') === $csrf) {
-    $db->prepare('UPDATE stations SET nombre=?, url=?, provincia=?, homepage=?, updated_at=datetime("now") WHERE id=?')
+    $db->prepare('UPDATE stations SET nombre=?, url=?, provincia=?, homepage=?, updated_at=' . sql_now() . ' WHERE id=?')
        ->execute([
             trim($_POST['nombre'] ?? ''),
             trim($_POST['url'] ?? ''),
@@ -223,7 +197,7 @@ if ($act === 'update_meta' && ($_POST['csrf'] ?? '') === $csrf) {
     $db->prepare('UPDATE stations SET
             en_observacion = ?, destacada = ?,
             contacto_publico = ?, contacto_privado = ?, notas_privadas = ?,
-            updated_at = datetime("now")
+            updated_at = ' . sql_now() . '
          WHERE id = ?')
        ->execute([
             !empty($_POST['en_observacion']) ? 1 : 0,
@@ -251,19 +225,19 @@ if (isset($_GET['ajax'])) {
                 'ok'          => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
                 'icy'         => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
                 'icy_activo'  => (int)$db->query("SELECT COUNT(*) FROM icy_cache WHERE supported=1 AND stream_title IS NOT NULL AND stream_title!=''")->fetchColumn(),
-                'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
+                'plays_hoy'   => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=" . sql_date_local(db_engine()==='mysql'?'NOW()':"'now'", 0))->fetchColumn(),
                 'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
-                'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
+                'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=" . sql_now_offset(-90, 'SECOND'))->fetchColumn(),
             ],
             'plays' => $db->query(
                 "SELECT p.played_at, p.ip_hash, p.provincia, p.source, p.session_id, s.nombre, s.slug,
-                        CASE WHEN p.ended_at IS NOT NULL THEN ROUND((julianday(p.ended_at)-julianday(p.played_at))*86400)
-                             WHEN l.sid IS NOT NULL      THEN ROUND((julianday('now')-julianday(p.played_at))*86400)
+                        CASE WHEN p.ended_at IS NOT NULL THEN " . sql_seconds_diff('p.played_at', 'p.ended_at') . "
+                             WHEN l.sid IS NOT NULL      THEN " . sql_seconds_diff('p.played_at', db_engine()==='mysql'?'NOW()':"'now'") . "
                              ELSE NULL END AS duration_secs,
                         CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
-                        (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
+                        (SELECT COUNT(DISTINCT " . sql_date_local('p2.played_at', 0) . ") FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
                         (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
-                          AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
+                          AND p3.played_at BETWEEN " . sql_offset('p.played_at', -30, 'MINUTE') . " AND " . sql_offset('p.played_at', 30, 'MINUTE') . ") AS hops_1h
                  FROM plays p
                  LEFT JOIN stations s ON s.id=p.station_id
                  LEFT JOIN listeners l ON l.sid=p.session_id
@@ -291,9 +265,9 @@ $stats = [
     'ok'         => (int)$db->query("SELECT COUNT(*) FROM v_stations WHERE estado='ok'")->fetchColumn(),
     'icy'        => (int)$db->query('SELECT COUNT(*) FROM icy_cache WHERE supported=1')->fetchColumn(),
     'icy_activo' => (int)$db->query("SELECT COUNT(*) FROM icy_cache WHERE supported=1 AND stream_title IS NOT NULL AND stream_title!=''")->fetchColumn(),
-    'plays_hoy'  => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=date('now')")->fetchColumn(),
+    'plays_hoy'  => (int)$db->query("SELECT COUNT(*) FROM plays WHERE played_at>=" . sql_date_local(db_engine()==='mysql'?'NOW()':"'now'", 0))->fetchColumn(),
     'plays_total'=> (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
-    'listeners'  => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=datetime('now','-90 seconds')")->fetchColumn(),
+    'listeners'  => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=" . sql_now_offset(-90, 'SECOND'))->fetchColumn(),
     'surveys'    => (int)$db->query('SELECT COUNT(*) FROM surveys')->fetchColumn(),
     'suger_pend' => (int)$db->query("SELECT COUNT(*) FROM stations WHERE source IN ('sugerencia','radio-browser') AND approved=0")->fetchColumn(),
     'problemas'  => (int)$db->query(
@@ -301,7 +275,7 @@ $stats = [
          LEFT JOIN stream_status ss ON ss.station_id = s.id
          WHERE (s.approved = 0 AND s.source NOT IN ('sugerencia','radio-browser'))
             OR ss.estado IN ('muerto','timeout')
-            OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))"
+            OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= " . sql_now_offset(-14, 'DAY') . ")"
     )->fetchColumn(),
     'pendientes_crawler' => (int)$db->query(
         "SELECT COUNT(*) FROM stations s
@@ -326,11 +300,11 @@ $welcome_loc = $db->query(
 $loc_icons = ['casa' => '🏠', 'trabajo' => '💼', 'viaje' => '🚗', 'caminando' => '📱'];
 
 // Oyentes por provincia (geolocalizado por IP, últimos 30 días — TKT-0689)
-try { $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'); } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE plays ADD COLUMN provincia TEXT'));
 $geo_provincia = $db->query(
     "SELECT provincia, COUNT(DISTINCT ip_hash) AS cnt
      FROM plays
-     WHERE provincia IS NOT NULL AND played_at >= datetime('now','-30 days')
+     WHERE provincia IS NOT NULL AND played_at >= " . sql_now_offset(-30, 'DAY') . "
      GROUP BY provincia ORDER BY cnt DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 $geo_total = array_sum(array_column($geo_provincia, 'cnt'));
@@ -352,7 +326,7 @@ $station_surveys = $db->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Sugerencias pendientes
-try { $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'); } catch (Exception $e) {}
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE stations ADD COLUMN contacto TEXT'));
 // "Sugerencias pendientes" incluye lo que escribe la gente (source=sugerencia)
 // Y lo que encuentran los crawlers de descubrimiento (source=radio-browser,
 // approved=0 hasta que se revisan acá) — mismo flujo de aprobar/rechazar.
@@ -365,14 +339,15 @@ $sugerencias = $db->query(
 // Radios con problemas: ocultas, muertas/timeout, o reportadas en los últimos 14 días.
 // Las approved=0 de sugerencia/radio-browser NO entran acá — ya tienen su propio
 // lugar (pestaña Sugerencias) con botones de aprobar/rechazar.
+$desde14d = sql_now_offset(-14, 'DAY');
 $problemas = $db->query(
     "SELECT s.*, ss.estado,
-            (SELECT COUNT(*) FROM reportes r WHERE r.station_id = s.id AND r.created_at >= datetime('now','-14 days')) AS reportes_recientes
+            (SELECT COUNT(*) FROM reportes r WHERE r.station_id = s.id AND r.created_at >= $desde14d) AS reportes_recientes
      FROM stations s
      LEFT JOIN stream_status ss ON ss.station_id = s.id
      WHERE (s.approved = 0 AND s.source NOT IN ('sugerencia','radio-browser'))
         OR ss.estado IN ('muerto','timeout')
-        OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= datetime('now','-14 days'))
+        OR s.id IN (SELECT station_id FROM reportes WHERE created_at >= $desde14d)
      ORDER BY s.updated_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
@@ -385,12 +360,15 @@ $pendientes_crawler = $db->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // ABM completo de emisoras — TODO el catálogo (activas y de baja), nunca se borra nada acá.
+// COLLATE NOCASE es sintaxis SQLite — en MySQL el orden ya es case-insensitive
+// por defecto (utf8mb4_unicode_ci), así que ahí no hace falta nada extra.
+$collateNocase = db_engine() === 'mysql' ? '' : ' COLLATE NOCASE';
 $emisoras_todas = $db->query(
     "SELECT s.*, ss.estado
      FROM stations s
      LEFT JOIN stream_status ss ON ss.station_id = s.id
      WHERE s.approved = 1
-     ORDER BY s.nombre COLLATE NOCASE"
+     ORDER BY s.nombre$collateNocase"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Seguimiento especial: en observación, o con contacto privado cargado
@@ -401,15 +379,16 @@ $seguimiento = $db->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Últimas ejecuciones de crawlers
+$durCrawler = sql_seconds_diff('started_at', 'finished_at');
 $crawler_runs = $db->query(
     "SELECT crawler, started_at, finished_at,
-            ROUND((julianday(finished_at)-julianday(started_at))*86400) AS secs,
+            $durCrawler AS secs,
             stations_checked, changes_detected, errors, notes
      FROM crawler_runs ORDER BY started_at DESC LIMIT 30"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Estado Telegram
-$notify_db  = $db->query("SELECT value FROM settings WHERE key='notify_oyentes' LIMIT 1")->fetchColumn();
+$notify_db  = $db->query("SELECT value FROM settings WHERE `key`='notify_oyentes' LIMIT 1")->fetchColumn();
 $notify_val = $notify_db !== false ? $notify_db === '1' : (defined('NOTIFY_OYENTES') && NOTIFY_OYENTES);
 
 // Shares recientes (últimas 100)
@@ -454,15 +433,15 @@ $plays_recientes = $db->query(
             s.nombre, s.slug,
             CASE
               WHEN p.ended_at IS NOT NULL
-                THEN ROUND((julianday(p.ended_at) - julianday(p.played_at)) * 86400)
+                THEN " . sql_seconds_diff('p.played_at', 'p.ended_at') . "
               WHEN l.sid IS NOT NULL
-                THEN ROUND((julianday('now')       - julianday(p.played_at)) * 86400)
+                THEN " . sql_seconds_diff('p.played_at', db_engine()==='mysql'?'NOW()':"'now'") . "
               ELSE NULL
             END AS duration_secs,
             CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
-            (SELECT COUNT(DISTINCT date(p2.played_at)) FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
+            (SELECT COUNT(DISTINCT " . sql_date_local('p2.played_at', 0) . ") FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
             (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
-              AND p3.played_at BETWEEN datetime(p.played_at,'-30 minutes') AND datetime(p.played_at,'+30 minutes')) AS hops_1h
+              AND p3.played_at BETWEEN " . sql_offset('p.played_at', -30, 'MINUTE') . " AND " . sql_offset('p.played_at', 30, 'MINUTE') . ") AS hops_1h
      FROM plays p
      LEFT JOIN stations s ON s.id = p.station_id
      LEFT JOIN listeners l ON l.sid = p.session_id
@@ -537,9 +516,10 @@ if ($preview_raw) {
 }
 
 // ── ICY activas (con título, las más recientes)
+$minsAgo = sql_minutes_diff('ic.last_checked', db_engine()==='mysql'?'NOW()':"'now'");
 $icy_activas = $db->query(
     "SELECT s.nombre, s.slug, ic.stream_title, ic.last_checked,
-            ROUND((julianday('now')-julianday(ic.last_checked))*1440) AS mins_ago
+            $minsAgo AS mins_ago
      FROM icy_cache ic
      JOIN stations s ON s.id = ic.station_id
      WHERE ic.supported=1 AND ic.stream_title IS NOT NULL AND ic.stream_title!=''

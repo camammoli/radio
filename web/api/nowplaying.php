@@ -36,13 +36,14 @@ if ($slug !== '') {
 // ── Batch: todos los títulos ICY en caché ─────────────────────────────────────
 
 if (isset($_GET['batch'])) {
+    $age = sql_age_seconds('ic.last_checked');
     $rows = $db->query(
         "SELECT s.slug, ic.stream_title
          FROM icy_cache ic
          JOIN stations s ON s.id = ic.station_id
          WHERE ic.supported = 1
            AND ic.stream_title IS NOT NULL AND ic.stream_title != ''
-           AND (strftime('%s','now') - strftime('%s', ic.last_checked)) < 25200"
+           AND $age < 25200"
     )->fetchAll(PDO::FETCH_KEY_PAIR);
     api_response($rows ?: new stdClass());
 }
@@ -52,9 +53,10 @@ if ($url === '') api_error('slug requerido o inexistente', 400);
 // ── Leer caché ────────────────────────────────────────────────────────────────
 
 if ($station_id) {
+    $age = sql_age_seconds('last_checked');
     $cache = $db->prepare(
         "SELECT stream_title, last_checked,
-                (strftime('%s','now') - strftime('%s', last_checked)) AS age_s
+                $age AS age_s
          FROM icy_cache WHERE station_id = ? AND supported = 1"
     );
     $cache->execute([$station_id]);
@@ -171,22 +173,43 @@ if ($station_id) {
         $prev_title = $prev->fetchColumn();
         $changed    = ($prev_title !== $title);
 
-        $db->prepare(
-            'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
-             VALUES (?,1,?,?,?)
-             ON CONFLICT(station_id) DO UPDATE SET
-               supported=1, stream_title=excluded.stream_title,
-               last_checked=excluded.last_checked,
-               last_title_change=CASE WHEN excluded.stream_title != stream_title
-                                      THEN excluded.last_title_change
-                                      ELSE last_title_change END'
-        )->execute([$station_id, $title, $now, $changed ? $now : null]);
+        if (db_engine() === 'mysql') {
+            $db->prepare(
+                'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
+                 VALUES (?,1,?,?,?)
+                 ON DUPLICATE KEY UPDATE
+                   supported=1, stream_title=VALUES(stream_title),
+                   last_checked=VALUES(last_checked),
+                   last_title_change=CASE WHEN VALUES(stream_title) != stream_title
+                                          THEN VALUES(last_title_change)
+                                          ELSE last_title_change END'
+            )->execute([$station_id, $title, $now, $changed ? $now : null]);
+        } else {
+            $db->prepare(
+                'INSERT INTO icy_cache (station_id, supported, stream_title, last_checked, last_title_change)
+                 VALUES (?,1,?,?,?)
+                 ON CONFLICT(station_id) DO UPDATE SET
+                   supported=1, stream_title=excluded.stream_title,
+                   last_checked=excluded.last_checked,
+                   last_title_change=CASE WHEN excluded.stream_title != stream_title
+                                          THEN excluded.last_title_change
+                                          ELSE last_title_change END'
+            )->execute([$station_id, $title, $now, $changed ? $now : null]);
+        }
     } else {
-        $db->prepare(
-            'INSERT INTO icy_cache (station_id, supported, last_checked)
-             VALUES (?,0,?)
-             ON CONFLICT(station_id) DO UPDATE SET last_checked=excluded.last_checked'
-        )->execute([$station_id, $now]);
+        if (db_engine() === 'mysql') {
+            $db->prepare(
+                'INSERT INTO icy_cache (station_id, supported, last_checked)
+                 VALUES (?,0,?)
+                 ON DUPLICATE KEY UPDATE last_checked=VALUES(last_checked)'
+            )->execute([$station_id, $now]);
+        } else {
+            $db->prepare(
+                'INSERT INTO icy_cache (station_id, supported, last_checked)
+                 VALUES (?,0,?)
+                 ON CONFLICT(station_id) DO UPDATE SET last_checked=excluded.last_checked'
+            )->execute([$station_id, $now]);
+        }
     }
 }
 
