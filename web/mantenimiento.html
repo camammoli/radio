@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Radio Argentina — Mantenimiento</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#111827">
+<style>
+  :root {
+    --bg:      #111827;
+    --surface: #1f2937;
+    --border:  #374151;
+    --text:    #f9fafb;
+    --muted:   #9ca3af;
+    --accent:  #3b82f6;
+    --green:   #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .card {
+    max-width: 480px;
+    width: 100%;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 40px 28px;
+  }
+  .icono {
+    position: relative;
+    display: inline-block;
+    font-size: 64px;
+    line-height: 1;
+    margin-bottom: 18px;
+  }
+  .icono .llave {
+    position: absolute;
+    right: -10px;
+    bottom: -6px;
+    font-size: 28px;
+    animation: girar 2.2s ease-in-out infinite;
+    transform-origin: 70% 70%;
+  }
+  @keyframes girar {
+    0%, 100% { transform: rotate(-18deg); }
+    50%      { transform: rotate(18deg); }
+  }
+  .ecualizador {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 5px;
+    height: 34px;
+    margin: 6px 0 22px;
+  }
+  .ecualizador span {
+    display: block;
+    width: 6px;
+    border-radius: 3px;
+    background: var(--muted);
+    opacity: .5;
+    animation: pausa 1.6s ease-in-out infinite;
+  }
+  .ecualizador span:nth-child(1) { height: 40%; animation-delay: 0s; }
+  .ecualizador span:nth-child(2) { height: 70%; animation-delay: .15s; }
+  .ecualizador span:nth-child(3) { height: 100%; animation-delay: .3s; }
+  .ecualizador span:nth-child(4) { height: 55%; animation-delay: .45s; }
+  .ecualizador span:nth-child(5) { height: 80%; animation-delay: .6s; }
+  @keyframes pausa {
+    0%, 100% { opacity: .25; }
+    50%      { opacity: .8; }
+  }
+  h1 {
+    font-size: 22px;
+    margin-bottom: 10px;
+  }
+  p {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+  .nota {
+    margin-top: 22px;
+    font-size: 13px;
+    color: var(--muted);
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+  .nota strong { color: var(--text); }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icono">📻<span class="llave">🔧</span></div>
+    <div class="ecualizador"><span></span><span></span><span></span><span></span><span></span></div>
+    <h1>Estamos en mantenimiento</h1>
+    <p>Le estamos haciendo una mejora al motor de la radio para que funcione más rápido y más estable.</p>
+    <p>Volvemos enseguida — no hace falta que hagas nada, esto se resuelve solo en unos minutos.</p>
+    <div class="nota">Si volvés a entrar y seguís viendo esta página, esperá un ratito y recargá. — <strong>Radio Argentina</strong></div>
+  </div>
+</body>
+</html>
