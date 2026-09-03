@@ -2836,3 +2836,101 @@ downtime/riesgo real.
 ### Archivos afectados
 `web/api/_db.php`, `web/api/listeners.php`, `web/api/stations.php`.
 Commit `11b14f6`.
+
+## 2026-09-03 — Migración a MySQL, paso 9 (el corte real): producción corrió en MySQL desde las 16:02 (TKT-0724, Claude Code)
+
+Autorizado explícitamente por Carlos en el momento ("dale, confirmado, hacé
+el corte... y procede"), con 13 oyentes conectados. Downtime real: **15:55
+a 16:02 (≈7 minutos)**, con página de mantenimiento visible todo ese rato
+en vez de un error genérico.
+
+**Orden de ejecución:**
+
+1. **Checkpoint de repo primero** (pedido explícito de Carlos, "para poder
+   volver"): repo local sin cambios pendientes, sincronizado con GitHub
+   (`git fetch` sin diferencia en ningún sentido) antes de tocar nada.
+2. **Página de mantenimiento reusable**: `web/mantenimiento.html` nueva —
+   autocontenida (CSS inline, sin `<link>`/`<script>` externos) para que
+   se vea bien incluso con el resto de los assets bloqueados. Mismo look
+   que el sitio (paleta de `style.css`, emoji 📻 en vez de foto — evita
+   quedar atado a una imagen externa/con derechos). Mostrada primero en
+   `/radio/prueba/` para que Carlos la viera y diera el OK, después
+   commiteada a `web/mantenimiento.html` (commit `c661c4f`) — queda
+   disponible para cualquier mantenimiento futuro, no solo este.
+3. **Backups antes de tocar nada real**: `.htaccess` original y
+   `config.php` de producción bajados y guardados con timestamp antes de
+   modificar cualquiera de los dos.
+4. **`.htaccess` de mantenimiento**: reemplaza el original por uno que
+   devuelve 503 (con `ErrorDocument 503` apuntando a `mantenimiento.html`)
+   para todo, excepto la propia página de mantenimiento y el script de
+   sync. Confirmado en vivo: `home` pasó de 200 a 503 con el contenido de
+   mantenimiento.
+5. **Script temporal `radio_cutover.php`** (mismo patrón de siempre: subir
+   → correr por HTTP con `CRAWLER_TOKEN` → borrar): `truncate` de las 19
+   tablas en `mammoli_radio`, después `import` tabla por tabla leyendo
+   directo del `radio_v2.sqlite` real del servidor (ya congelado por el
+   mantenimiento, sin escrituras concurrentes) — en chunks de 5000 filas
+   para no pisar el timeout de ~300s del proxy del hosting (documentado ya
+   en la sesión 1 de esta migración). `stream_history` (237.857 filas, la
+   tabla más grande) tardó ~35s en total, todo el resto de las tablas
+   junto menos de 5s.
+6. **Verificación de conteos**: las 19 tablas quedaron con conteo exacto
+   igual entre SQLite y MySQL (incluida `listeners`, que creció de 12 a 13
+   filas entre el chequeo inicial y el corte — normal, tráfico real).
+
+### 🐛 Bug real encontrado y corregido en el camino: `v_stations` en MySQL seguía en v4 (sin filtro `activa`)
+A pesar de que `db/mysql_schema.sql` (el archivo) ya tenía la vista v5
+correcta desde la sesión 1, la vista REALMENTE creada en la base
+`mammoli_radio` en su momento se había quedado en la versión anterior —
+sin el filtro `activa=1`. Nunca se había re-aplicado el `CREATE OR REPLACE
+VIEW` después de que se corrigiera este mismo bug del lado de SQLite el
+2026-09-02 (ver esa fecha en este archivo). Se encontró ANTES del flip,
+chequeando `SHOW CREATE VIEW v_stations` con el script temporal — de no
+corregirse, una emisora dada de baja manualmente habría podido reaparecer
+en el listado público apenas se prendiera MySQL. Recreada con la
+definición correcta (acción `fixview` agregada al script temporal),
+confirmado con `SHOW CREATE VIEW` que el filtro quedó presente. Sin
+impacto real ese día porque no había ninguna emisora con `activa=0` en ese
+momento, pero era una bomba de tiempo para la próxima baja manual.
+
+7. **Flip**: `config.php` de producción — `define('RADIO_DB_ENGINE',
+   'mysql');` agregado (único cambio real de comportamiento del corte).
+8. **Verificación en vivo contra MySQL real, con el sitio todavía en
+   mantenimiento para el público**: se agregó una excepción temporal al
+   `.htaccess` de mantenimiento (bypass por un token de un solo uso en la
+   query string, generado para este corte, jamás reusado) para poder
+   probar rutas reales sin exponerlas al público. Probado con éxito:
+   `index.php` (1267 emisoras, coincide con la foto de SQLite pre-corte),
+   `api/listeners.php` (13, coincide), `api/stations.php?slug=...` (ficha
+   real, Vorterix), `index.php?station=...` (título correcto),
+   `api/listeners.php?action=top` y `api/stations.php` paginado (los dos
+   casos que habían tenido el bug de `LIMIT` en el paso 8 — sin error),
+   `estadisticas.php`.
+9. **Mantenimiento apagado**: `.htaccess` original restaurado. Confirmado
+   en público (sin el token de bypass): `/radio/` 200, mismo conteo de
+   emisoras, `/vorterix-caba/` 200, `/api/playlist.m3u` 200.
+10. **Limpieza**: `radio_cutover.php` y `/radio/prueba/` borrados del
+    servidor — no queda ningún script ni archivo temporal expuesto.
+
+### Pendiente real (no bloqueante, quedó fuera de esta ventana)
+**Backup automático de `mammoli_radio` en cPanel** — mencionado en el plan
+original como parte del paso 9 ("de yapa"), no se hizo en esta sesión por
+no tener acceso a la API de cPanel/WHM desde acá (solo FTP). Alternativa
+más simple, sin necesitar cPanel: un endpoint HTTP nuevo tipo
+`crawler_ingest.php` que haga un dump de las tablas a un archivo,
+disparado por un GitHub Action con cron (mismo patrón que
+`check-streams-v2.yml`) — evaluar en la próxima sesión.
+
+### Estado final
+Producción corre en MySQL (`mammoli_radio`) desde las 16:02 del
+2026-09-03. `radio_v2.sqlite` queda intacto en el servidor como respaldo
+(no se borró nada, `RADIO_DB` sigue definida en `config.php` por si hace
+falta un rollback rápido — alcanza con borrar la línea `RADIO_DB_ENGINE`
+de `config.php` para volver a SQLite). Con esto, el plan completo de
+`Radio_v5_Roadmap.html` (Parte 1) queda terminado — los 9 pasos hechos.
+
+### Archivos afectados
+`web/mantenimiento.html` (nuevo, commit `c661c4f`). En el servidor (fuera
+de git, por diseño): `.htaccess` (ida y vuelta), `config.php` (agregado
+`RADIO_DB_ENGINE`), `mammoli_radio` (datos + vista `v_stations`
+recreada).
