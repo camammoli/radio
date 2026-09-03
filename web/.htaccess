@@ -1,6 +1,17 @@
 RewriteEngine On
 RewriteBase /radio/
 
+# ── Modo mantenimiento (toggle desde el panel admin, pestaña Mantenimiento) ──
+# Presencia del archivo MAINTENANCE_ON = mantenimiento activo. Excluye la
+# propia página de mantenimiento, su API (contador/contacto) y admin.php
+# (para poder apagarlo desde ahí mientras está activo).
+ErrorDocument 503 /radio/mantenimiento.html
+RewriteCond %{DOCUMENT_ROOT}/radio/MAINTENANCE_ON -f
+RewriteCond %{REQUEST_URI} !^/radio/mantenimiento\.html$
+RewriteCond %{REQUEST_URI} !^/radio/api/maintenance\.php$
+RewriteCond %{REQUEST_URI} !^/radio/admin\.php$
+RewriteRule ^ - [R=503,L]
+
 # sitemap.xml → sitemap.php
 RewriteRule ^sitemap\.xml$ sitemap.php [L]
 

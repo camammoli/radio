@@ -44,6 +44,14 @@ if (empty($_SESSION['radio_admin'])) {
 $csrf = $_SESSION['csrf'] ??= bin2hex(random_bytes(16));
 $db   = radio_db();
 
+// Modo mantenimiento: la presencia del archivo MAINTENANCE_ON (en la raíz de
+// /radio/, junto a este mismo admin.php) lo activa — lo lee .htaccess
+// directo con -f, así el bloqueo funciona aunque PHP/la DB tengan un
+// problema. El toggle de acá abajo solo crea/borra ese archivo.
+$maint_flag       = __DIR__ . '/MAINTENANCE_ON';
+$maint_active     = file_exists($maint_flag);
+$maint_started_at = $maint_active ? trim((string)@file_get_contents($maint_flag)) : null;
+
 // Migraciones (solo aplican en SQLite — en MySQL el esquema ya está creado
 // completo por la migración v5, ver [[project_radio_mysql_migracion]])
 sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE surveys ADD COLUMN location TEXT'));
@@ -208,6 +216,15 @@ if ($act === 'update_meta' && ($_POST['csrf'] ?? '') === $csrf) {
             (int)($_POST['id'] ?? 0),
        ]);
     header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#' . preg_replace('/[^a-z]/', '', $_POST['volver'] ?? 'seguimiento'));
+    exit;
+}
+if ($act === 'toggle_maintenance' && ($_POST['csrf'] ?? '') === $csrf) {
+    if (file_exists($maint_flag)) {
+        @unlink($maint_flag);
+    } else {
+        @file_put_contents($maint_flag, gmdate('Y-m-d H:i:s'));
+    }
+    header('Location: ' . strtok($_SERVER['REQUEST_URI'], '?') . '#mantenimiento');
     exit;
 }
 
@@ -785,6 +802,10 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   </button>
   <button class="tab-btn" data-tab="icy">ICY</button>
   <button class="tab-btn" data-tab="crawlers">Crawlers</button>
+  <button class="tab-btn" data-tab="mantenimiento">
+    🛠️ Mantenimiento
+    <?php if ($maint_active): ?><span class="tab-badge warn">ON</span><?php endif; ?>
+  </button>
 </div>
 
 <!-- ══ Tab: Resumen ══════════════════════════════════════════════════════════ -->
@@ -1410,6 +1431,42 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   </p>
 </div>
 
+<!-- ══ Tab: Mantenimiento ════════════════════════════════════════════════════ -->
+<div class="tab-content" id="tab-mantenimiento">
+  <h2 id="mantenimiento">Modo mantenimiento</h2>
+  <p class="note" style="margin-bottom:14px">
+    Cuando está activo, todo <code>/radio/</code> muestra
+    <a href="mantenimiento.html" target="_blank">la página de mantenimiento</a>
+    (con formulario de contacto y contador propios) en vez del sitio real —
+    excepto esta sección de admin, para poder apagarlo desde acá.
+  </p>
+
+  <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;flex-wrap:wrap">
+    <span style="font-size:14px">
+      Estado actual:
+      <strong style="color:<?= $maint_active ? 'var(--red)' : 'var(--green)' ?>">
+        <?= $maint_active ? '● Activo' : '● Apagado (sitio funcionando normal)' ?>
+      </strong>
+      <?php if ($maint_active && $maint_started_at): ?>
+        <span style="font-size:12px;color:var(--muted)">desde <?= h($maint_started_at) ?> UTC</span>
+      <?php endif; ?>
+    </span>
+    <form method="post" style="margin:0" onsubmit="return confirm('<?= $maint_active ? '¿Apagar el modo mantenimiento? El sitio vuelve a estar disponible al público.' : '¿Activar el modo mantenimiento? El sitio público va a mostrar la página de mantenimiento hasta que lo apagues.' ?>')">
+      <input type="hidden" name="action" value="toggle_maintenance">
+      <input type="hidden" name="csrf" value="<?= h($csrf) ?>">
+      <button class="<?= $maint_active ? 'btn-del' : 'btn-ok' ?>" type="submit">
+        <?= $maint_active ? '⏸ Desactivar mantenimiento' : '🛠️ Activar mantenimiento' ?>
+      </button>
+    </form>
+  </div>
+
+  <div class="cards" id="maint-cards" style="<?= $maint_active ? '' : 'display:none' ?>">
+    <div class="card"><div class="v" id="maint-tiempo">—</div><div class="l">En mantenimiento</div></div>
+    <div class="card"><div class="v" id="maint-ahora">—</div><div class="l">Viendo la página ahora</div></div>
+    <div class="card"><div class="v" id="maint-total">—</div><div class="l">Pasaron por acá</div></div>
+  </div>
+</div>
+
 <p style="margin-top:32px;font-size:11px;color:var(--border);text-align:center">
   Radio Argentina Admin · <?= gmdate('Y-m-d H:i') ?> UTC
 </p>
@@ -1784,6 +1841,25 @@ window.DT = (function () {
   }
 
   setInterval(refreshAdmin, 10000);
+
+  // ── Mantenimiento: contador en vivo (tiempo / oyentes de la página) ──────────
+  function refreshMaintenance() {
+    fetch('api/maintenance.php?action=status&_=' + Date.now())
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (res) {
+        var d = res && res.data;
+        if (!d || !d.active) return;
+        if (d.started_at) {
+          var startedMs = Date.parse(d.started_at.replace(' ', 'T') + 'Z');
+          upd('maint-tiempo', fmtDur(Math.max(0, Math.round((Date.now() - startedMs) / 1000))));
+        }
+        upd('maint-ahora', d.viewers_now);
+        upd('maint-total', d.viewers_total);
+      })
+      .catch(function () {});
+  }
+  refreshMaintenance();
+  setInterval(refreshMaintenance, 5000);
 }());
 </script>
 </body>

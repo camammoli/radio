@@ -2934,3 +2934,80 @@ de `config.php` para volver a SQLite). Con esto, el plan completo de
 de git, por diseño): `.htaccess` (ida y vuelta), `config.php` (agregado
 `RADIO_DB_ENGINE`), `mammoli_radio` (datos + vista `v_stations`
 recreada).
+
+## 2026-09-03 — Modo mantenimiento con toggle en el admin + contador de visitas + formulario de contacto (TKT-0725, Claude Code)
+
+A pedido de Carlos justo después del corte real (paso 9), para no tener que
+repetir el swap manual de `.htaccess` por FTP cada vez que haga falta un
+mantenimiento futuro. Antes de tocar nada se investigó el impacto real del
+corte recién hecho (el reloj de `mammoli_radio` está ~2hs atrasado respecto
+al horario local, hubo que corregir la ventana de búsqueda con eso en
+cuenta): las sesiones que ya estaban escuchando siguieron sin cortarse (el
+audio lo sirve el servidor de cada emisora, no `mammoli.ar`) y las 13
+sesiones activas al momento del corte volvieron todas a mandar heartbeat
+después — ninguna quedó huérfana. Downtime real medido: 6m57s.
+
+**Diseño — activación por archivo bandera, no por swap de `.htaccess`:**
+`.htaccess` ahora es permanente (un solo archivo, sin ida y vuelta) y
+consulta con `-f` si existe `/radio/MAINTENANCE_ON` — si existe, todo
+devuelve 503 con `ErrorDocument 503 → mantenimiento.html`, excepto la
+propia página, `api/maintenance.php` (necesaria para que esa página
+funcione) y `admin.php` (para poder apagarlo desde ahí mientras está
+activo). El contenido del archivo es el timestamp UTC de cuándo se
+activó — así ni la página pública ni el admin necesitan otra fuente para
+calcular "hace cuánto".
+
+- **`admin.php`** — pestaña nueva "🛠️ Mantenimiento" (con badge "ON" en la
+  barra de pestañas cuando está activo). Botón único que alterna
+  crear/borrar `MAINTENANCE_ON` (mismo patrón `action`+`csrf` que el resto
+  de las acciones del panel, con `confirm()` antes de cualquiera de los dos
+  sentidos). Mientras está activo, muestra tiempo transcurrido + oyentes
+  ahora + total histórico de esa activación, refrescado cada 5s contra
+  `api/maintenance.php`.
+- **`web/api/maintenance.php`** (nuevo) — excluido a propósito del bloqueo:
+  `action=status` (público, sin auth), `action=ping` (heartbeat del
+  visitante, tabla nueva `maintenance_viewers`, mismo patrón de
+  `sid`/`ip_hash`/`geo_provincia()` que `listeners.php`), `action=contact`
+  (formulario, ver checklist abajo).
+- **`web/mantenimiento.html`** — reescrita: respeta el tema oscuro/claro ya
+  guardado por el visitante (`localStorage.radio_theme`, mismo mecanismo
+  que el resto del sitio) con su propio botón de toggle; contador en vivo
+  de tiempo en mantenimiento + oyentes ahora + total; formulario de
+  contacto. Sigue totalmente autocontenida en CSS/JS inline — sin eso, con
+  el resto de los assets bloqueados durante un mantenimiento real, se
+  vería rota.
+
+**Formulario de contacto — checklist de [[feedback_estandar_formularios_contacto]] aplicado completo:**
+honeypot camuflado (`asunto2`, no `web`/`honeypot`/`url`), trampa de tiempo
+(timestamp `tsm` renderizado server-side, rechaza envíos a menos de 2s),
+rate limit 5/hora por IP (archivo temporal con hash de IP, sin DB), éxito
+fingido silencioso ante honeypot/trampa (sin dar feedback útil a un bot),
+error real y distinto ante validación real (mensaje corto/largo, email
+inválido, rate limit), origen identificado en la notificación de Telegram
+("[Radio Argentina · Mantenimiento]") y en el mensaje guardado (prefijo
+"[Durante mantenimiento]"). Reusa la tabla `contacto_mensajes` que ya
+existía (la usa `contacto.php`) — no hizo falta una tabla nueva para esto,
+sí para `maintenance_viewers`.
+
+**Probado:** contra copia local de la SQLite real (con
+`session.save_path` seteado a mano — sin eso, `session_start()` tira un
+warning en este entorno de pruebas que rompe silenciosamente los
+`header('Location: ...')` de todas las acciones del admin, no solo la
+nueva; ya documentado antes como artefacto del entorno, no bug real) más
+Playwright para el flujo completo (login → activar → ver contador → tema
+claro/oscuro → enviar mensaje → desactivar). El bloqueo real de Apache
+(`-f` + `ErrorDocument 503` + `R=503`) no se puede probar con el server
+embebido de PHP (no interpreta `.htaccess`) — se probó en producción real,
+pero acotado a **14 segundos** (16:32:01–16:32:15): activar, confirmar 503
++ contenido de mantenimiento + `admin.php` seguía accesible + API
+respondiendo contra MySQL real, desactivar, confirmar 1267 emisoras de
+vuelta.
+
+**Deploy:** `.htaccess`, `admin.php`, `mantenimiento.html`,
+`api/maintenance.php` — los 4 verificados byte a byte contra producción
+después de subir.
+
+### Archivos afectados
+`web/.htaccess`, `web/admin.php`, `web/mantenimiento.html`,
+`web/api/maintenance.php` (nuevo). En el servidor (fuera de git):
+`MAINTENANCE_ON` se crea/borra solo desde el admin, no se sube a mano.

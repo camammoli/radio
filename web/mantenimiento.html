@@ -15,6 +15,17 @@
     --muted:   #9ca3af;
     --accent:  #3b82f6;
     --green:   #22c55e;
+    --red:     #ef4444;
+  }
+  body.light {
+    --bg:      #f3f4f6;
+    --surface: #ffffff;
+    --border:  #d1d5db;
+    --text:    #111827;
+    --muted:   #6b7280;
+    --accent:  #2563eb;
+    --green:   #16a34a;
+    --red:     #dc2626;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -22,32 +33,34 @@
     color: var(--text);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 24px;
+    padding: 24px 16px 48px;
   }
+  .wrap { max-width: 480px; margin: 0 auto; }
+  .theme-row { display: flex; justify-content: flex-end; margin-bottom: 14px; }
+  #theme-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--muted);
+    font-size: 12px; padding: 5px 10px; border-radius: 999px; cursor: pointer;
+  }
+  #theme-btn:hover { color: var(--text); border-color: var(--muted); }
   .card {
-    max-width: 480px;
-    width: 100%;
     text-align: center;
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 16px;
-    padding: 40px 28px;
+    padding: 36px 26px 30px;
   }
   .icono {
     position: relative;
     display: inline-block;
-    font-size: 64px;
+    font-size: 60px;
     line-height: 1;
-    margin-bottom: 18px;
+    margin-bottom: 16px;
   }
   .icono .llave {
     position: absolute;
     right: -10px;
     bottom: -6px;
-    font-size: 28px;
+    font-size: 26px;
     animation: girar 2.2s ease-in-out infinite;
     transform-origin: 70% 70%;
   }
@@ -56,58 +69,222 @@
     50%      { transform: rotate(18deg); }
   }
   .ecualizador {
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 5px;
-    height: 34px;
-    margin: 6px 0 22px;
+    display: flex; align-items: flex-end; justify-content: center;
+    gap: 5px; height: 30px; margin: 4px 0 20px;
   }
   .ecualizador span {
-    display: block;
-    width: 6px;
-    border-radius: 3px;
-    background: var(--muted);
-    opacity: .5;
-    animation: pausa 1.6s ease-in-out infinite;
+    display: block; width: 6px; border-radius: 3px; background: var(--muted);
+    opacity: .5; animation: pausa 1.6s ease-in-out infinite;
   }
   .ecualizador span:nth-child(1) { height: 40%; animation-delay: 0s; }
   .ecualizador span:nth-child(2) { height: 70%; animation-delay: .15s; }
   .ecualizador span:nth-child(3) { height: 100%; animation-delay: .3s; }
   .ecualizador span:nth-child(4) { height: 55%; animation-delay: .45s; }
   .ecualizador span:nth-child(5) { height: 80%; animation-delay: .6s; }
-  @keyframes pausa {
-    0%, 100% { opacity: .25; }
-    50%      { opacity: .8; }
+  @keyframes pausa { 0%, 100% { opacity: .25; } 50% { opacity: .8; } }
+  h1 { font-size: 21px; margin-bottom: 8px; }
+  .card > p { color: var(--muted); font-size: 14px; line-height: 1.55; margin-bottom: 8px; }
+  .stats {
+    display: flex; justify-content: center; gap: 22px;
+    margin: 20px 0 4px; padding-top: 18px; border-top: 1px solid var(--border);
   }
-  h1 {
-    font-size: 22px;
-    margin-bottom: 10px;
+  .stat .v { font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat .l { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .stat .v.live { color: var(--green); }
+  #stats-row { display: none; }
+
+  .contacto {
+    margin-top: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 24px;
+    text-align: left;
   }
-  p {
-    color: var(--muted);
-    font-size: 15px;
-    line-height: 1.55;
-    margin-bottom: 10px;
+  .contacto h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .contacto > p { color: var(--muted); font-size: 13px; margin-bottom: 16px; line-height: 1.5; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; margin-top: 12px; }
+  label:first-of-type { margin-top: 0; }
+  input, textarea {
+    width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 14px; outline: none;
+    font-family: inherit; transition: border-color .15s;
   }
+  textarea { resize: vertical; min-height: 90px; }
+  input:focus, textarea:focus { border-color: var(--accent); }
+  body.light input, body.light textarea { background: #f9fafb; }
+  .btn {
+    width: 100%; padding: 11px; border-radius: 8px; border: none; background: var(--accent);
+    color: #fff; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 16px;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: .85; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .msg-error {
+    background: #2a0a0a; border: 1px solid var(--red); border-radius: 8px; padding: 10px 12px;
+    color: #ff8a8a; font-size: 13px; margin-top: 12px; line-height: 1.5;
+  }
+  body.light .msg-error { background: #fee2e2; color: #991b1b; }
+  .msg-success {
+    background: #0a2e12; border: 1px solid var(--green); border-radius: 8px; padding: 14px;
+    color: #7dd49f; font-size: 13px; line-height: 1.6; text-align: center;
+  }
+  body.light .msg-success { background: #dcfce7; color: #166534; }
+  /* Honeypot: fuera de pantalla, invisible pero completable por bots simples */
+  .hp { position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
   .nota {
-    margin-top: 22px;
-    font-size: 13px;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    padding-top: 16px;
+    margin-top: 18px; font-size: 12px; color: var(--muted); text-align: center;
   }
-  .nota strong { color: var(--text); }
 </style>
 </head>
 <body>
+<div class="wrap">
+  <div class="theme-row"><button id="theme-btn">☀️ Modo claro</button></div>
+
   <div class="card">
     <div class="icono">📻<span class="llave">🔧</span></div>
     <div class="ecualizador"><span></span><span></span><span></span><span></span><span></span></div>
     <h1>Estamos en mantenimiento</h1>
     <p>Le estamos haciendo una mejora al motor de la radio para que funcione más rápido y más estable.</p>
     <p>Volvemos enseguida — no hace falta que hagas nada, esto se resuelve solo en unos minutos.</p>
-    <div class="nota">Si volvés a entrar y seguís viendo esta página, esperá un ratito y recargá. — <strong>Radio Argentina</strong></div>
+
+    <div class="stats" id="stats-row">
+      <div class="stat"><div class="v live" id="stat-tiempo">—</div><div class="l">En mantenimiento</div></div>
+      <div class="stat"><div class="v live" id="stat-ahora">—</div><div class="l">Viendo esto ahora</div></div>
+      <div class="stat"><div class="v" id="stat-total">—</div><div class="l">Pasaron por acá</div></div>
+    </div>
   </div>
+
+  <div class="contacto">
+    <h2>¿Necesitás algo urgente?</h2>
+    <p>Dejanos un mensaje y lo vemos apenas volvamos.</p>
+    <div id="msg-area"></div>
+    <form id="form-mant">
+      <label for="m-nombre">Tu nombre <span style="font-weight:normal">(opcional)</span></label>
+      <input type="text" id="m-nombre" name="nombre" maxlength="100">
+      <label for="m-email">Tu email <span style="font-weight:normal">(opcional, si querés respuesta)</span></label>
+      <input type="email" id="m-email" name="email" maxlength="150" placeholder="tu@email.com">
+      <label for="m-mensaje">Mensaje *</label>
+      <textarea id="m-mensaje" name="mensaje" required maxlength="2000" placeholder="Contame..."></textarea>
+      <input type="hidden" id="m-tsm" name="tsm" value="">
+      <div class="hp" aria-hidden="true">
+        <label for="m-asunto2">No completar</label>
+        <input type="text" id="m-asunto2" name="asunto2" tabindex="-1" autocomplete="off">
+      </div>
+      <button type="submit" class="btn" id="btn-mant">Enviar mensaje</button>
+    </form>
+  </div>
+
+  <div class="nota">— Radio Argentina</div>
+</div>
+
+<script>
+(function () {
+  // ── Tema: respeta exactamente la preferencia ya guardada por el sitio ────
+  var theme = localStorage.getItem('radio_theme');
+  if (theme === 'light') document.body.classList.add('light');
+  var themeBtn = document.getElementById('theme-btn');
+  function syncThemeBtn() { themeBtn.textContent = document.body.classList.contains('light') ? '🌙 Modo oscuro' : '☀️ Modo claro'; }
+  syncThemeBtn();
+  themeBtn.addEventListener('click', function () {
+    var isLight = document.body.classList.toggle('light');
+    localStorage.setItem('radio_theme', isLight ? 'light' : 'dark');
+    syncThemeBtn();
+  });
+
+  // ── Contador de tiempo + oyentes de la página de mantenimiento ───────────
+  var sid = sessionStorage.getItem('radio_maint_sid');
+  if (!sid) {
+    sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+    sessionStorage.setItem('radio_maint_sid', sid);
+  }
+
+  function fmtDur(s) {
+    if (s < 60) return s + 's';
+    var m = Math.floor(s / 60), r = s % 60;
+    if (m < 60) return m + 'm ' + r + 's';
+    var h = Math.floor(m / 60);
+    return h + 'h ' + (m % 60) + 'm';
+  }
+
+  var startedAtMs = null;
+
+  function actualizarTiempo() {
+    if (startedAtMs === null) return;
+    var seg = Math.max(0, Math.round((Date.now() - startedAtMs) / 1000));
+    document.getElementById('stat-tiempo').textContent = fmtDur(seg);
+  }
+
+  function consultarEstado() {
+    fetch('api/maintenance.php?action=status')
+      .then(function (r) { return r.json(); })
+      .then(function (res) {
+        var d = res.data || res; // por si acaso, tolera ambas formas
+        if (!d.active) return;
+        document.getElementById('stats-row').style.display = 'flex';
+        if (d.started_at) {
+          // El timestamp del servidor viene en UTC "YYYY-MM-DD HH:MM:SS"
+          startedAtMs = Date.parse(d.started_at.replace(' ', 'T') + 'Z');
+          actualizarTiempo();
+        }
+        document.getElementById('stat-ahora').textContent = d.viewers_now != null ? d.viewers_now : '—';
+        document.getElementById('stat-total').textContent = d.viewers_total != null ? d.viewers_total : '—';
+      })
+      .catch(function () {});
+  }
+
+  function ping() {
+    fetch('api/maintenance.php?action=ping&sid=' + encodeURIComponent(sid)).catch(function () {});
+  }
+
+  consultarEstado();
+  ping();
+  setInterval(consultarEstado, 15000);
+  setInterval(ping, 20000);
+  setInterval(actualizarTiempo, 1000);
+
+  // ── Formulario de contacto ────────────────────────────────────────────────
+  document.getElementById('m-tsm').value = Math.floor(Date.now() / 1000);
+
+  var form = document.getElementById('form-mant');
+  var msgArea = document.getElementById('msg-area');
+  var btn = document.getElementById('btn-mant');
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+    msgArea.innerHTML = '';
+
+    var params = new URLSearchParams({
+      action: 'contact',
+      nombre: document.getElementById('m-nombre').value,
+      email: document.getElementById('m-email').value,
+      mensaje: document.getElementById('m-mensaje').value,
+      asunto2: document.getElementById('m-asunto2').value,
+      tsm: document.getElementById('m-tsm').value
+    });
+
+    fetch('api/maintenance.php?' + params.toString())
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.ok) {
+          form.style.display = 'none';
+          msgArea.innerHTML = '<div class="msg-success"><strong>¡Gracias!</strong><br>Leemos todos los mensajes apenas volvemos.</div>';
+        } else {
+          msgArea.innerHTML = '<div class="msg-error">⚠️ ' + (data.error || 'No se pudo enviar el mensaje.') + '</div>';
+          btn.disabled = false;
+          btn.textContent = 'Enviar mensaje';
+        }
+      })
+      .catch(function () {
+        msgArea.innerHTML = '<div class="msg-error">⚠️ No se pudo enviar el mensaje. Probá de nuevo en un rato.</div>';
+        btn.disabled = false;
+        btn.textContent = 'Enviar mensaje';
+      });
+  });
+})();
+</script>
 </body>
 </html>
