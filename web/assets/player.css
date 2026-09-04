@@ -380,3 +380,44 @@ body.light .rp-tg-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
 }
 
 body.light .rp-wa-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+
+/* ── Botón flotante "volver arriba" ────────────────────────────────────────── */
+/* Mismo lado (left) y sistema de offset que TG/WA, apilado arriba de los
+   dos (144px + 56px). Oculto por default — el JS de listing.php lo
+   muestra recién después de bajar un poco, no todo el tiempo. Usa
+   var(--accent) en vez de un color de marca fijo: sigue el tema
+   oscuro/claro del sitio solo, sin reglas nuevas por tema. */
+.rp-top-btn {
+  position: fixed;
+  left: 16px;
+  bottom: calc(200px + env(safe-area-inset-bottom));
+  z-index: 140;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0,0,0,.35);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(8px);
+  transition: opacity .2s ease, transform .2s ease, box-shadow .15s ease;
+}
+.rp-top-btn.rp-top-btn--visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+.rp-top-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.4);
+}
+body.light .rp-top-btn { box-shadow: 0 6px 18px rgba(0,0,0,.18); }
+@media (prefers-reduced-motion: reduce) {
+  .rp-top-btn { transition: opacity .2s ease; }
+}

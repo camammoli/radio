@@ -702,5 +702,23 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register(<?= json_enco
 <?php require __DIR__ . '/../components/privacy.php'; ?>
 <?php require __DIR__ . '/../components/telegram_button.php'; ?>
 <?php require __DIR__ . '/../components/whatsapp_button.php'; ?>
+<?php require __DIR__ . '/../components/volver_arriba_button.php'; ?>
+<script>
+(function () {
+  var boton = document.getElementById('rp-top-btn');
+  if (!boton) return;
+
+  function actualizarVisibilidad() {
+    boton.classList.toggle('rp-top-btn--visible', window.scrollY > 500);
+  }
+  window.addEventListener('scroll', actualizarVisibilidad, { passive: true });
+  actualizarVisibilidad();
+
+  boton.addEventListener('click', function () {
+    var prefiereMenosMovimiento = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: prefiereMenosMovimiento ? 'auto' : 'smooth' });
+  });
+}());
+</script>
 </body>
 </html>

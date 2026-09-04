@@ -3011,3 +3011,44 @@ después de subir.
 `web/.htaccess`, `web/admin.php`, `web/mantenimiento.html`,
 `web/api/maintenance.php` (nuevo). En el servidor (fuera de git):
 `MAINTENANCE_ON` se crea/borra solo desde el admin, no se sube a mano.
+
+## 2026-09-04 — Botón flotante "volver arriba" en el listado (TKT-0737, Claude Code)
+
+**Pedido de Carlos**: mismo botón que se acababa de implementar en Tienda
+de Juan — circular, flecha hacia arriba, aparece recién después de bajar
+un poco, color del sitio.
+
+**Decisión de posición — lado izquierdo, no derecho**: a diferencia de
+Tienda de Juan (donde fue a la derecha, sin nada más ahí), este sitio ya
+tiene un sistema de botones flotantes establecido: Telegram y WhatsApp
+viven a la izquierda (`left:16px`, apilados por `bottom` — ver comentario
+en `.rp-tg-btn` de `player.css`) justamente para no chocar con los toasts
+que sí viven a la derecha (`#support-toast`, `.rp-welcome`). Se respetó
+ese sistema existente en vez de forzar el lado derecho: el botón nuevo
+queda apilado arriba de WhatsApp (`bottom: calc(200px + safe-area)`,
+144px de WA + 56px de espaciado, mismo patrón que los otros dos).
+
+**Implementado**:
+- `web/components/volver_arriba_button.php` (nuevo) — mismo patrón que
+  `telegram_button.php`/`whatsapp_button.php`, un componente por botón.
+  SVG de flecha simple (el sitio no usa una librería de íconos, usa SVG
+  inline para estos botones).
+- `web/assets/player.css` — `.rp-top-btn`, oculto por default, con
+  `background: var(--accent)` (sigue el tema oscuro/claro del sitio solo,
+  sin reglas nuevas por tema), respeta `prefers-reduced-motion`.
+- `web/pages/listing.php` — incluye el componente + JS chico (muestra con
+  `scrollY > 500`, scroll suave al tope, `behavior:'auto'` si el usuario
+  tiene reduced-motion). Solo en esta página (el listado largo de 1267
+  emisoras) — no en `station.php`, que es una ficha corta.
+
+**Probado**: local con Playwright, oscuro y claro — aparece al bajar,
+sube al tope, se vuelve a ocultar, y no choca visualmente con
+WhatsApp/Telegram en desktop ni en mobile (capturas tomadas de los tres
+casos).
+
+**Deploy**: los 3 archivos. Verificado byte a byte contra producción, y
+además confirmado con `curl` fresco (sin caché de navegador) que el
+`player.css` real servido ya tiene la regla nueva — este sitio no tiene
+cache-busting en `player.css`/`style.css` (a diferencia de `carrito.js`
+en Tienda de Juan), así que un visitante con el CSS viejo cacheado podría
+tardar en ver el botón hasta que su navegador revalide el archivo.
