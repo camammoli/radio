@@ -113,7 +113,7 @@ $ld_itemlist = [
     <a  class="badge" href="/radio/suscribirse.php">🔔 Alertas</a>
     <a  class="badge" href="/radio/estadisticas.php">📊 Estadísticas</a>
     <a  class="badge" href="https://github.com/camammoli/radio" target="_blank" rel="noopener">GitHub</a>
-    <a  class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Café</a>
+    <a  class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>
     <button id="theme-btn" class="badge">☀️ Modo claro</button>
   </div>
 </header>
