@@ -240,8 +240,7 @@ $ld_itemlist = [
 
 <!-- Toast cafecito -->
 <div id="support-toast" style="display:none">
-  ¿Te gusta Radio Argentina? <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener">☕ Invitame un café</a>
-  <button onclick="this.closest('#support-toast').classList.add('hide')">✕</button>
+  ¿Te gusta Radio Argentina? <a href="https://cafecito.app/mammoli" target="_blank" rel="noopener" onclick="this.closest('#support-toast').classList.add('hide')">☕ Invitame un café</a>
 </div>
 
 <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>

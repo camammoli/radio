@@ -363,21 +363,14 @@ body.light #btn-copy.copied { color: #15803d; border-color: #16a34a; }
   position: fixed; bottom: 140px; right: 16px;
   max-width: 260px; background: #1f2937ee;
   border: 1px solid #374151; border-left: 3px solid #fbbf24;
-  border-radius: 8px; padding: 13px 40px 13px 17px;
+  border-radius: 8px; padding: 13px 17px;
   font-size: 14px; color: #d1d5db; line-height: 1.5; z-index: 200;
   opacity: 1; transition: opacity .6s ease;
 }
 #support-toast.hide { opacity: 0; pointer-events: none; }
 #support-toast a    { color: #fbbf24; text-decoration: none; }
 #support-toast a:hover { text-decoration: underline; }
-#support-toast button {
-  position: absolute; top: 6px; right: 8px;
-  background: none; border: none; color: #6b7280;
-  font-size: 13px; cursor: pointer; padding: 2px;
-}
 body.light #support-toast { background: #ffffffee; color: #374151; border-color: #d1d5db; }
-body.light #support-toast button { color: #9ca3af; }
-body.light #support-toast button:hover { color: #374151; }
 
 /* ── Página de emisora individual ────────────────────────────────────────── */
 
