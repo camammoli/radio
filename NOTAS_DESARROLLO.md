@@ -3101,3 +3101,58 @@ cosmético de paso en `style.css` (`.rp-welcome--ayuda h3 { margin-right:
 player.js/style.css, ver TKT-0684). Verificado en vivo con `curl` fresco
 post-deploy: el HTML del toast ya no incluye el botón, `sw.js` en
 producción confirma v13.
+
+**Corrección sobre la marcha:** el fix de arriba solo tocó el toast de
+ayuda (`player.js`). Había un SEGUNDO toast de cafecito, independiente,
+en `web/pages/listing.php` (`#support-toast`, aparece tras 5 min de
+reproducción activa) que también tenía una X y no se había tocado —
+Carlos lo cerró con la X en producción y avisó que seguía ahí. Corregido
+en el momento: se sacó la X y el link ahora cierra el toast al hacer
+clic (antes no había forma de cerrarlo sin la X). CSS: se sacó el
+padding/regla del botón que ya no existe. **Lección:** cuando un pedido
+nombra "el toast de X" de forma genérica y hay más de un mecanismo con
+nombre similar en el código, verificar TODOS antes de dar el cambio por
+terminado — no alcanza con arreglar el que parece más probable.
+
+**Badge del header también renombrado** (mismo pedido, sesión seguida):
+"☕ Café" → "☕ Invitame un café" en `listing.php` y `station.php` (mismo
+texto que ya usa el toast, más descriptivo que la palabra sola).
+
+## 2026-09-14 — Aprobación masiva de sugerencias con stream funcional (TKT-0725, Claude Code)
+
+**Pedido explícito de Carlos**: de las 194 sugerencias pendientes
+(`stations` con `source IN ('sugerencia','radio-browser')` y
+`approved=0`), aprobar "por esta vez" las que tengan stream activo y
+funcional, como si él mismo lo hubiera hecho.
+
+**Método**: el crawler de streams (`check_streams_v2.py` /
+`crawler_ingest.php`) solo chequea emisoras ya `approved=1` — las
+sugerencias pendientes nunca habían sido verificadas en vivo desde que
+se cargaron. Se armó un chequeo puntual (no productivo, solo para esta
+tarea) replicando el mismo criterio que usa `sugerir.php::check_stream()`
+al recibir una sugerencia nueva: HTTP 200-399 tras seguir redirects =
+funcional. Primera pasada con `HEAD`; los que fallaban se reintentaron
+con `GET` + `Range: 0-4095` (varios servidores Icecast/Shoutcast
+rechazan `HEAD` con 400/405 pero responden bien a `GET` — 54 de 61
+"fallidos" en la primera pasada en realidad andaban bien).
+
+**Resultado**: 187/194 con stream confirmado funcional → aprobadas una
+por una vía `admin.php` (`action=approve`, sesión real autenticada, no
+un bypass directo a la DB). Verificado post-cambio: "Sugerencias
+pendientes" bajó de 194 a 7, "Emisoras activas" subió de 1271 a 1458
+(+187 exacto).
+
+**Quedaron 7 SIN aprobar** (fallaron el chequeo real, no se rechazaron —
+quedan en el panel para revisión manual por si la URL es corregible):
+- 401 Unauthorized: Radio Fm Sur 107.7 Rosario (id 1429), Frecuencia
+  Sundance 98.7 (id 1382), CNN Radio Salta 94.7 FM (id 1369), Vorterix
+  Bahía Blanca 99.1 FM (id 1329)
+- 404: Radio Rivadavia Necochea 97.3 FM (id 1340)
+- 523 (Cloudflare, origen inalcanzable): Radio del Sol 93.7 (id 1343)
+- Sin respuesta / timeout: Radio Nueva Presidencia Roque Sáenz Peña 92.1
+  FM (id 1334)
+
+**Nota**: esta aprobación NO pasó por el crawler de verificación
+periódica — las 187 emisoras nuevas van a entrar al ciclo normal de
+`check_streams_v2.py` recién en la próxima corrida (cada 6hs), que va a
+actualizar su `stream_status` real por primera vez.
