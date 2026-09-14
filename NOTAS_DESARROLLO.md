@@ -3052,3 +3052,52 @@ además confirmado con `curl` fresco (sin caché de navegador) que el
 cache-busting en `player.css`/`style.css` (a diferencia de `carrito.js`
 en Tienda de Juan), así que un visitante con el CSS viejo cacheado podría
 tardar en ver el botón hasta que su navegador revalide el archivo.
+
+## 2026-09-14 — Auditoría de estado + quitar X del toast de ayuda/Cafecito (TKT-0724, Claude Code)
+
+**Pedido de Carlos**: retomar el proyecto (10 días sin tocarlo desde
+TKT-0737), buscar bugs/problemas, revisar visitas/oyentes, y sacar la X
+del toast del Cafecito dejando solo los botones.
+
+**Auditoría de estado (vía panel admin real + `gh run list`, sin tocar
+nada hasta el punto 3):**
+- Repo sin commits desde 2026-09-04 (10 días). Los 7 workflows de GitHub
+  Actions corren limpios (últimas 15 corridas: todas `success`) — la
+  migración a MySQL del 2026-09-03 sigue estable, sin ninguna corrupción
+  nueva desde el corte (antes eran ~1 cada 1-2 semanas).
+- Estado de streams: 1279 emisoras, 725 activas, 91 caídas, 463 timeout
+  (~57% online, consistente con el análisis de 2026-07-23 — el problema
+  de fondo de emisoras caídas en el listado sigue sin resolverse).
+- Oyentes/plays reales (panel admin, ahora): 22 oyentes conectados, 63
+  plays hoy, 7923 plays históricos totales.
+- **Backlog operativo sin atender, no reportado antes con estos números
+  exactos:** 194 sugerencias de emisoras pendientes de revisar, 560
+  reportes de "problemas" (caídas reportadas por oyentes) sin triar. Es
+  la señal más clara de "proyecto estancado" — el catálogo y el feedback
+  de la comunidad se acumulan sin curación desde hace tiempo.
+- **Dato clave que motivó el cambio de hoy:** el toast de ayuda (con el
+  botón Cafecito) se mostró 927 veces con solo 3.9% de tasa de respuesta
+  (21 "Ok", 7 Cafecito, 1 Contacto, 7 "No molestar" — el resto, ~96%,
+  simplemente lo cerraba con la X o lo ignoraba sin dejar rastro de qué
+  pensaba).
+- Pendientes ya conocidos de sesiones anteriores que siguen abiertos:
+  backup automático de `mammoli_radio` (no se hizo, ver
+  [[project_radio_mysql_migracion]]), y el 406 de ModSecurity en el login
+  de `admin.php` (ver [[feedback_waf_post_bloqueado]] — no resuelto por
+  el riesgo de exponer la contraseña en la URL con el fix habitual).
+
+**Cambio implementado — toast de ayuda (`web/assets/player.js`,
+`showAyuda()`):** se quitó el botón `✕` (`rp-welcome-close`) que cerraba
+el toast sin fijar preferencia y lo hacía reaparecer en la próxima
+entrada sin dejar registro de la decisión. Ahora el toast solo tiene los
+4 botones de acción (Ok, Cafecito, Contacto, No molestar), cada uno de
+los cuales sí registra una respuesta real. No se tocó el resto del
+comportamiento (delay de entrada, sesión única, snooze/never). Fix
+cosmético de paso en `style.css` (`.rp-welcome--ayuda h3 { margin-right:
+0 }`, el hueco que dejaba la X ya removida).
+
+**Deploy**: `web/assets/player.js`, `web/assets/style.css`, `web/sw.js`
+(bump `CACHE_NAME` a `radio-ar-v13` — obligatorio en todo cambio a
+player.js/style.css, ver TKT-0684). Verificado en vivo con `curl` fresco
+post-deploy: el HTML del toast ya no incluye el botón, `sw.js` en
+producción confirma v13.

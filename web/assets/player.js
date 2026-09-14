@@ -705,7 +705,6 @@
       var toast = document.createElement('div');
       toast.className = 'rp-welcome rp-welcome--ayuda';
       toast.innerHTML =
-        '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
         '<h3>&#x1F64F; Un pedido</h3>' +
         '<p>Radio Argentina lo armo y sostengo solo, en mi tiempo libre &#x2014; sin equipo, ' +
         'sin publicidad. Mantener m&#xE1;s de 1200 streams monitoreados en vivo, con metadata ' +
@@ -742,10 +741,6 @@
       function never() {
         localStorage.setItem(AYUDA_NEVER_KEY, '1');
       }
-
-      // La X cierra sin fijar preferencia — vuelve a aparecer en la próxima
-      // entrada, a diferencia de los 4 botones de abajo que sí la cambian.
-      toast.querySelector('.rp-welcome-close').addEventListener('click', close);
 
       toast.querySelector('.rp-ayuda-ok').addEventListener('click', function () {
         ayudaLog('ok'); snooze(); close();
