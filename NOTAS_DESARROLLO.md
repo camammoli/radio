@@ -3156,3 +3156,47 @@ quedan en el panel para revisión manual por si la URL es corregible):
 periódica — las 187 emisoras nuevas van a entrar al ciclo normal de
 `check_streams_v2.py` recién en la próxima corrida (cada 6hs), que va a
 actualizar su `stream_status` real por primera vez.
+
+## 2026-09-15 — Alta de 72 emisoras nuevas desde el reporte de competitor_scan (TKT-0726)
+
+Carlos pegó directamente el mensaje de Telegram del último `competitor_scan.py`
+(run `34870224591`, 2026-09-14 16:42 UTC) y pidió agregar las emisoras
+"posibles nuevas" al catálogo. El mensaje de Telegram viene truncado
+("... y 99 más"), así que se bajó el artifact completo
+(`competitor_scan_full.json`) del run de GitHub Actions para tener la
+lista real de 119 candidatas de `radio-browser.info` (116 únicas tras
+dedupe por URL).
+
+**Verificación real de stream** (mismo criterio que TKT-0725: HEAD +
+fallback GET con Range, siguiendo redirects): 109/116 con stream
+funcional confirmado. Dadas de alta vía `admin.php` (`action=crear_emisora`,
+sesión real autenticada, approved=1 directo — a diferencia de TKT-0725
+esto NO pasó por la cola de "sugerencias", se creó directo como alta
+manual porque el pedido era agregarlas, no revisarlas).
+
+**Resultado real:** 72 altas nuevas exitosas. **37 de las 109 con stream
+OK fallaron por colisión de slug/url_hash** — ya estaban en el catálogo
+(swap probable: `radio-browser.info` es la misma fuente que alimenta
+`hunt_stations_v2.py`, y muchas de estas ya habían entrado por la
+aprobación masiva de sugerencias de TKT-0725 el día anterior con una URL
+ligeramente distinta). No es un error del proceso, es solapamiento real
+de fuentes — quedó todo en el log de resultado, no se reintentó nada raro
+para forzarlas.
+
+**Las 7 restantes no tenían stream funcional real** y NO se agregaron:
+El Observador 107.9 y Maxima FM 94.5 (404), Radio El Palomar 87.5 FM /
+Radio FM Nueva Era 102.5 / radio indecente / Radio Nueva Presidencia
+Roque Sáenz Peña 92.1 FM (sin respuesta), Radio Fm Sur 107.7 Rosario
+(401 — la misma estación ya había fallado en TKT-0725 con otra URL,
+parece tener el stream restringido de verdad).
+
+**Verificado:** Emisoras activas 1458 → 1530 (+72 exacto).
+
+**Pendiente, no tocado en esta sesión** (parte del mismo reporte de
+competitor_scan, a la espera de que Carlos lo pida): las 178 "URLs
+alternativas" (emisoras que ya tenemos pero con una URL distinta
+detectada en la competencia — requiere decidir caso por caso si conviene
+reemplazar/agregar como backup), el grupo pendiente de
+`dedupe_streamtheworld_v2` (LAPOPU: `la-popu-92-3-argentina` vs
+`fm-popular-92-3-cordoba`) y los 2 "nombres rotos" detectados por ese
+mismo crawler.
