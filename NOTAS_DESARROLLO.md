@@ -3200,3 +3200,54 @@ reemplazar/agregar como backup), el grupo pendiente de
 `dedupe_streamtheworld_v2` (LAPOPU: `la-popu-92-3-argentina` vs
 `fm-popular-92-3-cordoba`) y los 2 "nombres rotos" detectados por ese
 mismo crawler.
+
+## 2026-09-15 — Check-in de ánimo + FAQ de reproductores externos (TKT-0727)
+
+Carlos pidió llevar a código dos ideas surgidas de revisar sitios `.ar`
+recién registrados (parte de una sesión de "vigilancia de mercado" con
+`~/Scripts/dominios2/`, no relacionado al catálogo de emisoras en sí).
+
+**Check-in de ánimo (`web/pages/listing.php`):** barra nueva
+`#mood-bar` arriba del listado, con 4 botones (🔥 Con energía, 😌 Tranqui,
+💃 Para bailar, 🎙️ Compañía) que filtran usando el mismo mecanismo que el
+filtro de género ya existente (substring sobre `data-tags` de cada
+tarjeta) — no es un sistema nuevo, reutiliza `applyFilters()` agregando
+`matchM`. Los tags mapeados a cada mood se verificaron contra los tags
+reales más frecuentes en la base (`rock`, `pop`, `cumbia`, `folklore`,
+`noticias`, etc. — vía `api/stations.json`), no son inventados. Quinto
+botón, "🎲 Sorprendeme", no filtra: elige una tarjeta visible al azar,
+hace scroll y la resalta 2s con una animación CSS nueva (`mood-highlight`).
+
+**`web/faq.php` (nuevo):** guía "cómo conectar Radio Argentina a otros
+reproductores" — VLC, Kodi, Rhythmbox y genérico, con pasos numerados
+(círculo con número + texto) en vez de párrafos, mismo patrón visual que
+usan varios sitios de servicios `.ar` para explicar procesos. Resuelve
+el TKT-0728 (2026-07-01, quedó pendiente a propósito "hasta tener más
+demanda") — el texto borrador de esa sesión no había quedado guardado en
+ningún archivo, así que el contenido de esta guía es nuevo, redactado en
+esta sesión. Incluye botón de copiar el link M3U. Badge nuevo "🎧 Otros
+reproductores" en `listing.php` (no se agregó a `station.php` a
+propósito, para no inflar esa página).
+
+**Deploy:** `web/faq.php` (nuevo), `web/pages/listing.php`,
+`web/assets/style.css`, `web/sw.js` (bump `CACHE_NAME` a `radio-ar-v14`).
+Verificado en vivo: `faq.php` responde 200, `mood-bar` presente en el
+HTML del listado, `sw.js` confirma v14.
+
+**Pendiente, no implementado en esta sesión (explícitamente a discutir
+antes):** una tercera idea de la misma revisión — mensajes de WhatsApp/
+Telegram pre-armados con contexto (en vez de abrir el chat en blanco) —
+Carlos pidió primero un relevamiento de en qué proyectos aplica antes de
+tocar código. Relevamiento hecho (no implementado): `loteo` (2 archivos
+de footer, sin `?text=`), `SanGiorgio` (el botón flotante de
+`acciones_flotantes.php` va sin texto, aunque el proyecto YA tiene
+`funciones.php::share_urls()` con templates armados para compartir una
+propiedad — solo no se usa en el botón flotante genérico), `Juan`
+(`botones_contacto.php` arma el link de WhatsApp sin `?text=` cuando es
+solo un número). Ya tienen mensaje armado y no hace falta tocarlos:
+`amigo`, `lista`, `split` (los tres arman el texto dinámicamente en JS
+antes de abrir wa.me). `radio` usa un código de mensaje corto de
+WhatsApp Business (`wa.me/message/CODE`) que es el mismo en todo el
+sitio — podría mejorarse para que en `station.php` mencione la emisora
+puntual, pero eso implica cambiar el mecanismo (de código fijo a
+`?text=` dinámico).

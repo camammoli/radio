@@ -112,6 +112,7 @@ $ld_itemlist = [
     <a  class="badge" href="/radio/contacto.php">💬 Contacto</a>
     <a  class="badge" href="/radio/suscribirse.php">🔔 Alertas</a>
     <a  class="badge" href="/radio/estadisticas.php">📊 Estadísticas</a>
+    <a  class="badge" href="/radio/faq.php">🎧 Otros reproductores</a>
     <a  class="badge" href="https://github.com/camammoli/radio" target="_blank" rel="noopener">GitHub</a>
     <a  class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>
     <button id="theme-btn" class="badge">☀️ Modo claro</button>
@@ -124,6 +125,7 @@ $ld_itemlist = [
   <div class="filtros" id="filtros"></div>
   <div id="genre-panel"></div>
   <div id="province-panel"></div>
+  <div id="mood-bar" class="mood-bar"></div>
   <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
     <div id="listeners-badge" style="font-size:11px;color:#22c55e;display:none">
       ● <span id="listeners-count"></span> escuchando
@@ -633,6 +635,58 @@ provinceList.forEach(function (prov) {
   provPanel.appendChild(btn);
 });
 
+// ── Check-in de ánimo — "¿Qué tenés ganas de escuchar?" ─────────────────────
+// No es un filtro más entre las categorías técnicas (género/provincia/estado):
+// es una forma más humana de entrar, pensada para quien no sabe qué buscar.
+// Selecciona por keywords sobre data-tags (mismo mecanismo que el filtro de
+// género) salvo "Sorprendeme", que no filtra: elige una emisora al azar entre
+// las visibles y la muestra.
+var moods = [
+  { id: 'energia',  label: '🔥 Con energía',  tags: ['rock', 'pop', 'dance', 'electronic', 'hits'] },
+  { id: 'tranqui',  label: '😌 Tranqui',       tags: ['folklore', 'adult contemporary', 'oldies', 'cristiana'] },
+  { id: 'bailar',   label: '💃 Para bailar',   tags: ['cumbia', 'cuarteto', 'reggaetón', 'tropical', 'latino'] },
+  { id: 'hablado',  label: '🎙️ Compañía',      tags: ['noticias', 'deportes', 'radio hablada', 'entretenimiento'] },
+];
+var filterMood = null;
+var moodBar = document.getElementById('mood-bar');
+
+var moodLabel = document.createElement('span');
+moodLabel.className = 'mood-label';
+moodLabel.textContent = '¿Qué tenés ganas de escuchar?';
+moodBar.appendChild(moodLabel);
+
+moods.forEach(function (m) {
+  var btn = document.createElement('button');
+  btn.className = 'mood-btn';
+  btn.textContent = m.label;
+  btn.addEventListener('click', function () {
+    var activar = filterMood !== m.id;
+    document.querySelectorAll('.mood-btn').forEach(function (b) { b.classList.remove('active'); });
+    filterMood = activar ? m.id : null;
+    if (activar) btn.classList.add('active');
+    applyFilters();
+  });
+  moodBar.appendChild(btn);
+});
+
+var sorpBtn = document.createElement('button');
+sorpBtn.className = 'mood-btn mood-btn-sorpresa';
+sorpBtn.textContent = '🎲 Sorprendeme';
+sorpBtn.addEventListener('click', function () {
+  var visibles = Array.from(lista.querySelectorAll('.station:not(.hidden)'));
+  if (!visibles.length) return;
+  var elegida = visibles[Math.floor(Math.random() * visibles.length)];
+  elegida.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  elegida.classList.add('mood-highlight');
+  setTimeout(function () { elegida.classList.remove('mood-highlight'); }, 2200);
+});
+moodBar.appendChild(sorpBtn);
+
+function moodTags(id) {
+  var m = moods.filter(function (x) { return x.id === id; })[0];
+  return m ? m.tags : [];
+}
+
 // ── Aplicar filtros ───────────────────────────────────────────────────────────
 function applyFilters() {
   var q       = buscador.value.trim().toLowerCase();
@@ -654,7 +708,9 @@ function applyFilters() {
     var matchS  = filterStatus === 'all' || el.dataset.estado === filterStatus;
     var matchG  = !filterGenre || (el.dataset.tags || '').toLowerCase().includes(filterGenre);
     var matchP  = !filterProv  || (el.dataset.prov || '').toLowerCase().includes(filterProv);
-    var show    = matchQ && matchS && matchG && matchP;
+    var tagsEl  = (el.dataset.tags || '').toLowerCase();
+    var matchM  = !filterMood || moodTags(filterMood).some(function (t) { return tagsEl.includes(t); });
+    var show    = matchQ && matchS && matchG && matchP && matchM;
     el.classList.toggle('hidden', !show);
     if (show) visible++;
   });
