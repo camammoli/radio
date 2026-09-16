@@ -56,6 +56,8 @@ $province_list = array_keys(array_filter($prov_counts, fn($c) => $c >= 4));
 
 // ── SEO por provincia ─────────────────────────────────────────────────────────
 
+$page_og_image = 'https://mammoli.ar/radio/icon-512.png';
+
 $filtro_prov_seo = trim($_GET['provincia'] ?? '');
 if ($filtro_prov_seo !== '') {
     $page_title = 'Radios de ' . ucwords($filtro_prov_seo) . ' en Vivo Online Gratis | Radio Argentina';
@@ -162,7 +164,7 @@ $ld_itemlist = [
   <span class="dot <?= $dot ?>" title="<?= $s['estado'] ?>"></span>
 
   <?php if ($s['logo']): ?>
-  <img class="station-logo" src="<?= htmlspecialchars($s['logo']) ?>" alt="" loading="lazy" onerror="this.style.display='none'">
+  <img class="station-logo" src="<?= htmlspecialchars($s['logo']) ?>" alt="Logo de <?= htmlspecialchars($s['nombre']) ?>" loading="lazy" onerror="this.style.display='none'">
   <?php endif; ?>
 
   <div class="station-info">

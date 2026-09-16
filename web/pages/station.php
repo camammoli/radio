@@ -129,7 +129,7 @@ if ($prov) {
 <div class="station-page">
 
   <?php if ($s['logo']): ?>
-  <img src="<?= htmlspecialchars($s['logo']) ?>" alt="" style="width:72px;height:72px;border-radius:10px;object-fit:cover;margin-bottom:16px" onerror="this.style.display='none'">
+  <img src="<?= htmlspecialchars($s['logo']) ?>" alt="Logo de <?= htmlspecialchars($s['nombre']) ?>" style="width:72px;height:72px;border-radius:10px;object-fit:cover;margin-bottom:16px" onerror="this.style.display='none'">
   <?php endif; ?>
 
   <h1><?= htmlspecialchars($s['nombre']) ?></h1>

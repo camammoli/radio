@@ -4,6 +4,14 @@
  * Lee config, carga helpers, decide qué página servir.
  */
 
+// Compresión de salida a nivel PHP — el hosting no tiene mod_deflate/mod_brotli
+// habilitados a nivel de Apache (probado: header Content-Encoding nunca aparece
+// pese a las directivas en .htaccess), así que se comprime acá. ob_gzhandler ya
+// respeta el Accept-Encoding del cliente y no rompe nada si no puede comprimir.
+if (function_exists('ob_gzhandler') && !ob_start('ob_gzhandler')) {
+    ob_start();
+}
+
 if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
 if (file_exists(__DIR__ . '/api/config.php')) require_once __DIR__ . '/api/config.php';
 
