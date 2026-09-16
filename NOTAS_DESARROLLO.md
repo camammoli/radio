@@ -3251,3 +3251,38 @@ WhatsApp Business (`wa.me/message/CODE`) que es el mismo en todo el
 sitio — podría mejorarse para que en `station.php` mencione la emisora
 puntual, pero eso implica cambiar el mecanismo (de código fijo a
 `?text=` dinámico).
+
+## 2026-09-16 — Auditoría SEO/performance (TKT-0729)
+
+Antes de arrancar, se encontraron y commitearon 2 cambios que ya estaban
+en producción (deploy directo) pero nunca se habían subido a git: el fix
+de Rhythmbox del FAQ (comando real por terminal en vez del menú
+inexistente) y el ajuste de meta "ayudanos a llegar a 2000" (se
+superaron las 1500). Commits `eb59950` y `b1cf0a0`.
+
+**Hallazgo principal — el listado pesaba 1,79MB sin comprimir.**
+Se agregaron directivas `mod_deflate`/`mod_brotli` al `.htaccess` — **no
+tuvieron ningún efecto en producción** (verificado con `curl` fresco,
+sin `Content-Encoding` en la respuesta). Conclusión: este hosting
+compartido no tiene esos módulos de Apache habilitados a nivel de
+cuenta. Solución real: `ob_start('ob_gzhandler')` agregado al principio
+de `index.php` (el router, cubre todas las páginas) — comprime a nivel
+PHP sin depender de Apache. **Resultado medido en producción:** 1,79MB
+→ 171KB (~90% menos). Si en algún momento se mueve de hosting o se
+habilitan esos módulos, esta capa de PHP no molesta (no duplica
+compresión, simplemente deja de ser necesaria).
+
+**`og:image` faltante en el listado.** Las fichas de emisora (`station.php`)
+ya tenían `og:image` (el logo de la radio), pero `/radio/` (la página
+más compartida) no tenía ninguno — compartir el link principal en
+WhatsApp/redes no mostraba preview. Agregado un fallback fijo
+(`icon-512.png`) en `listing.php`.
+
+**`alt=""` vacío en ~1500 logos de emisora**, sistemático en listado y
+ficha — no aportaba nada a SEO de imágenes ni accesibilidad. Cambiado a
+`alt="Logo de {nombre}"`, generado automáticamente por emisora en ambos
+archivos.
+
+Deploy: `web/.htaccess`, `web/index.php`, `web/pages/listing.php`,
+`web/pages/station.php`. Todo verificado en vivo con `curl` fresco antes
+de dar por terminado. Commit `5dc0a04`.
