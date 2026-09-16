@@ -104,7 +104,7 @@ $ld_itemlist = [
   <h1>📻 Radio Argentina</h1>
   <p class="sub">
     <?= $total ?> emisoras en streaming · escuchá sin instalar nada
-    <?php if ($total < 1500): ?> · <a href="/radio/sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a 1500 →</a><?php endif; ?>
+    <?php if ($total < 2000): ?> · <a href="/radio/sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a 2000 →</a><?php endif; ?>
   </p>
   <div class="badges">
     <a  class="badge" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
