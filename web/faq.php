@@ -96,11 +96,12 @@ body.light .pasos code{background:rgba(0,0,0,.06)}
 
 <div class="card">
   <h2>🐧 Rhythmbox (Linux)</h2>
+  <p class="intro">Rhythmbox no tiene un simple "Abrir ubicación" para cargar una lista completa — la forma confiable es por terminal:</p>
   <ol class="pasos">
-    <li><span>Abrí Rhythmbox y andá a <strong>Música → Abrir ubicación</strong> (Ctrl+O).</span></li>
-    <li><span>Pegá el link M3U de arriba y confirmá.</span></li>
-    <li><span>Se agrega como una fuente nueva en el panel izquierdo, con todas las emisoras dentro.</span></li>
+    <li><span>Abrí una terminal y pegá:<br><code>rhythmbox-client --play-uri="https://mammoli.ar<?= $__base ?>/api/playlist.m3u"</code></span></li>
+    <li><span>Esto importa el catálogo completo y arranca a reproducir la primera emisora.</span></li>
   </ol>
+  <p class="nota">⚠️ Con 1400+ emisoras, Rhythmbox puede quedarse "sin responder" un buen rato mientras importa — es esperable, no lo fuerces a cerrar enseguida. Si se cuelga de verdad, forzá la salida (no hay riesgo de perder nada) y probá con <strong>VLC o Kodi</strong> en su lugar — manejan un catálogo de este tamaño sin problema.</p>
 </div>
 
 <div class="card">
