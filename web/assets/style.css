@@ -178,6 +178,15 @@ body.light .mood-bar {
 .mood-btn:nth-of-type(3) { background: rgba(236,72,153,.16); color: #f9a8d4; }  /* bailar */
 .mood-btn:nth-of-type(4) { background: rgba(52,211,153,.16); color: #6ee7b7; }  /* compañía */
 
+/* Los pasteles de arriba están pensados para fondo oscuro — en modo
+   claro quedan casi ilegibles sobre blanco. Mismo criterio que el
+   resto del sitio en body.light (ver .filter-btn.*.active): fondo
+   clarito + texto oscuro y saturado del mismo tono. */
+body.light .mood-btn:nth-of-type(1) { background: rgba(239,68,68,.12);  color: #b91c1c; }  /* energía */
+body.light .mood-btn:nth-of-type(2) { background: rgba(96,165,250,.14); color: #1e40af; }  /* tranqui */
+body.light .mood-btn:nth-of-type(3) { background: rgba(236,72,153,.12); color: #9d174d; }  /* bailar */
+body.light .mood-btn:nth-of-type(4) { background: rgba(52,211,153,.14); color: #047857; }  /* compañía */
+
 .mood-btn.active {
   border-color: currentColor;
   box-shadow: 0 0 0 1px currentColor inset;
@@ -188,6 +197,11 @@ body.light .mood-bar {
   border-style: dashed; border-color: rgba(251,191,36,.4);
 }
 .mood-btn-sorpresa:hover { background: rgba(251,191,36,.24); }
+body.light .mood-btn-sorpresa {
+  background: rgba(251,191,36,.16); color: #92400e;
+  border-color: rgba(217,119,6,.45);
+}
+body.light .mood-btn-sorpresa:hover { background: rgba(251,191,36,.26); }
 
 @media (max-width: 480px) {
   .mood-bar { justify-content: center; text-align: center; }
