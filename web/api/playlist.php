@@ -46,6 +46,15 @@ $stmt = $db->prepare($sql);
 $stmt->execute($params);
 $rows = $stmt->fetchAll();
 
+// Registrar la descarga — mismo mecanismo que api/share.php, reusando la
+// tabla shares (station_id/slug null: esto es la playlist completa, no
+// una emisora puntual). Mide DESCARGAS del M3U, no uso continuo: una vez
+// bajado, el reproductor externo (VLC/Kodi/etc.) transmite directo desde
+// cada emisora, sin volver a pasar por este servidor.
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
+$db->prepare('INSERT INTO shares (station_id, slug, channel, ip_hash) VALUES (NULL, NULL, ?, ?)')
+   ->execute(['m3u', ip_hash(client_ip())]);
+
 // ── Salida M3U ────────────────────────────────────────────────────────────────
 
 header('Content-Type: audio/x-mpegurl; charset=utf-8');

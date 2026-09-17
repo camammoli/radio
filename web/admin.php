@@ -1001,7 +1001,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <!-- ══ Tab: Compartidos ══════════════════════════════════════════════════════ -->
 <div class="tab-content" id="tab-compartidos">
   <h2 id="shares">Compartidos recientes (últimas 100)</h2>
-  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram']; ?>
+  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram', 'm3u' => '📻 M3U']; ?>
   <table id="dt-compartidos" class="dt">
     <thead><tr>
       <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th>
@@ -1761,7 +1761,7 @@ window.DT = (function () {
     return '<span style="color:var(--muted)">Persona</span>';
   }
 
-  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR', x: '𝕏 X', tg: '✈️ Telegram'};
+  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR', x: '𝕏 X', tg: '✈️ Telegram', m3u: '📻 M3U'};
 
   function upd(id, val) {
     var el = document.getElementById(id);
