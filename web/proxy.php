@@ -15,6 +15,15 @@
  *   /radio/proxy.php?station=SLUG
  */
 
+// Bug real 2026-09-21: faltaba este require. Sin config.php, RADIO_DB_ENGINE
+// queda indefinido y radio_db() cae al branch SQLite viejo (RADIO_DB_ENGINE
+// no definida => default 'sqlite' en _db.php) — el archivo db/radio_v2.sqlite
+// ya no existe en producción desde la migración a MySQL (2026-09-03), así que
+// CUALQUIER emisora que necesitara este proxy (streams HTTP en la página
+// HTTPS, o playlists .pls/.m3u) devolvía 503 "Base de datos no disponible" en
+// vez de reproducir. Los demás endpoints de api/ no tenían este bug porque sí
+// cargan config.php antes de _db.php.
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/log.php';
 require_once __DIR__ . '/_ssrf_guard.php';
 require_once __DIR__ . '/api/_db.php';
