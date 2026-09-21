@@ -37,9 +37,34 @@ jugables — el resto (~586, ~90% de las HTTP) probablemente no reproducen
 desde el sitio aunque el stream esté perfectamente vivo, por el bloqueo de
 puertos del hosting compartido. Las ~809 emisoras HTTPS no están afectadas
 (redirect directo del browser, nunca pasan por el proxy). No es arreglable
-en el código del sitio — ver TKT-0741 en gestión para las opciones
-evaluadas (consultar al hosting, mover el proxy a otro host, o mejorar el
-mensaje de error para este caso puntual). Pendiente de decidir con Carlos.
+en el código del sitio.
+
+**Análisis de impacto real (rb_votes vs total_plays)**: las 586 afectadas
+suman apenas 13 plays históricos en el sitio (0,14% del total) — pero eso es
+circular, nunca sonaron. Cruzando contra `rb_votes` (voto externo de
+radio-browser.info, independiente del sitio) aparecen ~17 emisoras
+conocidas de verdad con demanda real (Del Sol 5217 votos, Radio Latina FM
+101.1 5036, varias de Radio Nacional 1800-2500, etc.) — la mayoría del
+resto sí parece genuinamente de nicho.
+
+**Opción evaluada — proxy chico en VPS aparte** (investigación completa vía
+fork, sin implementar): DigitalOcean $4-6/mes sería la opción recomendada
+(ancho de banda nunca sería problema, ni en el escenario optimista). Oracle
+Cloud Free Tier existe pero con fricción real de aprovisionamiento. Plan de
+implementación estimado en horas, no días (relay que consulta la API
+pública existente para resolver slug→URL, sin duplicar la base).
+
+**Decisión final de Carlos (21/9)**: no pagar el VPS — el proyecto no generó
+ni un peso de colaboración en meses pese al uso real, así que no se
+justifica agregar un gasto mensual nuevo ahora. En cambio: **se dieron de
+baja (no se borraron) las 586 emisoras afectadas** — `UPDATE stations SET
+activa=0` directo en producción (MySQL), reversible en cualquier momento
+desde el panel admin (botón Alta/Baja ya existente, `admin.php` acción
+`set_activa`) o si se resuelve el tema del proxy más adelante. Verificado:
+`/api/stations` pasó de 1455 a 869 filtradas; las filas siguen existiendo
+con `approved=1, activa=0`, nada se perdió. Pendiente más grande sin
+resolver: sostenibilidad económica del proyecto en general — no es un tema
+de código, queda para pensar con calma en otro momento.
 
 ---
 
