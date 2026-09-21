@@ -719,6 +719,28 @@ function applyFilters() {
 
   counter.textContent = visible === total ? total + ' emisoras' : visible + ' de ' + total;
   noResults.style.display = visible === 0 ? '' : 'none';
+  checkPausadas(visible === 0 ? q : '');
+}
+
+// Si la búsqueda no encuentra nada activo, antes de mandar a "sugerila" (que
+// sería engañoso si la emisora YA existe, solo pausada por TKT-0741) se
+// chequea si hay alguna pausada con ese nombre — si la hay, se avisa en vez
+// del hint genérico.
+var noResultsDefaultHTML = noResults.innerHTML;
+var pausadasTimer = null;
+function checkPausadas(q) {
+  clearTimeout(pausadasTimer);
+  if (!q || q.length < 3) { noResults.innerHTML = noResultsDefaultHTML; return; }
+  pausadasTimer = setTimeout(function () {
+    fetch('/radio/api/pausadas.php?q=' + encodeURIComponent(q))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d || !d.ok || !d.data.length) { noResults.innerHTML = noResultsDefaultHTML; return; }
+        noResults.innerHTML = d.data.map(function (p) {
+          return '📻 <a href="/radio/' + p.slug + '/" style="color:#fbbf24">' + p.nombre + '</a> existe, pero está pausada por ahora →';
+        }).join('<br>');
+      }).catch(function () { noResults.innerHTML = noResultsDefaultHTML; });
+  }, 300);
 }
 
 buscador.addEventListener('input', applyFilters);
