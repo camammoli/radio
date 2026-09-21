@@ -66,6 +66,48 @@ con `approved=1, activa=0`, nada se perdió. Pendiente más grande sin
 resolver: sostenibilidad económica del proyecto en general — no es un tema
 de código, queda para pensar con calma en otro momento.
 
+**Opción del VPS chico evaluada y descartada**: se investigó (research
+completo, sin implementar) mover solo la función de proxy a un VPS aparte
+— DigitalOcean $4-6/mes hubiera sido la recomendación, ancho de banda
+nunca sería problema. Carlos la descartó explícitamente: el proyecto no
+generó ni un peso de colaboración en meses pese al uso real, no se
+justifica sumar un gasto mensual nuevo ahora.
+
+**Columna `motivo_baja` nueva en `stations`** (`VARCHAR(50) NULL`,
+después de `activa`) — distingue una baja masiva/programática con causa
+conocida de una baja manual cualquiera (que deja esto en `NULL`). Las 586
+quedaron marcadas `'sin_recursos_proxy'`. Ver `db/mysql_schema.sql`.
+
+**Toast/página explicando la pausa, en vez de "no encontrada"** (a pedido
+de Carlos, para que quien busque una de estas 586 entienda la situación
+en vez de creer que no existe):
+- `pages/station.php`: si el slug no está en `v_stations` (por `activa=0`),
+  antes del 404 genérico chequea `motivo_baja` en la tabla completa. Si es
+  `'sin_recursos_proxy'`, muestra una página propia explicando que la
+  emisora existe pero está pausada por costo de infraestructura, con link
+  a Cafecito — mismo patrón visual (`badge-cafe`) que ya usa el resto del
+  sitio. Cualquier otra baja (`motivo_baja` NULL) sigue con el 404 de
+  siempre, sin cambios.
+- **Bug encontrado por el propio Carlos probándolo**: el fix de arriba solo
+  cubría entrar por el link directo (`/radio/{slug}/`) — buscando
+  "intercom" en el buscador del listado (`listing.php`) seguía diciendo
+  "¿no la encontrás? sugerila", que es engañoso si la emisora YA existe.
+  El buscador filtra client-side sobre las tarjetas ya renderizadas
+  (activas únicamente), así que una pausada nunca puede aparecer ahí por
+  más que se busque bien. Fix: `api/pausadas.php` (nuevo, solo lectura)
+  busca por nombre entre las `motivo_baja IS NOT NULL`; cuando la
+  búsqueda del listado da 0 resultados, se consulta ese endpoint antes de
+  mostrar el hint genérico — si hay coincidencia, se avisa con link a la
+  ficha (que ya tiene la explicación completa).
+- Verificado en producción real con Playwright reproduciendo el caso
+  exacto que reportó Carlos (buscar "intercom" en `/radio/`) + un término
+  genuinamente inexistente para confirmar que ese camino no cambió.
+
+Commits: `b03f6f3` (fix proxy), `b13473c`/`8421384` (documentación +
+decisión), `bf498f0` (toast en la ficha), `04435ac` (buscador). TKT-0741
+cerrado en gestión — el problema de fondo (hosting bloqueando puertos)
+queda sin resolver a propósito, mitigado con la baja + el aviso.
+
 ---
 
 ## ✅ TKT-0719 — 2026-08-26 — Hashtags automáticos al compartir por X
