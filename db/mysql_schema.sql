@@ -33,6 +33,13 @@ CREATE TABLE stations (
     contacto_privado VARCHAR(255) NULL,
     notas_privadas  TEXT NULL,
     activa          TINYINT(1) DEFAULT 1,
+    -- Motivo puntual de una baja masiva/programática (distinto de una baja
+    -- manual cualquiera desde el admin, que deja esto NULL) — permite mostrar
+    -- un mensaje específico en la ficha de la emisora en vez del 404 genérico,
+    -- sin confundir con emisoras dadas de baja por otras razones (repetida,
+    -- muerta, spam). Ver TKT-0741 (2026-09-21): 586 emisoras HTTP en puertos
+    -- que el hosting compartido bloquea, marcadas 'sin_recursos_proxy'.
+    motivo_baja     VARCHAR(50) NULL DEFAULT NULL,
     ultimo_cambio   DATETIME NULL,
     UNIQUE KEY uk_stations_slug (slug),
     UNIQUE KEY uk_stations_url_hash (url_hash),

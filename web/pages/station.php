@@ -14,8 +14,47 @@ $stmt = $db->prepare('SELECT * FROM v_stations WHERE slug = ? LIMIT 1');
 $stmt->execute([$slug]);
 $s = $stmt->fetch();
 
-// 404 si no existe
+// No está en v_stations (activa=0, o approved=0) — antes de dar el 404
+// genérico, chequear si es una baja programática con motivo conocido (ver
+// TKT-0741) para explicar la situación en vez de decir "no encontrada".
 if (!$s) {
+    $stmtBaja = $db->prepare('SELECT nombre, motivo_baja FROM stations WHERE slug = ? LIMIT 1');
+    $stmtBaja->execute([$slug]);
+    $pausada = $stmtBaja->fetch();
+
+    if ($pausada && $pausada['motivo_baja'] === 'sin_recursos_proxy') {
+        http_response_code(200);
+        $page_title = $pausada['nombre'] . ' — pausada | Radio Argentina';
+        $page_desc  = '';
+        $page_canon = 'https://mammoli.ar/radio/' . $slug . '/';
+        require __DIR__ . '/../components/head.php';
+        ?>
+        <body>
+        <div style="max-width:480px;margin:60px auto;padding:0 20px;text-align:center">
+          <h1 style="font-size:20px;color:#f9fafb;margin-bottom:8px">📻 <?= htmlspecialchars($pausada['nombre']) ?></h1>
+          <p style="color:#fbbf24;font-weight:600;margin:12px 0 4px">Esta emisora está pausada por ahora</p>
+          <p style="color:#9ca3af;line-height:1.6;margin:0 0 16px">
+            Existe y la tenemos identificada — el problema es técnico: el stream necesita un tipo de
+            conexión que nuestro hosting actual no permite. Arreglarlo requiere un servidor extra, que
+            tiene un costo mensual que hoy no estamos en condiciones de sumar.
+          </p>
+          <p style="color:#9ca3af;line-height:1.6;margin:0 0 20px">
+            Si te interesa esta radio en particular (o el proyecto en general) y querés ayudar a
+            sostenerlo, podés colaborar acá:
+          </p>
+          <p style="margin:0 0 28px">
+            <a class="badge badge-cafe" href="https://cafecito.app/mammoli" target="_blank" rel="noopener" style="font-size:15px;padding:8px 16px">☕ Invitame un café</a>
+          </p>
+          <p style="color:#6b7280;font-size:13px;margin:0 0 24px">
+            Mientras tanto, probá escucharla directo en VLC o en la app oficial de la radio, si tiene.
+          </p>
+          <p style="margin:0"><a href="/radio/" style="color:#3b82f6">← Volver al directorio</a></p>
+        </div>
+        </body></html>
+        <?php
+        exit;
+    }
+
     http_response_code(404);
     $page_title = 'Emisora no encontrada | Radio Argentina';
     $page_desc  = '';
