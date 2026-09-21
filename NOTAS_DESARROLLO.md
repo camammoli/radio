@@ -4,6 +4,45 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## 🐛 TKT-0741 — 2026-09-21 — proxy.php sin config.php (18 días roto) + hosting bloquea casi todos los puertos salientes
+
+Disparado por un reporte: "Radio InterCom FM 98.3" (Salta) no sonaba desde el
+sitio pero sí desde el link directo. Dos hallazgos distintos.
+
+**Bug real corregido**: `proxy.php` nunca hacía `require_once config.php` —
+a diferencia de todos los demás entrypoints (`admin.php`, `contacto.php`,
+`sugerir.php`, `index.php`, etc.), que sí lo hacen antes de `api/_db.php`.
+Sin la constante `RADIO_DB_ENGINE` definida, `radio_db()` caía al branch
+SQLite (default cuando la constante no existe) — y `db/radio_v2.sqlite` ya
+no existe en producción desde la migración a MySQL (2026-09-03, TKT v5).
+Resultado: **503 "Base de datos no disponible" para cualquier stream que
+necesitara el proxy** (streams HTTP en la página HTTPS, o playlists
+.pls/.m3u) — roto silenciosamente durante ~18 días. Fix de una línea,
+confirmado con múltiples emisoras post-deploy. Commit `b03f6f3`.
+
+**Hallazgo nuevo, SIN resolver — bloqueo de puertos del hosting**: con el bug
+de arriba corregido, se probó una muestra de 26 emisoras HTTP en puertos
+repartidos por todo el rango usado (80 a 50095) — **solo las de puerto 80
+funcionaron**. Confirmado con diagnóstico de curl contra 4 hosts/IPs
+totalmente distintos en puertos distintos (9300, 8555, 7013, 8104): las 4
+dan `Connection refused` con `connect_time=0` (rechazo instantáneo, antes
+de cualquier intento real de red) — patrón de firewall/ACL del hosting, no
+de servidor remoto caído (que daría timeout, y no el mismo patrón exacto en
+4 hosts no relacionados). El puerto 8080 sí conecta (confirmado con
+`la-red-635`, 106KB recibidos reales).
+
+**Alcance real**: de 1455 emisoras activas, 646 son `http://` (necesitan el
+proxy). De esas, solo 48 en puerto 80 + 12 en puerto 8080 = 60 confirmadas
+jugables — el resto (~586, ~90% de las HTTP) probablemente no reproducen
+desde el sitio aunque el stream esté perfectamente vivo, por el bloqueo de
+puertos del hosting compartido. Las ~809 emisoras HTTPS no están afectadas
+(redirect directo del browser, nunca pasan por el proxy). No es arreglable
+en el código del sitio — ver TKT-0741 en gestión para las opciones
+evaluadas (consultar al hosting, mover el proxy a otro host, o mejorar el
+mensaje de error para este caso puntual). Pendiente de decidir con Carlos.
+
+---
+
 ## ✅ TKT-0719 — 2026-08-26 — Hashtags automáticos al compartir por X
 
 A pedido de Carlos: agregar hashtags "adecuados para atraer gente" al compartir por X, respetando el
