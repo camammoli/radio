@@ -237,6 +237,20 @@ CREATE TABLE ayuda_toast_eventos (
     created_at  DATETIME NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE donaciones (
+    id                INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    monto             DECIMAL(10,2) NOT NULL,
+    estado            VARCHAR(20) NOT NULL DEFAULT 'pendiente',
+    mp_preference_id  VARCHAR(80) NULL,
+    mp_payment_id     VARCHAR(80) NULL,
+    ip_hash           VARCHAR(32) NULL,
+    created_at        DATETIME NULL DEFAULT CURRENT_TIMESTAMP,
+    confirmed_at      DATETIME NULL,
+    KEY idx_donaciones_preference (mp_preference_id),
+    KEY idx_donaciones_payment (mp_payment_id),
+    KEY idx_donaciones_estado (estado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- Vistas (MySQL 5.7.44 no soporta CTE — reescritas con subconsulta/derived table)

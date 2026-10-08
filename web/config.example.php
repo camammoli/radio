@@ -8,6 +8,8 @@ define('TG_CHAT_ID', '12345678');
 define('NOTIFY_OYENTES', false); // true para recibir notificaciones cuando hay oyentes
 define('GITHUB_PAT', '');        // PAT con scope repo/workflow para disparar add-station.yml
 define('GA_ID', '');             // Google Analytics 4 Measurement ID (ej: G-XXXXXXXXXX) — vacío = desactivado
+define('MP_ACCESS_TOKEN', '');   // Mercado Pago Developers > credenciales. Vacío = donar.php desactivado
+define('MP_WEBHOOK_SECRET', ''); // string random propio, para validar que el webhook viene de MP
 // V2: ruta a la DB SQLite (por defecto: ../../db/radio_v2.sqlite relativo a web/api/)
 // define('RADIO_DB', '/home/usuario/radio/db/radio_v2.sqlite');
 // V2: prefijo URL base (para staging en /radio/beta/)

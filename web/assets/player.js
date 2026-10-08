@@ -709,18 +709,33 @@
         '<p>Radio Argentina lo armo y sostengo solo, en mi tiempo libre &#x2014; sin equipo, ' +
         'sin publicidad. Mantener m&#xE1;s de 1200 streams monitoreados en vivo, con metadata ' +
         'en tiempo real y alertas, tiene un costo de hosting real y creciente.</p>' +
-        '<p>Si 1 de cada 10 oyentes aportara un cafecito alguna vez, cubrir&#xED;amos gran parte ' +
-        'de ese costo. Cualquier aporte ayuda, por chico que sea &#x2014; y tambi&#xE9;n ayuda ' +
-        'mucho avisar cuando una radio se cae o sugerir una que falta.</p>' +
+        '<p>Si 1 de cada 10 oyentes aportara una colaboraci&#xF3;n alguna vez, cubrir&#xED;amos ' +
+        'gran parte de ese costo. Cualquier aporte ayuda, por chico que sea &#x2014; y tambi&#xE9;n ' +
+        'ayuda mucho avisar cuando una radio se cae o sugerir una que falta.</p>' +
         '<p>Quiero que este proyecto siga gratis y sin publicidad invasiva. Con una mano de la ' +
         'comunidad, se puede.</p>' +
         '<p>&#x1F4BB; <a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">Es open source, mir&#xE1; el c&#xF3;digo ac&#xE1;</a></p>' +
         '<p>Gracias por escuchar, por sugerir emisoras, por avisarme cuando algo se cae.</p>' +
         '<div class="rp-ayuda-actions">' +
           '<button class="rp-welcome-cta rp-ayuda-ok">&#x1F44D; Ok, record&#xE1;melo en unos d&#xED;as</button>' +
-          '<a class="rp-welcome-cta rp-ayuda-cafecito" href="https://cafecito.app/mammoli" target="_blank" rel="noreferrer">&#x2615; Cafecito</a>' +
+          '<button class="rp-welcome-cta rp-ayuda-colaborar">&#x1F4B3; Colaborar</button>' +
           '<a class="rp-welcome-cta rp-ayuda-contacto" href="contacto.php" target="_blank" rel="noreferrer">&#x1F4EC; Contacto</a>' +
           '<button class="rp-welcome-cta rp-ayuda-nomolestar">&#x1F6AB; No molestar m&#xE1;s</button>' +
+        '</div>' +
+        '<div class="rp-colaborar-panel" id="_rcolab" hidden>' +
+          '<p class="rp-colaborar-explica">Esto se usa para pagar el hosting que mantiene ' +
+          'online m&#xE1;s de 1200 streams monitoreados, los dominios, y el tiempo real que le ' +
+          'dedico a que todo siga funcionando &#x2014; sin publicidad ni letra chica.</p>' +
+          '<div class="rp-welcome-btns" id="_rcolabmontos">' +
+            '<button data-m="50">$50</button>' +
+            '<button data-m="100">$100</button>' +
+            '<button data-m="200" class="rp-sel">$200</button>' +
+            '<button data-m="500">$500</button>' +
+            '<button data-m="1000">$1000</button>' +
+          '</div>' +
+          '<input type="number" class="rp-colaborar-otro" placeholder="Otro monto (ARS)" min="50" step="1">' +
+          '<button class="rp-welcome-cta rp-colaborar-pagar">Pagar ARS $200 con Mercado Pago</button>' +
+          '<p class="rp-colaborar-error" hidden></p>' +
         '</div>';
 
       document.body.appendChild(toast);
@@ -748,17 +763,91 @@
       toast.querySelector('.rp-ayuda-nomolestar').addEventListener('click', function () {
         ayudaLog('no_molestar'); never(); close();
       });
-      // Cafecito y Contacto abren en pestaña nueva (comportamiento nativo del
-      // <a>, no se previene) y además fijan la preferencia correspondiente.
-      // Cafecito usa snooze(), no never(): el clic solo confirma que abrió el
-      // link externo, no que completó el pago (no hay webhook de Cafecito) —
-      // marcar "nunca más" acá silenciaría para siempre a quien clickeó pero
-      // no llegó a donar (medido: 3 de cada 4 clics reales en este proyecto).
-      toast.querySelector('.rp-ayuda-cafecito').addEventListener('click', function () {
-        ayudaLog('cafecito'); snooze(); close();
-      });
+      // Contacto abre en pestaña nueva (comportamiento nativo del <a>, no se
+      // previene) y fija la preferencia correspondiente.
       toast.querySelector('.rp-ayuda-contacto').addEventListener('click', function () {
         ayudaLog('contacto'); snooze(); close();
+      });
+
+      // ── Colaborar: expande el panel in-place (no abre nada todavía) con
+      // la explicación ampliada + selector de monto + pago directo con
+      // Mercado Pago. "Colaborar" solo expande — igual que pasaba con
+      // Cafecito, el clic en "Pagar" tampoco garantiza que complete el pago,
+      // así que usa snooze() y no never().
+      var panel      = toast.querySelector('#_rcolab');
+      var montosWrap = toast.querySelector('#_rcolabmontos');
+      var otroInput  = toast.querySelector('.rp-colaborar-otro');
+      var pagarBtn   = toast.querySelector('.rp-colaborar-pagar');
+      var errorEl    = toast.querySelector('.rp-colaborar-error');
+
+      function montoSeleccionado() {
+        var libre = parseFloat(otroInput.value);
+        if (libre > 0) return libre;
+        var sel = montosWrap.querySelector('.rp-sel');
+        return sel ? parseFloat(sel.dataset.m) : 0;
+      }
+
+      function actualizarBotonPago() {
+        var m = montoSeleccionado();
+        pagarBtn.textContent = m > 0
+          ? 'Pagar ARS $' + m.toLocaleString('es-AR') + ' con Mercado Pago'
+          : 'Elegí un monto para continuar';
+      }
+
+      toast.querySelector('.rp-ayuda-colaborar').addEventListener('click', function () {
+        var abierto = !panel.hidden;
+        panel.hidden = abierto;
+        if (!abierto) { ayudaLog('colaborar_click'); actualizarBotonPago(); }
+      });
+
+      montosWrap.querySelectorAll('[data-m]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          montosWrap.querySelectorAll('[data-m]').forEach(function (b) { b.classList.remove('rp-sel'); });
+          btn.classList.add('rp-sel');
+          otroInput.value = '';
+          actualizarBotonPago();
+        });
+      });
+
+      otroInput.addEventListener('input', function () {
+        if (otroInput.value) {
+          montosWrap.querySelectorAll('[data-m]').forEach(function (b) { b.classList.remove('rp-sel'); });
+        }
+        actualizarBotonPago();
+      });
+
+      pagarBtn.addEventListener('click', function () {
+        var monto = montoSeleccionado();
+        errorEl.hidden = true;
+        if (!monto || monto < 50) {
+          errorEl.textContent = 'El monto mínimo es $50.';
+          errorEl.hidden = false;
+          return;
+        }
+        ayudaLog('colaborar_mp');
+        snooze();
+        pagarBtn.disabled = true;
+        pagarBtn.textContent = 'Conectando con Mercado Pago…';
+        fetch('/radio/api/donar.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ monto: monto }),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data.ok && data.data && data.data.init_point) {
+              window.open(data.data.init_point, '_blank', 'noreferrer');
+              close();
+            } else {
+              throw new Error(data.error || 'No se pudo iniciar el pago');
+            }
+          })
+          .catch(function () {
+            errorEl.textContent = 'No se pudo iniciar el pago, probá de nuevo en un rato.';
+            errorEl.hidden = false;
+            pagarBtn.disabled = false;
+            actualizarBotonPago();
+          });
       });
     }
 

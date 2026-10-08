@@ -773,6 +773,42 @@ fetch('/radio/api/nowplaying?batch=1')
   // Scroll y banner serían opcionales — se puede agregar después
 }());
 
+// ── Vuelta de Mercado Pago (?donacion=ok|pendiente|error) ────────────────────
+(function () {
+  var p = new URLSearchParams(location.search);
+  var estado = p.get('donacion');
+  if (!estado) return;
+
+  // Limpiamos el parámetro de la URL ya mismo — si recargan la página no
+  // debe volver a aparecer el banner.
+  p.delete('donacion');
+  var limpia = location.pathname + (p.toString() ? '?' + p.toString() : '');
+  history.replaceState(null, '', limpia);
+
+  var textos = {
+    ok:        '&#x1F64F; ¡Gracias! Tu colaboración llegó y ayuda un montón.',
+    pendiente: '&#x23F3; Tu pago quedó pendiente de confirmación — en cuanto se acredite, gracias igual.',
+    error:     '&#x1F614; El pago no se completó. Si fue un error y querés reintentar, el botón "Colaborar" sigue disponible.',
+  };
+  if (!textos[estado]) return;
+
+  var toast = document.createElement('div');
+  toast.className = 'rp-welcome';
+  toast.innerHTML =
+    '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
+    '<p style="margin:0">' + textos[estado] + '</p>';
+  document.body.appendChild(toast);
+  requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+
+  function close() {
+    toast.classList.remove('rp-welcome--in');
+    toast.classList.add('rp-welcome--out');
+    setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+  }
+  toast.querySelector('.rp-welcome-close').addEventListener('click', close);
+  if (estado === 'ok') setTimeout(close, 8000);
+}());
+
 // ── Service Worker ────────────────────────────────────────────────────────────
 if ('serviceWorker' in navigator) navigator.serviceWorker.register(<?= json_encode($__base . '/sw.js') ?>).catch(function(){});
 

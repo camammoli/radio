@@ -4,6 +4,87 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0806 — 2026-10-08 — Donación directa con Mercado Pago en el toast (reemplaza Cafecito ahí)
+
+### Contexto
+Seguimiento de `project_radio_monetizacion` (memoria de Claude Code): Cafecito mostró
+13 clicks reales de oyentes con intención genuina y **0 donaciones completadas**.
+Diagnóstico con Playwright (sesión 2026-10-07) encontró dos causas: se pierde el
+contexto de "esto es por Radio Argentina" al aterrizar en el perfil genérico de
+Cafecito, y su opción "transferencia" salta a un procesador de terceros (GalioPay)
+con cuenta regresiva de 15 minutos. Carlos descartó reemplazar Cafecito por una
+página desconocida (la gente confía en marcas conocidas) — pero Mercado Pago no es
+"una página distinta", es la marca de pago más reconocida en Argentina. La idea:
+elegir el monto y pagar con MP sin salir del toast.
+
+### Implementación
+- El botón `☕ Cafecito` del toast de ayuda (`player.js`, el instrumentado — se
+  mostró 1691 veces a 655 oyentes únicos) pasó a ser `💳 Colaborar`. Un click expande
+  un panel in-place (sin popup nuevo) con una explicación ampliada de en qué se usa
+  la plata, selector de monto ($50/100/200/500/1000 + campo libre, reutilizando el
+  patrón `.rp-welcome-btns`/`.rp-sel` que ya usaba la encuesta de sitio) y el botón
+  de pago.
+- `api/donar.php` (nuevo): valida el monto (rango $50–$200.000), crea la preferencia
+  vía la API de Preferences de Checkout Pro (`POST /checkout/preferences`, cURL
+  directo, sin SDK — mismo estilo liviano que el resto del proyecto) y **registra el
+  intento como "pendiente" ANTES de redirigir** — esto da visibilidad de cuánta gente
+  llega al checkout real, algo invisible con Cafecito. Si la llamada a MP falla, borra
+  el registro pendiente (no deja filas fantasma).
+- `api/mp_webhook.php` (nuevo): recibe la notificación de MP, valida un secreto propio
+  (`MP_WEBHOOK_SECRET`) antes de hacer nada, consulta el pago real contra
+  `GET /v1/payments/{id}` (el webhook en sí solo trae el ID), actualiza `donaciones` y
+  notifica por Telegram si quedó aprobado — mismo patrón de `curl` directo que
+  `api/share.php`/`api/listeners.php`.
+- Tabla `donaciones` nueva — en SQLite se crea sola (lazy migration, igual que
+  `ayuda_toast_eventos`); en MySQL (producción) `sqlite_lazy_migration` es un no-op,
+  así que se creó a mano con un script temporal subido por FTP, ejecutado una vez y
+  borrado (mismo patrón ya usado para consultas puntuales de stats).
+- `ayuda_toast.php`: se agregaron los tipos `colaborar_click`/`colaborar_mp` al
+  whitelist de eventos.
+- `listing.php`: banner de agradecimiento al volver de MP (`?donacion=ok|pendiente|
+  error`), reutilizando el estilo `.rp-welcome` existente. Limpia el parámetro de la
+  URL con `history.replaceState` para que un reload no lo vuelva a mostrar.
+- `sw.js`: `CACHE_NAME` bumpeado a `radio-ar-v17` — obligatorio porque `player.js` es
+  cache-first (lección ya aprendida en TKT-0684/TKT-0692, no se repitió acá).
+- Fuera de alcance a propósito: el toast chico de `listing.php` (`#support-toast`) y
+  los badges estáticos (`☕ Invitame un café` en `station.php`/`listing.php`) siguen
+  yendo a Cafecito sin tocar — si el flujo nuevo funciona bien, migrarlos es un paso
+  separado.
+
+### Pruebas
+Local con Playwright (`php -S` + symlink `radio/ -> web/`, DB SQLite descartable):
+selección de monto, monto libre, validación de rango, que un fallo de red/API no deja
+fila "pendiente" fantasma, que el resto del toast (Ok/Contacto/No molestar) sigue sin
+regresión, banner de agradecimiento para los 3 estados, sin errores de consola.
+
+Verificado además **en vivo contra la API real de Mercado Pago** con el Access Token
+de producción que generó Carlos (Checkout Pro → API de Preferences): la preferencia
+se crea con `HTTP 201` y devuelve un `init_point` válido usando exactamente la
+estructura que arma `donar.php` con `back_urls` reales (`https://mammoli.ar/radio/...`).
+El único fallo visto fue en la prueba local contra `127.0.0.1` — MP exige un
+`back_url.success` público para `auto_return`, esperable y sin relación con el código.
+
+**Pendiente de validar con el primer pago real que haga Carlos:** el tramo completo
+del webhook (confirmación real + notificación Telegram) — no se puede simular sin
+completar un pago de verdad.
+
+### Deploy
+```bash
+lftp -e "set ssl:verify-certificate no; put archivo -o /radio/ruta; bye" \
+  -u "carlos@mammoli.ar,lskdfjDwekFjr764!" mammoli.ar
+```
+Archivos: `config.php` (agregadas `MP_ACCESS_TOKEN`/`MP_WEBHOOK_SECRET` preservando
+el resto — ese archivo no viaja por git), `api/donar.php`, `api/mp_webhook.php`,
+`api/ayuda_toast.php`, `assets/player.js`, `assets/style.css`, `pages/listing.php`,
+`sw.js`. Uno por uno — el lote de 8 `put` en una sola sesión lftp cortaba la conexión
+("No conectado") de forma consistente, sin causa clara; subir de a uno funcionó sin
+problema. Verificado en producción: nuevo tipo de evento en `ayuda_toast.php` (200),
+clases nuevas en `player.js`/`style.css`, `sw.js` en v17, banner de `?donacion=ok`,
+y una preferencia real creada con éxito contra `donar.php` en producción (limpiada
+después con otro script temporal).
+
+---
+
 ## 🐛 TKT-0741 — 2026-09-21 — proxy.php sin config.php (18 días roto) + hosting bloquea casi todos los puertos salientes
 
 Disparado por un reporte: "Radio InterCom FM 98.3" (Salta) no sonaba desde el

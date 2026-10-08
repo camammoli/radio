@@ -654,6 +654,35 @@ body.light .rp-welcome-privacy { background: rgba(0,0,0,.05); }
 }
 .rp-ayuda-nomolestar:hover { border-color: var(--muted); opacity: 1; }
 
+.rp-colaborar-panel {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.rp-colaborar-explica {
+  font-size: 12px !important;
+  color: var(--muted);
+  margin-bottom: 10px !important;
+}
+.rp-colaborar-otro {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  box-sizing: border-box;
+}
+.rp-colaborar-otro:focus { border-color: var(--accent); outline: none; }
+.rp-colaborar-pagar:disabled { opacity: .6; cursor: default; }
+.rp-colaborar-error {
+  font-size: 12px !important;
+  color: #e06a6a;
+  margin: 8px 0 0 !important;
+}
+
 .rp-welcome-footer {
   margin-top: 10px;
   font-size: 11px; color: var(--muted);
