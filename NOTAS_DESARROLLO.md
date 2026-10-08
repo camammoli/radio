@@ -4,6 +4,50 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0807 — 2026-10-08 — Badge header/ficha "Colaborar" ya no linkea a Cafecito
+
+### Contexto
+Seguimiento inmediato de TKT-0806: Carlos vio el sitio en vivo y notó que el badge
+"☕ Invitame un café" del header (`listing.php`) y de la ficha de emisora
+(`station.php`, 2 ocurrencias) seguía yendo a Cafecito, pese al cambio del toast
+principal — y es *más* visible que el toast (siempre arriba, sin el delay de 12s).
+
+### Implementación
+- `listing.php`/`station.php`: el `<a href="cafecito...">` pasa a
+  `<button type="button" class="badge badge-cafe js-colaborar">☕ Colaborar</button>`
+  — ya no es un link externo.
+- `player.js`: se extrajo `wireColaborar(scope, snoozeFn, closeFn)` del código que
+  ya usaba el toast de ayuda (selector de monto + pago con MP) para que lo compartan
+  ambos puntos de entrada sin duplicar lógica. Nueva `showColaborarStandalone()`:
+  abre el mismo panel de una (sin el texto largo del pedido automático ni el delay),
+  con su propio botón de cerrar (×), cerrando primero cualquier otro `.rp-welcome`
+  abierto para no superponer toasts.
+- `style.css`: `font: inherit` agregado a `.badge` — sin esto el `<button>` no se
+  veía exactamente igual a los `<a>` vecinos (fuente por defecto del navegador).
+- `sw.js`: `CACHE_NAME` bumpeado a v18 (mismo motivo de siempre, `player.js`/
+  `style.css` son cache-first).
+
+### Pruebas
+Playwright local: el badge no tiene `href`, el panel abre en ~300ms (no 12s) con
+$200 preseleccionado, cambiar de monto actualiza el texto del botón de pago, cerrar
+con la X lo saca del DOM, y el toast automático normal (con su propio botón
+Colaborar inline) sigue funcionando sin regresión después. Verificado en producción:
+badge sin `href`, `sw.js` en v18, `showColaborarStandalone` presente en el JS
+deployado.
+
+Fuera de alcance a propósito, igual que en TKT-0806: el toast chico de `listing.php`
+(`#support-toast`) sigue yendo a Cafecito sin cambios.
+
+### Deploy
+```bash
+lftp -e "set ssl:verify-certificate no; put archivo -o /radio/ruta; bye" \
+  -u "carlos@mammoli.ar,lskdfjDwekFjr764!" mammoli.ar
+```
+`assets/player.js`, `assets/style.css`, `pages/listing.php`, `pages/station.php`,
+`sw.js` — uno por uno, mismo motivo que TKT-0806 (el lote cortaba la conexión).
+
+---
+
 ## ✅ TKT-0806 — 2026-10-08 — Donación directa con Mercado Pago en el toast (reemplaza Cafecito ahí)
 
 ### Contexto
