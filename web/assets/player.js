@@ -773,12 +773,26 @@
       // la explicación ampliada + selector de monto + pago directo con
       // Mercado Pago. "Colaborar" solo expande — igual que pasaba con
       // Cafecito, el clic en "Pagar" tampoco garantiza que complete el pago,
-      // así que usa snooze() y no never().
-      var panel      = toast.querySelector('#_rcolab');
-      var montosWrap = toast.querySelector('#_rcolabmontos');
-      var otroInput  = toast.querySelector('.rp-colaborar-otro');
-      var pagarBtn   = toast.querySelector('.rp-colaborar-pagar');
-      var errorEl    = toast.querySelector('.rp-colaborar-error');
+      // así que usa snooze() y no never(). Wiring compartido con el botón
+      // standalone del header — ver wireColaborar().
+      var panel = toast.querySelector('#_rcolab');
+      toast.querySelector('.rp-ayuda-colaborar').addEventListener('click', function () {
+        var abierto = !panel.hidden;
+        panel.hidden = abierto;
+        if (!abierto) { ayudaLog('colaborar_click'); }
+      });
+      wireColaborar(toast, snooze, close);
+    }
+
+    // ── Panel de "Colaborar" (monto + pago MP) — lo usan tanto el toast de
+    // ayuda (ya expandido ahí) como el botón standalone del header
+    // (open=true, lo muestra de una). `scope` es el elemento que contiene
+    // el panel (#_rcolab, #_rcolabmontos, etc.).
+    function wireColaborar(scope, snoozeFn, closeFn) {
+      var montosWrap = scope.querySelector('#_rcolabmontos');
+      var otroInput  = scope.querySelector('.rp-colaborar-otro');
+      var pagarBtn   = scope.querySelector('.rp-colaborar-pagar');
+      var errorEl    = scope.querySelector('.rp-colaborar-error');
 
       function montoSeleccionado() {
         var libre = parseFloat(otroInput.value);
@@ -793,12 +807,7 @@
           ? 'Pagar ARS $' + m.toLocaleString('es-AR') + ' con Mercado Pago'
           : 'Elegí un monto para continuar';
       }
-
-      toast.querySelector('.rp-ayuda-colaborar').addEventListener('click', function () {
-        var abierto = !panel.hidden;
-        panel.hidden = abierto;
-        if (!abierto) { ayudaLog('colaborar_click'); actualizarBotonPago(); }
-      });
+      actualizarBotonPago();
 
       montosWrap.querySelectorAll('[data-m]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -825,7 +834,7 @@
           return;
         }
         ayudaLog('colaborar_mp');
-        snooze();
+        if (snoozeFn) snoozeFn();
         pagarBtn.disabled = true;
         pagarBtn.textContent = 'Conectando con Mercado Pago…';
         fetch('/radio/api/donar.php', {
@@ -837,7 +846,7 @@
           .then(function (data) {
             if (data.ok && data.data && data.data.init_point) {
               window.open(data.data.init_point, '_blank', 'noreferrer');
-              close();
+              if (closeFn) closeFn();
             } else {
               throw new Error(data.error || 'No se pudo iniciar el pago');
             }
@@ -849,6 +858,54 @@
             actualizarBotonPago();
           });
       });
+    }
+
+    // ── Botón "Colaborar" del header/ficha de emisora (antes linkeaba a
+    // Cafecito) — abre el mismo panel que el toast, pero de una, sin
+    // esperar los 12s del pedido automático ni mostrar todo ese texto (acá
+    // el visitante ya decidió entrar por su cuenta). ─────────────────────
+    function showColaborarStandalone() {
+      document.querySelectorAll('.rp-welcome').forEach(function (t) {
+        t.classList.remove('rp-welcome--in'); t.classList.add('rp-welcome--out');
+        setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 400);
+      });
+
+      var toast = document.createElement('div');
+      toast.className = 'rp-welcome rp-welcome--ayuda';
+      toast.innerHTML =
+        '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
+        '<h3>&#x1F4B3; Colaborar</h3>' +
+        '<div class="rp-colaborar-panel" id="_rcolab">' +
+          '<p class="rp-colaborar-explica">Esto se usa para pagar el hosting que mantiene ' +
+          'online m&#xE1;s de 1200 streams monitoreados, los dominios, y el tiempo real que le ' +
+          'dedico a que todo siga funcionando &#x2014; sin publicidad ni letra chica.</p>' +
+          '<div class="rp-welcome-btns" id="_rcolabmontos">' +
+            '<button data-m="50">$50</button>' +
+            '<button data-m="100">$100</button>' +
+            '<button data-m="200" class="rp-sel">$200</button>' +
+            '<button data-m="500">$500</button>' +
+            '<button data-m="1000">$1000</button>' +
+          '</div>' +
+          '<input type="number" class="rp-colaborar-otro" placeholder="Otro monto (ARS)" min="50" step="1">' +
+          '<button class="rp-welcome-cta rp-colaborar-pagar">Pagar ARS $200 con Mercado Pago</button>' +
+          '<p class="rp-colaborar-error" hidden></p>' +
+        '</div>';
+
+      document.body.appendChild(toast);
+      requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
+      ayudaLog('colaborar_click');
+
+      function close() {
+        toast.classList.remove('rp-welcome--in');
+        toast.classList.add('rp-welcome--out');
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 400);
+      }
+      toast.querySelector('.rp-welcome-close').addEventListener('click', close);
+
+      function snooze() {
+        localStorage.setItem(AYUDA_SNOOZE_KEY, String(Date.now() + AYUDA_SNOOZE_DIAS * 24 * 60 * 60 * 1000));
+      }
+      wireColaborar(toast, snooze, close);
     }
 
     // ── Encuesta de sitio (opinión + ubicación) — separada de la bienvenida,
@@ -951,6 +1008,12 @@
     // Pedido de ayuda: ni bien se entra al sitio, independiente de si se
     // reproduce algo o no.
     ayudaInit();
+
+    // Botón "Colaborar" del header/ficha (antes ☕ Cafecito) — abre el panel
+    // de una, sin esperar el pedido automático.
+    document.querySelectorAll('.js-colaborar').forEach(function (btn) {
+      btn.addEventListener('click', showColaborarStandalone);
+    });
 
     return {
       play:       play,

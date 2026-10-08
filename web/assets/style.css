@@ -69,6 +69,7 @@ body.light .site-header {
   border: 1px solid var(--border);
   border-radius: 20px;
   padding: 4px 12px;
+  font: inherit;
   font-size: 12px;
   color: var(--muted);
   text-decoration: none;

@@ -43,7 +43,7 @@ if (!$s) {
             sostenerlo, podés colaborar acá:
           </p>
           <p style="margin:0 0 28px">
-            <a class="badge badge-cafe" href="https://cafecito.app/mammoli" target="_blank" rel="noopener" style="font-size:15px;padding:8px 16px">☕ Invitame un café</a>
+            <button type="button" class="badge badge-cafe js-colaborar" style="font-size:15px;padding:8px 16px">☕ Colaborar</button>
           </p>
           <p style="color:#6b7280;font-size:13px;margin:0 0 24px">
             Mientras tanto, probá escucharla directo en VLC o en la app oficial de la radio, si tiene.
@@ -159,7 +159,7 @@ if ($prov) {
     <a class="badge" href="/radio/">← Todas las emisoras</a>
     <a class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
     <a class="badge" href="/radio/contacto.php">💬 Contacto</a>
-    <a class="badge badge-cafe" href="https://cafecito.app/mammoli" rel="noopener" target="_blank">☕ Invitame un café</a>
+    <button type="button" class="badge badge-cafe js-colaborar">☕ Colaborar</button>
     <button id="theme-btn" class="badge">☀️ Modo claro</button>
   </div>
 </header>
