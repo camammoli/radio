@@ -7,6 +7,12 @@
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/api/_db.php';
 
+// Comprimir la respuesta entera de una vez (TKT-0818). El HTML pesa ~4,4 MB (tabla de
+// emisoras con un form de edición por fila). Apache lo comprimía por pedazos y salían
+// ~1,4 MB; comprimido entero son ~200 KB. ob_gzhandler solo comprime si el navegador
+// manda Accept-Encoding, y mod_deflate no recomprime si ya hay Content-Encoding.
+if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) ob_start('ob_gzhandler');
+
 session_start();
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Pragma: no-cache');

@@ -4,6 +4,40 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## 🐛 TKT-0818 — 2026-10-20 — Admin tardaba de 40 s a más de 2 min en cargar
+
+### Causa (medida, no inferida)
+`admin.php` genera **~4,4 MB de HTML** en una sola respuesta:
+- Emisoras: 3 MB (1533 filas, cada una con su form de edición incrustado, ~2 KB por fila).
+- Problemas: 918 KB (592 filas).
+- Reproducciones: 196 KB. El resto es chico (Compartidos 41 KB, o sea que no lo causó
+  TKT-0817).
+
+Leyendo la respuesta por chunks no aparecen pausas de más de 2 s: no hay consultas
+lentas, el servidor manda de corrido. Apache sí comprimía (`Content-Encoding: gzip`),
+pero por pedazos, y transfería **1,46 MB**. El mismo HTML comprimido de una vez son
+~190 KB. Con el hosting lento ese día (la API de gestión también llegó a timeouts de
+120 s), eso daba entre 38 s y más de 2 min, y Playwright ni llegaba a DOMContentLoaded
+en 120 s.
+
+### Fix
+`ob_start('ob_gzhandler')` al inicio de `admin.php`, antes de `session_start()`, si
+hay zlib y no está activo `zlib.output_compression`. PHP comprime la respuesta entera
+al final. `ob_gzhandler` solo comprime si el cliente manda `Accept-Encoding`, y
+mod_deflate no recomprime una respuesta que ya trae `Content-Encoding`.
+
+### Resultado
+Transferencia 1,46 MB → **~200 KB**. Login + dashboard en 3,0 s; GETs siguientes en
+1,9 a 3 s (una de 22 s en un pico del hosting). AJAX `?ajax=1` OK. Playwright:
+DOMContentLoaded 4,1 s, sin errores JS, pestaña Compartidos con la columna Cliente OK.
+
+### Pendiente sugerido (no hecho)
+El DOM sigue teniendo 1533 + 592 filas. Si vuelve a ponerse lento: cargar Emisoras y
+Problemas recién al abrir la pestaña (vía AJAX), o sacar el form de edición por fila y
+armar uno solo bajo demanda. Eso solo bajaría ~70 % del HTML.
+
+---
+
 ## ✅ TKT-0817 — 2026-10-20 — Columna "Cliente" (user-agent) en admin + meta "ayudanos a llegar a N" dinámica
 
 ### Columna Cliente
