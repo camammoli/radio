@@ -4,6 +4,32 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0817 — 2026-10-20 — Columna "Cliente" (user-agent) en admin + meta "ayudanos a llegar a N" dinámica
+
+### Columna Cliente
+- `admin.php`, pestaña Compartidos: nueva columna agrupable "Cliente", tanto en el
+  render PHP inicial como en el refresco AJAX (`?ajax=1`, cada 10s). Las dos
+  queries ahora traen `sh.ua`.
+- `ua_corto(?string)`: clasifica `shares.ua` (por ahora solo lo llena el M3U,
+  TKT-0815) en Bot / VLC / Kodi / mpv / Rhythmbox-GStreamer / Reproductor / App
+  IPTV / Reproductor (lib) / Script / Edge / Opera / Firefox / Chrome / Safari / Otro.
+  El orden importa: bot primero, Edge/Opera antes que Chrome, Chrome antes que
+  Safari, porque todos incluyen "Safari" en el UA. El UA completo va en el `title`.
+  La etiqueta se calcula en PHP y viaja en el JSON (`ua_corto`) para no duplicar
+  las reglas en JS. Filas anteriores a TKT-0815 muestran "—".
+- **Fix de seguridad de paso:** `esc()` del JS del admin no escapaba comillas. El
+  UA lo controla el visitante y se mete en un atributo `title`, así que un UA con
+  `"` podía cerrar el atributo e inyectar HTML en el admin. Ahora escapa `"` y `'`
+  (inocuo para los demás usos, que son contenido de texto).
+
+### Meta dinámica
+- `pages/listing.php`: "ayudanos a llegar a 2000" (fijo, se ocultaba al pasar 2000)
+  → próxima centena por encima del total real: `(intdiv($total, 100) + 1) * 100`
+  (857→900, 899→900, 900→1000, 1999→2000, 2000→2100). Siempre visible, con
+  separador de miles AR.
+
+---
+
 ## ✅ TKT-0816 — 2026-10-20 — Número de emisoras unificado (sale de la DB)
 
 ### Contexto

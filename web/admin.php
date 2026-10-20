@@ -260,12 +260,12 @@ if (isset($_GET['ajax'])) {
                  LEFT JOIN listeners l ON l.sid=p.session_id
                  ORDER BY p.played_at DESC LIMIT 200"
             )->fetchAll(),
-            'shares' => $db->query(
-                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, s.nombre, g.provincia
+            'shares' => array_map(fn($sh) => $sh + ['ua_corto' => ua_corto($sh['ua'])], $db->query(
+                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, sh.ua, s.nombre, g.provincia
                  FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
                                  LEFT JOIN ip_geo_cache g ON g.ip_hash=sh.ip_hash
                  ORDER BY sh.created_at DESC LIMIT 100"
-            )->fetchAll(),
+            )->fetchAll()),
         ];
         echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } catch (Exception $e) {
@@ -410,7 +410,7 @@ $notify_val = $notify_db !== false ? $notify_db === '1' : (defined('NOTIFY_OYENT
 
 // Shares recientes (últimas 100)
 $shares_recientes = $db->query(
-    "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug,
+    "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, sh.ua,
             s.nombre, g.provincia
      FROM shares sh
      LEFT JOIN stations s ON s.id = sh.station_id
@@ -547,6 +547,31 @@ $icy_activas = $db->query(
 // ── HTML ──────────────────────────────────────────────────────────────────────
 
 function h(string $s): string { return htmlspecialchars($s, ENT_QUOTES, 'UTF-8'); }
+
+// Etiqueta corta del user-agent de shares.ua (TKT-0817) — por ahora solo lo
+// guarda el M3U (TKT-0815). Sirve para ver si lo bajan reproductores reales
+// (VLC/Kodi/apps IPTV) o navegadores/bots. El UA completo va en el title.
+function ua_corto(?string $ua): string {
+    if ($ua === null || $ua === '') return '';
+    $reglas = [
+        '/bot|crawl|spider|slurp|preview/i'         => '🤖 Bot',
+        '/VLC|LibVLC/i'                             => '📺 VLC',
+        '/Kodi|XBMC/i'                              => '📺 Kodi',
+        '/mpv/i'                                    => '📺 mpv',
+        '/Rhythmbox|GStreamer/i'                    => '📺 Rhythmbox/GStreamer',
+        '/foobar|Winamp|AIMP|MusicBee|Audacious/i'  => '📺 Reproductor',
+        '/IPTV|Smarters|TiviMate|\bOTT\b|Perfect ?Player|Televizo/i' => '📺 App IPTV',
+        '/ExoPlayer|Lavf|ffmpeg|stagefright/i'      => '📺 Reproductor (lib)',
+        '/curl|Wget|python|Go-http|okhttp|Java\//i' => '⚙️ Script',
+        '/Edg\//i'                                  => '🌐 Edge',
+        '/OPR\/|Opera/i'                            => '🌐 Opera',
+        '/Firefox\//i'                              => '🌐 Firefox',
+        '/Chrome\/|CriOS/i'                         => '🌐 Chrome',
+        '/Safari\//i'                               => '🌐 Safari',
+    ];
+    foreach ($reglas as $re => $label) if (preg_match($re, $ua)) return $label;
+    return '❓ Otro';
+}
 function ago(?string $dt): string {
     if (!$dt) return '—';
     $diff = time() - strtotime($dt . ' UTC');
@@ -1004,7 +1029,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram', 'm3u' => '📻 M3U']; ?>
   <table id="dt-compartidos" class="dt">
     <thead><tr>
-      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th>
+      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-group="Cliente">Cliente</th><th data-nosort="1">IP hash</th>
     </tr></thead>
     <tbody id="shares-body">
     <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
@@ -1013,10 +1038,11 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
       <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
       <td style="font-size:12px;color:var(--muted)"><?= $sh['provincia'] ? '📍 ' . h($sh['provincia']) : '—' ?></td>
+      <td style="font-size:12px;white-space:nowrap"<?= $sh['ua'] ? ' title="' . h($sh['ua']) . '"' : '' ?>><?= $sh['ua'] ? h(ua_corto($sh['ua'])) : '<span style="color:var(--muted)">—</span>' ?></td>
       <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
     </tr>
     <?php endforeach; else: ?>
-    <tr><td colspan="5" class="empty">Sin compartidos registrados todavía.</td></tr>
+    <tr><td colspan="6" class="empty">Sin compartidos registrados todavía.</td></tr>
     <?php endif; ?>
     </tbody>
   </table>
@@ -1735,7 +1761,8 @@ window.DT = (function () {
 
   // ── Auto-refresh ────────────────────────────────────────────────────────────
   function esc(s) {
-    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
   function fmtDur(s) {
     if (s == null) return '—';
@@ -1827,6 +1854,9 @@ window.DT = (function () {
               + '<td>' + nom + '</td>'
               + '<td>' + esc(CH[sh.channel] || sh.channel) + '</td>'
               + '<td style="font-size:12px;color:var(--muted)">' + (sh.provincia ? '📍 ' + esc(sh.provincia) : '—') + '</td>'
+              + (sh.ua
+                  ? '<td style="font-size:12px;white-space:nowrap" title="' + esc(sh.ua) + '">' + esc(sh.ua_corto) + '</td>'
+                  : '<td style="font-size:12px;white-space:nowrap"><span style="color:var(--muted)">—</span></td>')
               + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((sh.ip_hash || '').substring(0,16)) + '…</td>'
               + '</tr>';
           }).join('');

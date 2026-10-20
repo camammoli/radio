@@ -106,7 +106,10 @@ $ld_itemlist = [
   <h1>📻 Radio Argentina</h1>
   <p class="sub">
     <?= $total ?> emisoras en streaming · escuchá sin instalar nada
-    <?php if ($total < 2000): ?> · <a href="/radio/sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a 2000 →</a><?php endif; ?>
+    <?php // Meta: la próxima centena redonda por encima del total real (857 → 900,
+          // 900 → 1000) — siempre alcanzable, se mueve sola con el catálogo (TKT-0817).
+          $meta = (intdiv($total, 100) + 1) * 100; ?>
+    · <a href="/radio/sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a <?= number_format($meta, 0, ',', '.') ?> →</a>
   </p>
   <div class="badges">
     <a  class="badge js-m3u" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
