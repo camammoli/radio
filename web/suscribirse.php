@@ -599,7 +599,7 @@ a{color:var(--accent)}
   <div class="card">
     <h2>¿Cómo funciona?</h2>
     <div class="step"><div class="step-n">1</div><div>Dejás tu Telegram o email y qué te gusta (artistas, programas, géneros).</div></div>
-    <div class="step"><div class="step-n">2</div><div>El sistema monitorea en tiempo real lo que están transmitiendo más de 1.200 emisoras.</div></div>
+    <div class="step"><div class="step-n">2</div><div>El sistema monitorea en tiempo real lo que están transmitiendo <?= ($__tot = radio_total_emisoras($db)) ? $__tot . ' emisoras' : 'todas las emisoras del catálogo' ?>.</div></div>
     <div class="step"><div class="step-n">3</div><div>Cuando detecta que una emisora lleva <strong>un par de temas</strong> de tu artista (no el primero suelto), te avisa.</div></div>
     <div class="step"><div class="step-n">4</div><div>También te puede avisar antes de que empiece tu programa favorito, basándose en el historial de horarios.</div></div>
   </div>

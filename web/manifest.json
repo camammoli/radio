@@ -1,7 +1,7 @@
 {
   "name": "Radio Argentina",
   "short_name": "Radio AR",
-  "description": "Más de 1200 radios argentinas en streaming, sin instalar nada",
+  "description": "Radios argentinas en streaming, sin instalar nada",
   "start_url": "/radio/",
   "scope": "/radio/",
   "display": "standalone",

@@ -249,6 +249,7 @@ $ld_itemlist = [
 
 <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
 <script src="<?= $__base ?>/assets/theme.js"></script>
+<script>window.RADIO_TOTAL = <?= (int)$total ?>;</script>
 <script src="<?= $__base ?>/assets/player.js"></script>
 <script>
 (function () {

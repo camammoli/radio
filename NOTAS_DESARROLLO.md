@@ -4,6 +4,41 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0816 — 2026-10-20 — Número de emisoras unificado (sale de la DB)
+
+### Contexto
+El encabezado del listado mostraba el conteo real (857, `count()` sobre
+`v_stations`), pero había textos con cantidades escritas a mano de cuando el
+catálogo era más grande: "más de 1200" (bienvenida v4, pedido de ayuda, 2 paneles
+de Colaborar), "1200+" (CTA de la ficha, FAQ), "más de 1.200" (suscribirse),
+"1400+" (nota de Rhythmbox en el FAQ), "Más de 1200" (`manifest.json`) y "~1200"
+(README).
+
+### Implementación
+- `api/_helpers.php`: `radio_total_emisoras(PDO $db): int`, `COUNT(*)` de
+  `v_stations` (mismo criterio que el encabezado), con cache estático por request y
+  0 si la DB falla. **Única fuente del número: no volver a escribir cantidades a mano.**
+- `pages/listing.php` / `pages/station.php`: `window.RADIO_TOTAL` inyectado antes de
+  `player.js`. Listing usa su `$total` ya calculado; la ficha llama al helper. El CTA
+  de la ficha ("Explorá las N emisoras") también usa el helper.
+- `assets/player.js`: `TOTAL` + `totalTxt(sustantivo)`, con fallback "cientos de …"
+  si la página no inyecta el dato. Se usa en los 4 textos.
+- `faq.php`: ahora carga `config.php` + `_db.php` (antes no tocaba la DB), con
+  try/catch para que el FAQ no se caiga si falla la base. `suscribirse.php`: helper.
+- `manifest.json`: es estático, así que se le sacó el número.
+- `README.md`: "~1200" → "cientos de".
+- `sw.js`: `CACHE_NAME` → v20.
+
+### Pruebas
+Contra producción: `/`, `/faq.php`, `/suscribirse.php` y una ficha (`/103-3/`)
+dan 200 con 857 en todos los textos. Los "1200"/"1400" que siguen apareciendo en el
+HTML de la portada son nombres de emisoras ("Radio 3 Andina AM 1200", "AM CUMBRE
+1400"). Playwright (mobile 390, eventos de `ayuda_toast` interceptados): pedido
+automático y panel Colaborar dicen "857 streams monitoreados" en portada y ficha,
+sin errores JS.
+
+---
+
 ## ✅ TKT-0815 — 2026-10-20 — User-agent en descargas del M3U + aviso de colaboración al descargar
 
 ### Contexto

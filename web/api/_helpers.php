@@ -127,6 +127,19 @@ function ip_hash(string $ip): string {
     return substr(hash('sha256', $ip), 0, 16);
 }
 
+// ── Total de emisoras (TKT-0816) ───────────────────────────────────────────────
+// Mismo criterio que el encabezado del listado (todo v_stations). Única fuente
+// del número que se muestra en el sitio — no escribir cantidades a mano en
+// textos, quedan viejas (pasó: "más de 1200" con 857 reales). 0 si la DB falla,
+// cada página decide el texto de reemplazo.
+function radio_total_emisoras(PDO $db): int {
+    static $n = null;
+    if ($n !== null) return $n;
+    try { $n = (int)$db->query('SELECT COUNT(*) FROM v_stations')->fetchColumn(); }
+    catch (Throwable $e) { $n = 0; }
+    return $n;
+}
+
 // ── Compatibilidad SQLite/MySQL ──────────────────────────────────────────────
 // Motor real controlado por RADIO_DB_ENGINE en config.php (ver _db.php). Estas
 // funciones dejan que el mismo código arme la sintaxis de fecha/upsert correcta

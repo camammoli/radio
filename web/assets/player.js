@@ -47,6 +47,13 @@
   var AYUDA_SESSION_KEY = 'radio_ayuda_session_shown'; // sessionStorage: ya se mostró en esta sesión de navegación
   var AYUDA_SNOOZE_DIAS = 7;
 
+  // Total real de emisoras, lo inyecta la página desde la DB (TKT-0816) — no
+  // escribir cantidades a mano en los textos. Sin dato: texto genérico.
+  var TOTAL = parseInt(window.RADIO_TOTAL, 10) || 0;
+  function totalTxt(sustantivo) {
+    return TOTAL ? TOTAL.toLocaleString('es-AR') + ' ' + sustantivo : 'cientos de ' + sustantivo;
+  }
+
   function RadioPlayer(opts) {
     // ── Config ──────────────────────────────────────────────────────────────
     var slug   = opts.slug   || '';
@@ -634,7 +641,7 @@
           '<li>Player con control de volumen</li>' +
           '<li>Avisos por Telegram o email cuando suene tu artista favorito</li>' +
           '<li>Arreglamos cortes de audio en varias emisoras</li>' +
-          '<li>M&#xE1;s de 1.200 emisoras argentinas verificadas</li>' +
+          '<li>' + totalTxt('emisoras argentinas verificadas') + '</li>' +
         '</ul>' +
         '<div class="rp-welcome-privacy">' +
           '&#x1F512; Sin rastreo, sin datos personales guardados.' +
@@ -707,7 +714,7 @@
       toast.innerHTML =
         '<h3>&#x1F64F; Un pedido</h3>' +
         '<p>Radio Argentina lo armo y sostengo solo, en mi tiempo libre &#x2014; sin equipo, ' +
-        'sin publicidad. Mantener m&#xE1;s de 1200 streams monitoreados en vivo, con metadata ' +
+        'sin publicidad. Mantener ' + totalTxt('streams monitoreados en vivo') + ', con metadata ' +
         'en tiempo real y alertas, tiene un costo de hosting real y creciente.</p>' +
         '<p>Si 1 de cada 10 oyentes aportara una colaboraci&#xF3;n alguna vez, cubrir&#xED;amos ' +
         'gran parte de ese costo. Cualquier aporte ayuda, por chico que sea &#x2014; y tambi&#xE9;n ' +
@@ -724,7 +731,7 @@
         '</div>' +
         '<div class="rp-colaborar-panel" id="_rcolab" hidden>' +
           '<p class="rp-colaborar-explica">Esto se usa para pagar el hosting que mantiene ' +
-          'online m&#xE1;s de 1200 streams monitoreados, los dominios, y el tiempo real que le ' +
+          'online ' + totalTxt('streams monitoreados') + ', los dominios, y el tiempo real que le ' +
           'dedico a que todo siga funcionando &#x2014; sin publicidad ni letra chica.</p>' +
           '<div class="rp-welcome-btns" id="_rcolabmontos">' +
             '<button data-m="50">$50</button>' +
@@ -881,7 +888,7 @@
         '<div class="rp-colaborar-panel" id="_rcolab">' +
           (opts.intro ? '<p class="rp-colaborar-explica">' + opts.intro + '</p>' : '') +
           '<p class="rp-colaborar-explica">Esto se usa para pagar el hosting que mantiene ' +
-          'online m&#xE1;s de 1200 streams monitoreados, los dominios, y el tiempo real que le ' +
+          'online ' + totalTxt('streams monitoreados') + ', los dominios, y el tiempo real que le ' +
           'dedico a que todo siga funcionando &#x2014; sin publicidad ni letra chica.</p>' +
           '<div class="rp-welcome-btns" id="_rcolabmontos">' +
             '<button data-m="50">$50</button>' +

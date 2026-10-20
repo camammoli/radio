@@ -342,7 +342,7 @@ if ($prov) {
   <!-- CTA directorio -->
   <div style="margin-top:32px;padding-top:24px;border-top:1px solid var(--border);text-align:center">
     <a href="/radio/" style="display:inline-block;padding:14px 28px;background:var(--accent);color:#fff;border-radius:10px;font-size:15px;font-weight:600;text-decoration:none;letter-spacing:.01em">
-      Explorá las 1200+ emisoras argentinas
+      <?php $__tot = radio_total_emisoras($db); ?>Explorá <?= $__tot ? 'las ' . $__tot : 'todas las' ?> emisoras argentinas
     </a>
   </div>
 
@@ -360,6 +360,7 @@ if ($prov) {
 
 <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
 <script src="<?= $__base ?>/assets/theme.js"></script>
+<script>window.RADIO_TOTAL = <?= radio_total_emisoras($db) ?>;</script>
 <script src="<?= $__base ?>/assets/player.js"></script>
 <script>
 (function () {

@@ -9,6 +9,9 @@
  * cómo Carrizo Logística / FP Construcción explican sus procesos).
  */
 $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio';
+if (file_exists(__DIR__ . '/config.php')) require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/api/_db.php';
+try { $__tot = radio_total_emisoras(radio_db()); } catch (Throwable $e) { $__tot = 0; }
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -68,7 +71,7 @@ body.light .pasos code{background:rgba(0,0,0,.06)}
 
 <div class="card">
   <h2>📻 Tu lista M3U</h2>
-  <p class="intro">Este es el link que vas a usar en todos los reproductores de abajo — abre las 1200+ emisoras del catálogo, siempre actualizado, sin instalar nada extra.</p>
+  <p class="intro">Este es el link que vas a usar en todos los reproductores de abajo — abre <?= $__tot ? 'las ' . $__tot : 'todas las' ?> emisoras del catálogo, siempre actualizado, sin instalar nada extra.</p>
   <div class="m3u-box">
     <code id="m3u-url">https://mammoli.ar<?= $__base ?>/api/playlist.m3u</code>
     <button id="btn-copiar">Copiar</button>
@@ -101,7 +104,7 @@ body.light .pasos code{background:rgba(0,0,0,.06)}
     <li><span>Abrí una terminal y pegá:<br><code>rhythmbox-client --play-uri="https://mammoli.ar<?= $__base ?>/api/playlist.m3u"</code></span></li>
     <li><span>Esto importa el catálogo completo y arranca a reproducir la primera emisora.</span></li>
   </ol>
-  <p class="nota">⚠️ Con 1400+ emisoras, Rhythmbox puede quedarse "sin responder" un buen rato mientras importa — es esperable, no lo fuerces a cerrar enseguida. Si se cuelga de verdad, forzá la salida (no hay riesgo de perder nada) y probá con <strong>VLC o Kodi</strong> en su lugar — manejan un catálogo de este tamaño sin problema.</p>
+  <p class="nota">⚠️ Con <?= $__tot ?: 'cientos de' ?> emisoras, Rhythmbox puede quedarse "sin responder" un buen rato mientras importa — es esperable, no lo fuerces a cerrar enseguida. Si se cuelga de verdad, forzá la salida (no hay riesgo de perder nada) y probá con <strong>VLC o Kodi</strong> en su lugar — manejan un catálogo de este tamaño sin problema.</p>
 </div>
 
 <div class="card">

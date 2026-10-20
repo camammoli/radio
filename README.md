@@ -1,6 +1,6 @@
 # Radio Argentina
 
-Escuchar ~1200 radios argentinas desde la terminal, o desde el navegador sin instalar nada.
+Escuchar cientos de radios argentinas desde la terminal, o desde el navegador sin instalar nada.
 
 **Player web:** [mammoli.ar/radio](https://mammoli.ar/radio/) — funciona en celular, buscador en tiempo real, filtros por estado y género, ICY now-playing, encuestas, compartir por link/WhatsApp/QR, descarga M3U.
 
@@ -142,7 +142,7 @@ SQLite con 9 tablas + 2 vistas:
 
 | Tabla | Contenido |
 |---|---|
-| `stations` | directorio de emisoras (~1200) |
+| `stations` | directorio de emisoras |
 | `stream_status` | estado actual por emisora |
 | `stream_history` | historial de verificaciones |
 | `station_events` | eventos: came_back, went_down, icy_gained, icy_lost |
