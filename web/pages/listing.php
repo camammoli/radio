@@ -109,7 +109,7 @@ $ld_itemlist = [
     <?php if ($total < 2000): ?> · <a href="/radio/sugerir.php" style="color:#f59e0b;text-decoration:none">ayudanos a llegar a 2000 →</a><?php endif; ?>
   </p>
   <div class="badges">
-    <a  class="badge" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
+    <a  class="badge js-m3u" href="/radio/api/playlist.m3u">⬇ Bajar M3U</a>
     <a  class="badge" href="/radio/sugerir.php">+ Sugerir emisora</a>
     <a  class="badge" href="/radio/contacto.php">💬 Contacto</a>
     <a  class="badge" href="/radio/suscribirse.php">🔔 Alertas</a>

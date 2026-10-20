@@ -2,7 +2,7 @@
 /**
  * ayuda_toast.php — Registra un evento del toast de ayuda/sostener el proyecto.
  *
- * GET /api/ayuda_toast?tipo=mostrado|ok|no_molestar|cafecito|contacto|colaborar_click|colaborar_mp
+ * GET /api/ayuda_toast?tipo=mostrado|ok|no_molestar|cafecito|contacto|colaborar_click|colaborar_mp|m3u_mostrado|m3u_mp|m3u_link
  */
 
 require_once __DIR__ . '/../config.php';
@@ -11,7 +11,8 @@ require_once __DIR__ . '/_helpers.php';
 
 api_method('GET');
 
-$tipos_validos = ['mostrado', 'ok', 'no_molestar', 'cafecito', 'contacto', 'colaborar_click', 'colaborar_mp'];
+$tipos_validos = ['mostrado', 'ok', 'no_molestar', 'cafecito', 'contacto', 'colaborar_click', 'colaborar_mp',
+                  'm3u_mostrado', 'm3u_mp', 'm3u_link'];
 $tipo = str_param('tipo', 20);
 if (!in_array($tipo, $tipos_validos, true)) api_error('tipo inválido');
 

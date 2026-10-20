@@ -788,7 +788,7 @@
     // ayuda (ya expandido ahí) como el botón standalone del header
     // (open=true, lo muestra de una). `scope` es el elemento que contiene
     // el panel (#_rcolab, #_rcolabmontos, etc.).
-    function wireColaborar(scope, snoozeFn, closeFn) {
+    function wireColaborar(scope, snoozeFn, closeFn, payTipo) {
       var montosWrap = scope.querySelector('#_rcolabmontos');
       var otroInput  = scope.querySelector('.rp-colaborar-otro');
       var pagarBtn   = scope.querySelector('.rp-colaborar-pagar');
@@ -833,7 +833,7 @@
           errorEl.hidden = false;
           return;
         }
-        ayudaLog('colaborar_mp');
+        ayudaLog(payTipo || 'colaborar_mp');
         if (snoozeFn) snoozeFn();
         pagarBtn.disabled = true;
         pagarBtn.textContent = 'Conectando con Mercado Pago…';
@@ -864,7 +864,10 @@
     // Cafecito) — abre el mismo panel que el toast, pero de una, sin
     // esperar los 12s del pedido automático ni mostrar todo ese texto (acá
     // el visitante ya decidió entrar por su cuenta). ─────────────────────
-    function showColaborarStandalone() {
+    // `opts` (opcional) lo usa el aviso post-descarga del M3U: título y texto
+    // propios + tipos de evento separados para medir esa vía aparte.
+    function showColaborarStandalone(opts) {
+      opts = opts || {};
       document.querySelectorAll('.rp-welcome').forEach(function (t) {
         t.classList.remove('rp-welcome--in'); t.classList.add('rp-welcome--out');
         setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 400);
@@ -874,8 +877,9 @@
       toast.className = 'rp-welcome rp-welcome--ayuda';
       toast.innerHTML =
         '<button class="rp-welcome-close" aria-label="Cerrar">&#x2715;</button>' +
-        '<h3>&#x1F4B3; Colaborar</h3>' +
+        '<h3>' + (opts.titulo || '&#x1F4B3; Colaborar') + '</h3>' +
         '<div class="rp-colaborar-panel" id="_rcolab">' +
+          (opts.intro ? '<p class="rp-colaborar-explica">' + opts.intro + '</p>' : '') +
           '<p class="rp-colaborar-explica">Esto se usa para pagar el hosting que mantiene ' +
           'online m&#xE1;s de 1200 streams monitoreados, los dominios, y el tiempo real que le ' +
           'dedico a que todo siga funcionando &#x2014; sin publicidad ni letra chica.</p>' +
@@ -893,7 +897,7 @@
 
       document.body.appendChild(toast);
       requestAnimationFrame(function () { toast.classList.add('rp-welcome--in'); });
-      ayudaLog('colaborar_click');
+      ayudaLog(opts.logShow || 'colaborar_click');
 
       function close() {
         toast.classList.remove('rp-welcome--in');
@@ -905,7 +909,23 @@
       function snooze() {
         localStorage.setItem(AYUDA_SNOOZE_KEY, String(Date.now() + AYUDA_SNOOZE_DIAS * 24 * 60 * 60 * 1000));
       }
-      wireColaborar(toast, snooze, close);
+      wireColaborar(toast, snooze, close, opts.logPay);
+    }
+
+    // Aviso post-descarga del M3U — la descarga sigue normal (no se frena el
+    // link), el panel aparece al lado. Quien eligió "No molestar más" en el
+    // toast de ayuda no lo ve.
+    function showColaborarM3u(logShow) {
+      if (localStorage.getItem(AYUDA_NEVER_KEY)) return;
+      showColaborarStandalone({
+        titulo: '&#x1F4FB; Lista M3U',
+        intro: 'La lista la armo y la mantengo yo: se chequea cada emisora varias veces ' +
+               'por d&#xED;a y se corrigen las que cambian de direcci&#xF3;n. ' +
+               'Volv&#xE9; a bajarla cada tanto para tenerla al d&#xED;a. Si te sirve, ' +
+               'cualquier aporte ayuda a que siga.',
+        logShow: logShow,
+        logPay: 'm3u_mp',
+      });
     }
 
     // ── Encuesta de sitio (opinión + ubicación) — separada de la bienvenida,
@@ -1012,8 +1032,20 @@
     // Botón "Colaborar" del header/ficha (antes ☕ Cafecito) — abre el panel
     // de una, sin esperar el pedido automático.
     document.querySelectorAll('.js-colaborar').forEach(function (btn) {
-      btn.addEventListener('click', showColaborarStandalone);
+      btn.addEventListener('click', function () { showColaborarStandalone(); });
     });
+
+    // Link "Bajar M3U": deja descargar y muestra el aviso de colaboración.
+    document.querySelectorAll('.js-m3u').forEach(function (a) {
+      a.addEventListener('click', function () {
+        setTimeout(function () { showColaborarM3u('m3u_mostrado'); }, 600);
+      });
+    });
+
+    // Link "colaborá" que viaja adentro del archivo M3U (?colaborar=m3u).
+    if (/[?&]colaborar=m3u(&|$)/.test(location.search)) {
+      setTimeout(function () { showColaborarM3u('m3u_link'); }, 800);
+    }
 
     return {
       play:       play,

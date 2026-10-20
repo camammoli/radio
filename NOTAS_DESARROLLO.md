@@ -4,6 +4,54 @@ Player web en [mammoli.ar/radio](https://mammoli.ar/radio/) + script de terminal
 
 ---
 
+## ✅ TKT-0815 — 2026-10-20 — User-agent en descargas del M3U + aviso de colaboración al descargar
+
+### Contexto
+Carlos planteó cobrar el M3U. Antes de construir nada se midió el uso real con la
+tabla `shares` (`channel='m3u'`, registro desde el 17/09): 146 descargas de 65 IPs
+en ~33 días, pero 60 de esas descargas son de una sola IP (11-12/10). Sin esa IP
+quedan unas 2 descargas por día, y solo 1 IP volvió en 3 días distintos o más, o sea
+que casi todos bajan la lista una vez y la usan como foto fija. Con ese volumen un
+paywall no se paga solo. Decisión: medir mejor (qué cliente descarga) y probar un
+pedido suave de colaboración en el momento de la descarga.
+
+### Implementación
+- **MySQL prod**: `ALTER TABLE shares ADD COLUMN ua VARCHAR(255) NULL AFTER ip_hash`
+  (script temporal, borrado al toque; `db/mysql_schema.sql` actualizado).
+- `api/playlist.php`: guarda `HTTP_USER_AGENT` (máx. 255) en `shares.ua`. Solo para
+  el M3U, no para los otros canales. Rama SQLite: `ua` en el CREATE + `ALTER` lazy.
+  Además el archivo trae 2 líneas de comentario con el link
+  `https://mammoli.ar/radio/?colaborar=m3u` (llega a quien lo baja directo por URL,
+  README, VLC, etc., sin pasar por el sitio).
+- `assets/player.js`: `showColaborarStandalone(opts)` acepta `titulo`/`intro`/
+  `logShow`/`logPay` opcionales; `wireColaborar()` recibe el tipo de evento de pago.
+  Nueva `showColaborarM3u()`. El link `.js-m3u` **no frena la descarga** y abre el
+  panel a los 600ms. `?colaborar=m3u` abre el panel al cargar. No se muestra si el
+  visitante eligió "No molestar más" (`AYUDA_NEVER_KEY`). Ojo: el listener de
+  `.js-colaborar` pasó a `function () { showColaborarStandalone(); }` porque si no
+  recibiría el evento de click como `opts`.
+- `api/ayuda_toast.php`: tipos nuevos `m3u_mostrado`, `m3u_link`, `m3u_mp`, para
+  medir esta vía aparte del toast normal.
+- `pages/listing.php`: clase `js-m3u` en el badge "⬇ Bajar M3U".
+- `sw.js`: `CACHE_NAME` → v19.
+
+### Pruebas
+Playwright contra producción, con `ayuda_toast.php` y `playlist.*` interceptados
+para no ensuciar estadísticas. En desktop 1280 y mobile 390: la descarga
+`radio-argentina.m3u` sale normal, el panel "📻 Lista M3U" aparece, `?colaborar=m3u`
+lo abre, con never-key no aparece y no hay errores JS. El `ua` quedó guardado en
+`shares` con un curl de prueba (UA `... (prueba-claude)`), fila borrada después.
+
+### Cómo leerlo más adelante
+```sql
+SELECT ua, COUNT(*) n, COUNT(DISTINCT ip_hash) ips FROM shares
+WHERE channel='m3u' AND ua IS NOT NULL GROUP BY ua ORDER BY n DESC;
+SELECT tipo, COUNT(*) FROM ayuda_toast_eventos WHERE tipo LIKE 'm3u_%' GROUP BY tipo;
+```
+El admin todavía no muestra la columna `ua` (pendiente si hace falta verla seguido).
+
+---
+
 ## ✅ TKT-0807 — 2026-10-08 — Badge header/ficha "Colaborar" ya no linkea a Cafecito
 
 ### Contexto

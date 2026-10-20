@@ -161,6 +161,7 @@ CREATE TABLE shares (
     slug        VARCHAR(150) NULL,
     channel     VARCHAR(20) NULL,
     ip_hash     VARCHAR(32) NULL,
+    ua          VARCHAR(255) NULL,
     created_at  DATETIME NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

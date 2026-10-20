@@ -51,9 +51,14 @@ $rows = $stmt->fetchAll();
 // una emisora puntual). Mide DESCARGAS del M3U, no uso continuo: una vez
 // bajado, el reproductor externo (VLC/Kodi/etc.) transmite directo desde
 // cada emisora, sin volver a pasar por este servidor.
-sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
-$db->prepare('INSERT INTO shares (station_id, slug, channel, ip_hash) VALUES (NULL, NULL, ?, ?)')
-   ->execute(['m3u', ip_hash(client_ip())]);
+// El user-agent (columna ua, TKT-0815) permite distinguir reproductores reales
+// (VLC/Kodi/apps IPTV) de navegadores y bots al evaluar si vale la pena
+// cobrar el M3U — solo se guarda acá, no en los demás canales de shares.
+sqlite_lazy_migration($db, fn($db) => $db->exec('CREATE TABLE IF NOT EXISTS shares (id INTEGER PRIMARY KEY AUTOINCREMENT, station_id INTEGER, slug TEXT, channel TEXT, ip_hash TEXT, ua TEXT, created_at TEXT DEFAULT CURRENT_TIMESTAMP)'));
+sqlite_lazy_migration($db, fn($db) => $db->exec('ALTER TABLE shares ADD COLUMN ua TEXT'));
+$ua = mb_substr((string)($_SERVER['HTTP_USER_AGENT'] ?? ''), 0, 255);
+$db->prepare('INSERT INTO shares (station_id, slug, channel, ip_hash, ua) VALUES (NULL, NULL, ?, ?, ?)')
+   ->execute(['m3u', ip_hash(client_ip()), $ua !== '' ? $ua : null]);
 
 // ── Salida M3U ────────────────────────────────────────────────────────────────
 
@@ -63,6 +68,8 @@ header('Cache-Control: public, max-age=3600');
 
 echo "#EXTM3U\n";
 echo '# Radio Argentina — mammoli.ar/radio — ' . count($rows) . " emisoras\n";
+echo "# Esta lista la mantengo yo (hosting, monitoreo de streams, tiempo). Si te sirve, colaborá:\n";
+echo "# https://mammoli.ar/radio/?colaborar=m3u\n";
 
 foreach ($rows as $r) {
     $tags    = json_decode($r['tags'] ?? '[]', true) ?: [];
