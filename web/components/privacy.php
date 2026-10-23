@@ -2,7 +2,10 @@
 
 <!-- ── Pie de página ──────────────────────────────────────────────────────────── -->
 <footer style="text-align:center;padding:28px 16px 20px;font-size:12px;color:var(--muted,#94a3b8)">
-  Radio Argentina · mammoli.ar &nbsp;·&nbsp;
+  Radio Argentina · Desarrollado por
+  <a href="https://mammoli.ar/?utm_source=radio&amp;utm_medium=referral&amp;utm_campaign=firma_desarrollador"
+     style="color:var(--muted,#94a3b8);text-decoration:none;border-bottom:1px dotted currentColor">mammoli.ar</a>
+  &nbsp;·&nbsp;
   <a href="#" id="privacy-link"
      style="color:var(--muted,#94a3b8);text-decoration:none;border-bottom:1px dotted currentColor"
      onclick="document.getElementById('privacy-modal').classList.add('open');return false">
