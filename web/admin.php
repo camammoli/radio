@@ -234,6 +234,21 @@ if ($act === 'toggle_maintenance' && ($_POST['csrf'] ?? '') === $csrf) {
     exit;
 }
 
+// ── Listas sin tope de filas (TKT-0827): página, resumen agrupado o CSV ─────────
+require_once __DIR__ . '/api/_admin_listas.php';
+if (isset($_GET['lista'])) {
+    session_write_close();
+    header('Content-Type: application/json; charset=utf-8');
+    header('Cache-Control: no-store');
+    try {
+        admin_listas_responder($db, (string)$_GET['lista']);
+    } catch (Throwable $e) {
+        http_response_code(500);
+        echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+    }
+    exit;
+}
+
 // ── Ajax: auto-refresh ───────────────────────────────────────────────────────
 
 if (isset($_GET['ajax'])) {
@@ -252,26 +267,6 @@ if (isset($_GET['ajax'])) {
                 'plays_total' => (int)$db->query('SELECT COUNT(*) FROM plays')->fetchColumn(),
                 'listeners'   => (int)$db->query("SELECT COUNT(*) FROM listeners WHERE last_seen>=" . sql_now_offset(-90, 'SECOND'))->fetchColumn(),
             ],
-            'plays' => $db->query(
-                "SELECT p.played_at, p.ip_hash, p.provincia, p.source, p.session_id, s.nombre, s.slug,
-                        CASE WHEN p.ended_at IS NOT NULL THEN " . sql_seconds_diff('p.played_at', 'p.ended_at') . "
-                             WHEN l.sid IS NOT NULL      THEN " . sql_seconds_diff('p.played_at', db_engine()==='mysql'?'NOW()':"'now'") . "
-                             ELSE NULL END AS duration_secs,
-                        CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
-                        (SELECT COUNT(DISTINCT " . sql_date_local('p2.played_at', 0) . ") FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
-                        (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
-                          AND p3.played_at BETWEEN " . sql_offset('p.played_at', -30, 'MINUTE') . " AND " . sql_offset('p.played_at', 30, 'MINUTE') . ") AS hops_1h
-                 FROM plays p
-                 LEFT JOIN stations s ON s.id=p.station_id
-                 LEFT JOIN listeners l ON l.sid=p.session_id
-                 ORDER BY p.played_at DESC LIMIT 200"
-            )->fetchAll(),
-            'shares' => array_map(fn($sh) => $sh + ['ua_corto' => ua_corto($sh['ua'])], $db->query(
-                "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, sh.ua, s.nombre, g.provincia
-                 FROM shares sh LEFT JOIN stations s ON s.id=sh.station_id
-                                 LEFT JOIN ip_geo_cache g ON g.ip_hash=sh.ip_hash
-                 ORDER BY sh.created_at DESC LIMIT 100"
-            )->fetchAll()),
         ];
         echo json_encode($out, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     } catch (Exception $e) {
@@ -332,7 +327,7 @@ $geo_provincia = $db->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 $geo_total = array_sum(array_column($geo_provincia, 'cnt'));
 
-// Encuestas por emisora (top 40)
+// Encuestas por emisora (todas las que tienen encuestas)
 $station_surveys = $db->query(
     "SELECT s.nombre, s.slug,
             SUM(CASE WHEN sv.rating=1  THEN 1 ELSE 0 END) AS pos,
@@ -344,8 +339,7 @@ $station_surveys = $db->query(
      JOIN stations s ON s.id = sv.station_id
      WHERE sv.station_id IS NOT NULL
      GROUP BY sv.station_id
-     ORDER BY total DESC
-     LIMIT 40"
+     ORDER BY total DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Sugerencias pendientes
@@ -401,29 +395,9 @@ $seguimiento = $db->query(
      ORDER BY updated_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
-// Últimas ejecuciones de crawlers
-$durCrawler = sql_seconds_diff('started_at', 'finished_at');
-$crawler_runs = $db->query(
-    "SELECT crawler, started_at, finished_at,
-            $durCrawler AS secs,
-            stations_checked, changes_detected, errors, notes
-     FROM crawler_runs ORDER BY started_at DESC LIMIT 30"
-)->fetchAll(PDO::FETCH_ASSOC);
-
 // Estado Telegram
 $notify_db  = $db->query("SELECT value FROM settings WHERE `key`='notify_oyentes' LIMIT 1")->fetchColumn();
 $notify_val = $notify_db !== false ? $notify_db === '1' : (defined('NOTIFY_OYENTES') && NOTIFY_OYENTES);
-
-// Shares recientes (últimas 100)
-$shares_recientes = $db->query(
-    "SELECT sh.created_at, sh.channel, sh.ip_hash, sh.slug, sh.ua,
-            s.nombre, g.provincia
-     FROM shares sh
-     LEFT JOIN stations s ON s.id = sh.station_id
-     LEFT JOIN ip_geo_cache g ON g.ip_hash = sh.ip_hash
-     ORDER BY sh.created_at DESC
-     LIMIT 100"
-)->fetchAll(PDO::FETCH_ASSOC);
 
 // Toast de ayuda/sostener el proyecto — estadísticas + eventos recientes
 try {
@@ -431,46 +405,6 @@ try {
         "SELECT tipo, COUNT(*) AS n FROM ayuda_toast_eventos GROUP BY tipo"
     )->fetchAll(PDO::FETCH_KEY_PAIR);
 } catch (Exception $e) { $ayuda_stats = []; }
-
-try {
-    $ayuda_eventos = $db->query(
-        "SELECT tipo, ip_hash, provincia, created_at FROM ayuda_toast_eventos
-         ORDER BY created_at DESC LIMIT 200"
-    )->fetchAll(PDO::FETCH_ASSOC);
-} catch (Exception $e) { $ayuda_eventos = []; }
-
-// Detalle de encuestas con ip_hash (últimas 100)
-$surveys_detalle = $db->query(
-    "SELECT sv.rating, sv.location, sv.ip_hash, sv.created_at,
-            s.nombre, s.slug, g.provincia AS provincia_geo
-     FROM surveys sv
-     LEFT JOIN stations s ON s.id = sv.station_id
-     LEFT JOIN ip_geo_cache g ON g.ip_hash = sv.ip_hash
-     ORDER BY sv.created_at DESC
-     LIMIT 100"
-)->fetchAll(PDO::FETCH_ASSOC);
-
-// Plays recientes (últimas 200)
-$plays_recientes = $db->query(
-    "SELECT p.played_at, p.ended_at, p.ip_hash, p.provincia, p.source, p.session_id,
-            s.nombre, s.slug,
-            CASE
-              WHEN p.ended_at IS NOT NULL
-                THEN " . sql_seconds_diff('p.played_at', 'p.ended_at') . "
-              WHEN l.sid IS NOT NULL
-                THEN " . sql_seconds_diff('p.played_at', db_engine()==='mysql'?'NOW()':"'now'") . "
-              ELSE NULL
-            END AS duration_secs,
-            CASE WHEN l.sid IS NOT NULL AND p.ended_at IS NULL THEN 1 ELSE 0 END AS is_active,
-            (SELECT COUNT(DISTINCT " . sql_date_local('p2.played_at', 0) . ") FROM plays p2 WHERE p2.ip_hash = p.ip_hash) AS dias_activos,
-            (SELECT COUNT(DISTINCT p3.station_id) FROM plays p3 WHERE p3.ip_hash = p.ip_hash
-              AND p3.played_at BETWEEN " . sql_offset('p.played_at', -30, 'MINUTE') . " AND " . sql_offset('p.played_at', 30, 'MINUTE') . ") AS hops_1h
-     FROM plays p
-     LEFT JOIN stations s ON s.id = p.station_id
-     LEFT JOIN listeners l ON l.sid = p.session_id
-     ORDER BY p.played_at DESC
-     LIMIT 200"
-)->fetchAll(PDO::FETCH_ASSOC);
 
 // ICY cache — resumen
 $icy = $db->query(
@@ -491,7 +425,7 @@ $sub_stats = [
 
 $subscribers_list = $db->query(
     "SELECT id, contact_type, contact_value, preferences, active, token, created_at, last_notified
-     FROM subscribers ORDER BY created_at DESC LIMIT 100"
+     FROM subscribers ORDER BY created_at DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 $notif_recientes = $db->query(
@@ -500,14 +434,7 @@ $notif_recientes = $db->query(
      JOIN subscribers sub ON sub.id = sm.subscriber_id
      LEFT JOIN stations s ON s.id = sm.station_id
      WHERE sm.notified = 1
-     ORDER BY sm.first_seen DESC LIMIT 30"
-)->fetchAll(PDO::FETCH_ASSOC);
-
-$program_patterns = $db->query(
-    "SELECT pp.keyword, pp.day_of_week, pp.hour, pp.confidence, pp.occurrences, pp.last_seen, s.nombre
-     FROM program_patterns pp
-     JOIN stations s ON s.id = pp.station_id
-     ORDER BY pp.confidence DESC LIMIT 40"
+     ORDER BY sm.first_seen DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // Top artistas desde icy_history (para preview de chips de suscripción)
@@ -546,8 +473,7 @@ $icy_activas = $db->query(
      FROM icy_cache ic
      JOIN stations s ON s.id = ic.station_id
      WHERE ic.supported=1 AND ic.stream_title IS NOT NULL AND ic.stream_title!=''
-     ORDER BY ic.last_checked DESC
-     LIMIT 60"
+     ORDER BY ic.last_checked DESC"
 )->fetchAll(PDO::FETCH_ASSOC);
 
 // ── HTML ──────────────────────────────────────────────────────────────────────
@@ -728,6 +654,11 @@ tr:hover td{background:var(--card2)}
 .dt-toolbar select{background:var(--card2);border:1px solid var(--border);color:var(--text);
   border-radius:6px;padding:6px 8px;font-size:12px}
 .dt-count{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.dt-chip{font-size:12px;background:var(--card2);border:1px solid var(--accent);color:var(--text);border-radius:999px;padding:3px 10px;cursor:pointer}
+.dt-csv{font-size:12px;color:var(--accent);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:4px 8px}
+.dt-csv:hover{border-color:var(--accent)}
+tr.dt-mas td{text-align:center;color:var(--accent);cursor:pointer;font-size:12px;padding:10px}
+table.dt-cargando tbody{opacity:.55;transition:opacity .2s}
 .dt-pager{display:flex;gap:10px;align-items:center;margin:6px 0 18px;font-size:12px;color:var(--muted)}
 .dt-pager button{background:var(--card2);border:1px solid var(--border);color:var(--text);
   border-radius:6px;padding:4px 12px;font-size:12px;cursor:pointer}
@@ -1000,57 +931,24 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <p class="empty">Sin encuestas de emisoras todavía.</p>
   <?php endif; ?>
 
-  <h2 id="encuestas-detalle" style="margin-top:28px">Encuestas — detalle (últimas 100)</h2>
+  <h2 id="encuestas-detalle" style="margin-top:28px">Encuestas — detalle</h2>
   <p class="note" style="margin-bottom:10px">IP hasheada: identificador anónimo consistente (misma IP = mismo hash).</p>
-  <?php if ($surveys_detalle): ?>
-  <table id="dt-encuestas-detalle" class="dt">
+  <table id="dt-encuestas-detalle" class="dt" data-lista="encuestas">
     <thead><tr>
-      <th>Fecha</th><th data-group="Rating">Rating</th><th data-group="Emisora">Emisora</th><th>Ubicación</th><th title="Provincia geolocalizada por IP, para comparar contra la ubicación autoreportada" data-group="Provincia (geo)">Provincia (geo)</th><th data-nosort="1">IP hash</th>
+      <th data-col="fecha">Fecha</th><th data-col="rating" data-gk="rating" data-group="Rating">Rating</th><th data-col="emisora" data-gk="emisora" data-group="Emisora">Emisora</th><th data-col="ubicacion" data-gk="ubicacion" data-group="Ubicación">Ubicación</th><th data-col="provincia" data-gk="provincia" title="Provincia geolocalizada por IP, para comparar contra la ubicación autoreportada" data-group="Provincia (geo)">Provincia (geo)</th><th>IP hash</th>
     </tr></thead>
-    <tbody>
-    <?php foreach ($surveys_detalle as $sv):
-      $rlbl = $sv['rating'] ==  1 ? '<span class="pos">👍</span>'
-            : ($sv['rating'] == -1 ? '<span class="neg">👎</span>'
-                                   : '<span class="neu">😐</span>');
-    ?>
-    <tr>
-      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sv['created_at'],0,19))) ?></td>
-      <td><?= $rlbl ?></td>
-      <td><?php if ($sv['slug']): ?><a href="/radio/<?= h($sv['slug']) ?>/" target="_blank"><?= h($sv['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">bienvenida</span><?php endif; ?></td>
-      <td style="color:var(--muted)"><?= $sv['location'] ? h(ucfirst($sv['location'])) : '—' ?></td>
-      <td style="font-size:12px;color:var(--muted)"><?= $sv['provincia_geo'] ? '📍 ' . h($sv['provincia_geo']) : '—' ?></td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sv['ip_hash'] ?? '', 0, 16)) ?>…</td>
-    </tr>
-    <?php endforeach; ?>
-    </tbody>
+    <tbody><tr class="dt-empty-row"><td colspan="6" class="empty">Cargando…</td></tr></tbody>
   </table>
-  <?php else: ?>
-  <p class="empty">Sin encuestas todavía.</p>
-  <?php endif; ?>
 </div>
 
 <!-- ══ Tab: Compartidos ══════════════════════════════════════════════════════ -->
 <div class="tab-content" id="tab-compartidos">
-  <h2 id="shares">Compartidos recientes (últimas 100)</h2>
-  <?php $ch_labels = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram', 'm3u' => '📻 M3U']; ?>
-  <table id="dt-compartidos" class="dt">
+  <h2 id="shares">Compartidos</h2>
+  <table id="dt-compartidos" class="dt" data-lista="shares">
     <thead><tr>
-      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Canal">Canal</th><th data-group="Provincia">Provincia</th><th data-group="Cliente">Cliente</th><th data-nosort="1">IP hash</th>
+      <th data-col="fecha">Fecha / Hora</th><th data-col="emisora" data-gk="emisora" data-group="Emisora">Emisora</th><th data-col="canal" data-gk="canal" data-group="Canal">Canal</th><th data-col="provincia" data-gk="provincia" data-group="Provincia">Provincia</th><th data-col="cliente">Cliente</th><th>IP hash</th>
     </tr></thead>
-    <tbody id="shares-body">
-    <?php if ($shares_recientes): foreach ($shares_recientes as $sh): ?>
-    <tr>
-      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($sh['created_at'],0,19))) ?></td>
-      <td><?php if ($sh['slug']): ?><a href="/radio/<?= h($sh['slug']) ?>/" target="_blank"><?= h($sh['nombre'] ?? $sh['slug']) ?></a><?php else: ?>—<?php endif; ?></td>
-      <td><?= $ch_labels[$sh['channel']] ?? h($sh['channel']) ?></td>
-      <td style="font-size:12px;color:var(--muted)"><?= $sh['provincia'] ? '📍 ' . h($sh['provincia']) : '—' ?></td>
-      <td style="font-size:12px;white-space:nowrap"<?= $sh['ua'] ? ' title="' . h($sh['ua']) . '"' : '' ?>><?= $sh['ua'] ? h(ua_corto($sh['ua'])) : '<span style="color:var(--muted)">—</span>' ?></td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($sh['ip_hash'] ?? '', 0, 16)) ?>…</td>
-    </tr>
-    <?php endforeach; else: ?>
-    <tr><td colspan="6" class="empty">Sin compartidos registrados todavía.</td></tr>
-    <?php endif; ?>
-    </tbody>
+    <tbody><tr class="dt-empty-row"><td colspan="6" class="empty">Cargando…</td></tr></tbody>
   </table>
 </div>
 
@@ -1074,28 +972,16 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     <div class="card"><div class="v neg">🚫 <?= $ay_nomolestar ?></div><div class="l">No molestar más</div></div>
     <div class="card"><div class="v"><?= $ay_tasa ?>%</div><div class="l">Tasa de respuesta</div></div>
   </div>
-  <h3 style="font-size:14px;margin:20px 0 8px">Eventos recientes (últimos 200)</h3>
-  <?php $ay_labels = ['mostrado' => '👁 Mostrado', 'ok' => '👍 OK', 'no_molestar' => '🚫 No molestar', 'cafecito' => '☕ Cafecito', 'contacto' => '💬 Contacto']; ?>
-  <table id="dt-ayuda" class="dt">
-    <thead><tr><th>Fecha / Hora</th><th data-group="Tipo">Tipo</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th></tr></thead>
-    <tbody>
-    <?php if ($ayuda_eventos): foreach ($ayuda_eventos as $ev): ?>
-    <tr>
-      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($ev['created_at'],0,19))) ?></td>
-      <td><?= $ay_labels[$ev['tipo']] ?? h($ev['tipo']) ?></td>
-      <td style="font-size:12px;color:var(--muted)"><?= $ev['provincia'] ? '📍 ' . h($ev['provincia']) : '—' ?></td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($ev['ip_hash'] ?? '', 0, 16)) ?>…</td>
-    </tr>
-    <?php endforeach; else: ?>
-    <tr><td colspan="4" class="empty">Sin eventos registrados todavía.</td></tr>
-    <?php endif; ?>
-    </tbody>
+  <h3 style="font-size:14px;margin:20px 0 8px">Eventos</h3>
+  <table id="dt-ayuda" class="dt" data-lista="ayuda">
+    <thead><tr><th data-col="fecha">Fecha / Hora</th><th data-col="tipo" data-gk="tipo" data-group="Tipo">Tipo</th><th data-col="provincia" data-gk="provincia" data-group="Provincia">Provincia</th><th>IP hash</th></tr></thead>
+    <tbody><tr class="dt-empty-row"><td colspan="4" class="empty">Cargando…</td></tr></tbody>
   </table>
 </div>
 
 <!-- ══ Tab: Reproducciones ═══════════════════════════════════════════════════ -->
 <div class="tab-content" id="tab-reproducciones">
-  <h2 id="plays">Reproducciones recientes (últimas 200)</h2>
+  <h2 id="plays">Reproducciones</h2>
   <?php
   function fmt_duration(?int $secs): string {
       if ($secs === null) return '—';
@@ -1104,40 +990,11 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
       return floor($secs/3600) . 'h ' . floor(($secs%3600)/60) . 'm';
   }
   ?>
-  <table id="dt-reproducciones" class="dt">
+  <table id="dt-reproducciones" class="dt" data-lista="plays">
     <thead><tr>
-      <th>Fecha / Hora</th><th data-group="Emisora">Emisora</th><th data-group="Reproduciendo">Estado</th><th>Duración</th><th data-group="Origen">Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)" data-nosort="1">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real" data-group="Tipo de oyente">🤖</th><th data-group="Provincia">Provincia</th><th data-nosort="1">IP hash</th><th data-nosort="1">Sesión</th>
+      <th data-col="fecha">Fecha / Hora</th><th data-col="emisora" data-gk="emisora" data-group="Emisora">Emisora</th><th data-col="estado" data-gk="estado" data-group="Estado">Estado</th><th data-col="duracion">Duración</th><th data-col="origen" data-gk="origen" data-group="Origen">Origen</th><th title="🆕 Ocasional (1 día) · 🔁 Recurrente (2-3) · ⭐ Frecuente (4-7) · 💎 Núcleo fiel (8+)">Visitante</th><th title="Mismo IP saltando de emisora en poco tiempo — no bloquea, solo marca para no confundir con audiencia real">🤖</th><th data-col="provincia" data-gk="provincia" data-group="Provincia">Provincia</th><th>IP hash</th><th>Sesión</th>
     </tr></thead>
-    <tbody id="plays-body">
-    <?php if ($plays_recientes): foreach ($plays_recientes as $pl): ?>
-    <tr>
-      <td style="white-space:nowrap;font-size:12px;color:var(--muted)"><?= h(str_replace('T',' ',substr($pl['played_at'],0,19))) ?></td>
-      <td><?php if ($pl['slug']): ?><a href="/radio/<?= h($pl['slug']) ?>/" target="_blank"><?= h($pl['nombre'] ?? '—') ?></a><?php else: ?><span style="color:var(--muted)">—</span><?php endif; ?></td>
-      <td style="font-size:12px;white-space:nowrap">
-        <?php if ($pl['is_active']): ?>
-          <span style="color:#22c55e">▶ Reproduciendo</span>
-        <?php else: ?>
-          <span style="color:var(--muted)">Terminada</span>
-        <?php endif; ?>
-      </td>
-      <td style="font-size:12px;white-space:nowrap">
-        <?php if ($pl['is_active']): ?>
-          <span style="color:#22c55e"><?= fmt_duration((int)$pl['duration_secs']) ?></span>
-        <?php else: ?>
-          <?= fmt_duration(isset($pl['duration_secs']) ? (int)$pl['duration_secs'] : null) ?>
-        <?php endif; ?>
-      </td>
-      <td style="font-size:12px;color:var(--muted)"><?= h($pl['source'] ?? '—') ?></td>
-      <td style="font-size:14px;text-align:center"><?= visitor_badge($pl['dias_activos'] ?? null) ?></td>
-      <td style="font-size:12px;text-align:center"><?= bot_badge($pl['hops_1h'] ?? 0) ?></td>
-      <td style="font-size:12px;color:var(--muted)"><?= $pl['provincia'] ? '📍 ' . h($pl['provincia']) : '—' ?></td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['ip_hash'] ?? '', 0, 16)) ?>…</td>
-      <td style="font-size:11px;color:var(--muted);font-family:monospace"><?= h(substr($pl['session_id'] ?? '', 0, 12)) ?>…</td>
-    </tr>
-    <?php endforeach; else: ?>
-    <tr><td colspan="10" class="empty" id="plays-empty">Sin reproducciones registradas todavía.</td></tr>
-    <?php endif; ?>
-    </tbody>
+    <tbody><tr class="dt-empty-row"><td colspan="10" class="empty">Cargando…</td></tr></tbody>
   </table>
 </div>
 
@@ -1332,7 +1189,7 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   </p>
   <?php endif; ?>
 
-  <h2 id="notificaciones" style="margin-top:28px">Notificaciones enviadas (últimas 30)</h2>
+  <h2 id="notificaciones" style="margin-top:28px">Notificaciones enviadas</h2>
   <?php if ($notif_recientes): ?>
   <table id="dt-notificaciones" class="dt">
     <thead><tr>
@@ -1355,30 +1212,13 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <?php endif; ?>
 
   <h2 id="patrones" style="margin-top:28px">Patrones de programas detectados</h2>
-  <?php if ($program_patterns): ?>
-  <table id="dt-patrones" class="dt">
+  <p class="note" style="margin-bottom:10px">Se aprenden automáticamente con el cron semanal (<code>learn_patterns.php</code>) una vez que hay suficiente historial ICY.</p>
+  <table id="dt-patrones" class="dt" data-lista="patrones">
     <thead><tr>
-      <th>Programa / Keyword</th><th data-group="Emisora">Emisora</th><th data-group="Día">Día</th><th>Hora (ARG)</th><th>Confianza</th><th>Ocurrencias</th><th>Último visto</th>
+      <th data-col="keyword">Programa / Keyword</th><th data-col="emisora" data-gk="emisora" data-group="Emisora">Emisora</th><th data-col="dia" data-gk="dia" data-group="Día">Día</th><th data-col="hora">Hora (ARG)</th><th data-col="confianza">Confianza</th><th data-col="ocurrencias">Ocurrencias</th><th data-col="visto">Último visto</th>
     </tr></thead>
-    <tbody>
-    <?php foreach ($program_patterns as $pp):
-      $conf_color = $pp['confidence'] >= 0.7 ? 'var(--green)' : ($pp['confidence'] >= 0.4 ? 'var(--yellow)' : 'var(--muted)');
-    ?>
-    <tr>
-      <td><strong><?= h($pp['keyword']) ?></strong></td>
-      <td style="font-size:12px"><?= h($pp['nombre']) ?></td>
-      <td style="font-size:12px"><?= $pp['day_of_week'] !== null ? $days_es[(int)$pp['day_of_week']] : 'Todos' ?></td>
-      <td><?= $pp['hour'] !== null ? sprintf('%02d:00', (int)$pp['hour']) : '—' ?></td>
-      <td style="color:<?= $conf_color ?>;font-weight:600"><?= round($pp['confidence'] * 100) ?>%</td>
-      <td style="color:var(--muted)"><?= (int)$pp['occurrences'] ?>x</td>
-      <td style="font-size:12px;color:var(--muted)"><?= h($pp['last_seen'] ?? '—') ?></td>
-    </tr>
-    <?php endforeach; ?>
-    </tbody>
+    <tbody><tr class="dt-empty-row"><td colspan="7" class="empty">Cargando…</td></tr></tbody>
   </table>
-  <?php else: ?>
-  <p class="empty">Sin patrones todavía. Se aprenden automáticamente con el cron semanal (<code>learn_patterns.php</code>) una vez que haya suficiente historial ICY.</p>
-  <?php endif; ?>
 </div>
 
 <!-- ══ Tab: ICY ═══════════════════════════════════════════════════════════════ -->
@@ -1429,35 +1269,14 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 
 <!-- ══ Tab: Crawlers ══════════════════════════════════════════════════════════ -->
 <div class="tab-content" id="tab-crawlers">
-  <h2 id="crawlers">Crawlers — últimas ejecuciones</h2>
-  <?php if ($crawler_runs): ?>
-  <table id="dt-crawlers" class="dt">
+  <h2 id="crawlers">Crawlers — ejecuciones</h2>
+  <table id="dt-crawlers" class="dt" data-lista="crawlers">
     <thead><tr>
-      <th data-group="Crawler">Crawler</th><th>Inicio</th><th>Duración</th>
-      <th>Chequeadas</th><th>Cambios</th><th>Errores</th><th>Notas</th>
+      <th data-col="crawler" data-gk="crawler" data-group="Crawler">Crawler</th><th data-col="inicio">Inicio</th><th data-col="duracion">Duración</th>
+      <th data-col="chequeadas">Chequeadas</th><th data-col="cambios">Cambios</th><th data-col="errores">Errores</th><th>Notas</th>
     </tr></thead>
-    <tbody>
-    <?php foreach ($crawler_runs as $cr): ?>
-    <tr>
-      <td><strong><?= h($cr['crawler']) ?></strong></td>
-      <td style="color:var(--muted);font-size:12px;white-space:nowrap"><?= ago($cr['started_at']) ?></td>
-      <td style="white-space:nowrap">
-        <?php if ($cr['secs'] !== null):
-          $s = (int)$cr['secs'];
-          echo $s >= 60 ? floor($s/60).'min '.($s%60).'s' : $s.'s';
-        else: echo '—'; endif; ?>
-      </td>
-      <td><?= $cr['stations_checked'] ?: '—' ?></td>
-      <td class="<?= $cr['changes_detected'] > 0 ? 'pos' : '' ?>"><?= $cr['changes_detected'] ?: '—' ?></td>
-      <td style="color:var(--muted)"><?= $cr['errors'] ?: '—' ?></td>
-      <td style="font-size:12px;color:var(--muted)"><?= h($cr['notes'] ?? '') ?></td>
-    </tr>
-    <?php endforeach; ?>
-    </tbody>
+    <tbody><tr class="dt-empty-row"><td colspan="7" class="empty">Cargando…</td></tr></tbody>
   </table>
-  <?php else: ?>
-  <p class="empty">Sin ejecuciones registradas todavía.</p>
-  <?php endif; ?>
   <p class="note" style="margin-top:8px">
     "Sin título" = emisoras que en ese momento no devolvieron StreamTitle (offline, silencio, ICY vacío). No son errores del cron.
   </p>
@@ -1506,16 +1325,20 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
 <script>
 // ── DT: filtro + orden por cabecera + paginado + agrupado, genérico para
 // cualquier <table class="dt"> del panel. Opera sobre las filas ya
-// renderizadas server-side (no pega a la API de nuevo) — las tablas de acá
-// son chicas (30-200 filas), así que hacerlo client-side alcanza y sobra.
+// renderizadas server-side (no pega a la API de nuevo). Se usa solo para las
+// tablas acotadas por naturaleza (emisoras, suscriptores, ICY activas…); las
+// que crecen sin límite (logs) usan el modo remoto de abajo.
 //
 // Marcar un <th> con data-group="Etiqueta" lo agrega como opción de
 // "Agrupar por". Marcar un <th> con data-nosort="1" (columnas de Acción,
 // IP hash, etc.) evita que se pueda ordenar por esa columna.
 //
-// DT.refresh(table) se usa desde refreshAdmin() para las 2 tablas que se
-// actualizan por AJAX cada 10s (Reproducciones, Compartidos) — recaptura
-// las filas nuevas que puso el fetch y vuelve a aplicar filtro/orden/página.
+// Tablas con data-lista="…" (TKT-0827): las filas NO vienen en el HTML, se piden
+// por página al servidor (admin.php?lista=…), así no hay tope de filas: búsqueda,
+// orden, agrupado y CSV trabajan sobre TODOS los datos. <th data-col="x"> = se
+// ordena por esa columna; <th data-gk="x" data-group="Etiqueta"> = "Agrupar por"
+// (resumen con la cantidad de cada valor; clic en un valor = filtrar por él).
+// DT.reload(table) vuelve a pedir la página 1 (lo usa el auto-refresh cada 10 s).
 window.DT = (function () {
   function textOf(el) { return (el.textContent || '').trim(); }
 
@@ -1537,8 +1360,232 @@ window.DT = (function () {
     });
   }
 
+  function el(tag, cls, txt) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (txt !== undefined) e.textContent = txt;
+    return e;
+  }
+  function fmtN(n) { return Number(n).toLocaleString('es-AR'); }
+
+  // ── Modo remoto (sin tope de filas) ────────────────────────────────────────
+  function remote(table) {
+    var lista = table.dataset.lista;
+    var tbody = table.querySelector('tbody');
+    var ths = Array.prototype.slice.call(table.querySelectorAll('thead th'));
+    var ncols = ths.length;
+    var KEY = 'radio_admin_dt_' + lista;
+    var guard = {};
+    try { guard = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { guard = {}; }
+    var st = { p: 1, n: guard.n !== undefined ? guard.n : 25, q: '', orden: '', dir: '', gk: '', gv: null, agrupar: '' };
+    var pedido = 0;
+
+    var toolbar = el('div', 'dt-toolbar');
+    var filterInput = el('input'); filterInput.type = 'search'; filterInput.placeholder = '🔎 Buscar en todo…';
+    toolbar.appendChild(filterInput);
+
+    var groupSelect = null;
+    var conGrupo = ths.filter(function (th) { return th.dataset.gk; });
+    if (conGrupo.length) {
+      groupSelect = el('select');
+      groupSelect.appendChild(new Option('Sin agrupar', ''));
+      conGrupo.forEach(function (th) { groupSelect.appendChild(new Option('Agrupar: ' + (th.dataset.group || textOf(th)), th.dataset.gk)); });
+      toolbar.appendChild(groupSelect);
+    }
+
+    var sizeSelect = el('select');
+    [25, 50, 100, 250, 500, 1000].forEach(function (n) { sizeSelect.appendChild(new Option(n + '/pág', String(n))); });
+    sizeSelect.appendChild(new Option('Todas', '0'));
+    sizeSelect.value = String(st.n);
+    toolbar.appendChild(sizeSelect);
+
+    var chip = el('span', 'dt-chip'); chip.hidden = true;
+    toolbar.appendChild(chip);
+
+    var csv = el('a', 'dt-csv', '⬇ CSV');
+    csv.title = 'Descargar la lista completa (con el filtro actual) como CSV';
+    toolbar.appendChild(csv);
+
+    var countEl = el('span', 'dt-count');
+    toolbar.appendChild(countEl);
+    table.parentNode.insertBefore(toolbar, table);
+
+    var pager = el('div', 'dt-pager');
+    var bFirst = el('button', '', '« Primera'), bPrev = el('button', '', '‹ Anterior');
+    var pageLabel = el('span');
+    var bNext = el('button', '', 'Siguiente ›'), bLast = el('button', '', 'Última »');
+    [bFirst, bPrev, pageLabel, bNext, bLast].forEach(function (b) { if (b.tagName === 'BUTTON') b.type = 'button'; pager.appendChild(b); });
+    table.parentNode.insertBefore(pager, table.nextSibling);
+    var paginas = 1;
+
+    ths.forEach(function (th) {
+      if (!th.dataset.col) return;
+      th.classList.add('dt-th');
+      th.addEventListener('click', function () {
+        if (st.orden === th.dataset.col) st.dir = st.dir === 'asc' ? 'desc' : 'asc';
+        else { st.orden = th.dataset.col; st.dir = 'asc'; }
+        st.p = 1; load();
+      });
+    });
+
+    function params(extra) {
+      var u = new URLSearchParams({ lista: lista, p: st.p, n: st.n });
+      if (st.q) u.set('q', st.q);
+      if (st.orden) { u.set('orden', st.orden); u.set('dir', st.dir); }
+      if (st.gk && st.gv !== null) { u.set('gk', st.gk); u.set('gv', st.gv); }
+      Object.keys(extra || {}).forEach(function (k) { u.set(k, extra[k]); });
+      return location.pathname + '?' + u.toString();
+    }
+    function filaMsg(txt) { return '<tr class="dt-empty-row"><td colspan="' + ncols + '" class="empty">' + txt + '</td></tr>'; }
+    function ponerChip() {
+      chip.hidden = !(st.gk && st.gv !== null);
+      if (chip.hidden) return;
+      var th = ths.filter(function (t) { return t.dataset.gk === st.gk; })[0];
+      chip.textContent = (th ? (th.dataset.group || textOf(th)) : st.gk) + ': ' + (st.gv === '' ? '—' : st.gv) + '  ✕';
+      chip.title = 'Quitar este filtro';
+    }
+    chip.addEventListener('click', function () { st.gk = ''; st.gv = null; st.p = 1; load(); });
+
+    function load() {
+      var n = ++pedido;
+      ponerChip();
+      csv.href = params({ csv: 1, p: 1, n: 0 });
+      ths.forEach(function (th) {
+        th.classList.remove('dt-sort-asc', 'dt-sort-desc');
+        if (st.orden && th.dataset.col === st.orden) th.classList.add(st.dir === 'asc' ? 'dt-sort-asc' : 'dt-sort-desc');
+      });
+      table.classList.add('dt-cargando');
+      if (st.n === 0 && !st.agrupar) return cargarTodas(n);
+      return fetch(st.agrupar ? params({ agrupar: st.agrupar }) : params(), { credentials: 'same-origin' })
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+        .then(function (d) {
+          if (n !== pedido) return;                              // llegó tarde: hay un pedido más nuevo
+          table.classList.remove('dt-cargando');
+          if (d.error) throw new Error(d.error);
+          if (st.agrupar) {
+            pager.style.display = 'none';
+            var tot = d.grupos.reduce(function (a, g) { return a + Number(g.n); }, 0);
+            countEl.textContent = d.grupos.length + ' grupos · ' + fmtN(tot) + ' filas';
+            tbody.innerHTML = d.grupos.length ? '' : filaMsg('Sin resultados.');
+            d.grupos.forEach(function (g) {
+              var tr = el('tr', 'dt-group-row');
+              var td = el('td', '', '▸ ' + (g.v === '' ? '—' : g.v) + ' (' + fmtN(g.n) + ')');
+              td.colSpan = ncols; td.title = 'Ver solo estas filas';
+              tr.appendChild(td);
+              tr.addEventListener('click', function () {
+                st.gk = st.agrupar; st.gv = g.v; st.agrupar = ''; st.p = 1;
+                if (groupSelect) groupSelect.value = '';
+                load();
+              });
+              tbody.appendChild(tr);
+            });
+            return;
+          }
+          pager.style.display = '';
+          paginas = d.paginas;
+          st.p = d.pagina;
+          tbody.innerHTML = d.html || filaMsg(st.q || st.gv !== null ? 'Sin resultados para este filtro.' : 'Sin datos registrados todavía.');
+          countEl.textContent = d.filtrado
+            ? 'Mostrando ' + fmtN(d.desde) + '–' + fmtN(d.hasta) + ' de ' + fmtN(d.filtrado) + (d.filtrado !== d.total ? ' (filtradas de ' + fmtN(d.total) + ')' : '')
+            : '0 de ' + fmtN(d.total);
+          pageLabel.textContent = 'Página ' + fmtN(st.p) + ' de ' + fmtN(paginas);
+          bFirst.disabled = bPrev.disabled = st.p <= 1;
+          bNext.disabled = bLast.disabled = st.p >= paginas;
+        })
+        .catch(function (e) {
+          if (n !== pedido) return;
+          table.classList.remove('dt-cargando');
+          tbody.innerHTML = filaMsg('No se pudo cargar la lista (' + esc(e.message) + '). Reintentá en un momento.');
+        });
+    }
+    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+    // "Todas": se piden tandas de 2000 filas una tras otra (el servidor nunca arma todo junto) y se dibujan
+    // de a 500 al bajar: con decenas de miles de filas el navegador tarda mucho en acomodar la tabla entera
+    // (medido: ~20 s con 30 mil). Están todas bajadas; el contador dice el total.
+    function cargarTodas(n) {
+      var TANDA = 2000, html = [], p = 1;
+      pager.style.display = 'none';
+      function una() {
+        var u = new URL(params(), location.href);
+        u.searchParams.set('n', TANDA); u.searchParams.set('p', p);
+        return fetch(u.toString(), { credentials: 'same-origin' })
+          .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('HTTP ' + r.status)); })
+          .then(function (d) {
+            if (n !== pedido) return;
+            if (d.error) throw new Error(d.error);
+            html.push(d.html);
+            countEl.textContent = 'Cargando ' + fmtN(d.hasta) + ' de ' + fmtN(d.filtrado) + '…';
+            if (d.pagina < d.paginas) { p++; return una(); }
+            table.classList.remove('dt-cargando');
+            countEl.textContent = 'Mostrando todas: ' + fmtN(d.filtrado) + (d.filtrado !== d.total ? ' (filtradas de ' + fmtN(d.total) + ')' : '');
+            var filas = html.join('').split('</tr>').filter(function (f) { return f.trim(); }).map(function (f) { return f + '</tr>'; });
+            if (!filas.length) { tbody.innerHTML = filaMsg(st.q || st.gv !== null ? 'Sin resultados para este filtro.' : 'Sin datos registrados todavía.'); return; }
+            dibujarDeAPoco(filas, n);
+          });
+      }
+      return una().catch(function (e) {
+        if (n !== pedido) return;
+        table.classList.remove('dt-cargando');
+        tbody.innerHTML = filaMsg('No se pudo cargar la lista (' + esc(e.message) + '). Reintentá en un momento.');
+      });
+    }
+    function dibujarDeAPoco(filas, n) {
+      var TRAMO = 500, hechas = 0, obs = null;
+      tbody.innerHTML = '';
+      var centinela = el('tr', 'dt-mas');
+      var td = el('td'); td.colSpan = ncols; centinela.appendChild(td);
+      function tramo() {
+        if (n !== pedido || hechas >= filas.length) return;
+        if (centinela.parentNode) centinela.remove();
+        tbody.insertAdjacentHTML('beforeend', filas.slice(hechas, hechas + TRAMO).join(''));
+        hechas = Math.min(filas.length, hechas + TRAMO);
+        if (hechas < filas.length) {
+          td.textContent = 'Dibujadas ' + fmtN(hechas) + ' de ' + fmtN(filas.length) + ' — bajá para ver más (o tocá acá)';
+          tbody.appendChild(centinela);
+        } else if (obs) obs.disconnect();
+      }
+      centinela.addEventListener('click', tramo);
+      if ('IntersectionObserver' in window) {
+        obs = new IntersectionObserver(function (es) { if (es[0].isIntersecting) setTimeout(tramo, 0); }, { rootMargin: '600px' });
+      }
+      tramo();
+      if (obs && centinela.parentNode) obs.observe(centinela);
+    }
+
+    var tBuscar = null;
+    filterInput.addEventListener('input', function () {
+      clearTimeout(tBuscar);
+      tBuscar = setTimeout(function () { st.q = filterInput.value.trim(); st.p = 1; load(); }, 350);
+    });
+    if (groupSelect) groupSelect.addEventListener('change', function () { st.agrupar = groupSelect.value; st.p = 1; load(); });
+    sizeSelect.addEventListener('change', function () {
+      var n = parseInt(sizeSelect.value, 10);
+      var filas = parseInt((countEl.textContent.match(/de ([\d.]+)/) || [0, '0'])[1].replace(/\./g, ''), 10) || 0;
+      if (n === 0 && filas > 5000 && !confirm('Son ' + fmtN(filas) + ' filas: mostrarlas todas juntas puede tardar y poner lento el navegador. Para tenerlas todas, el CSV es más cómodo. ¿Mostrarlas igual?')) {
+        sizeSelect.value = String(st.n); return;
+      }
+      st.n = n; st.p = 1;
+      try { localStorage.setItem(KEY, JSON.stringify({ n: st.n })); } catch (e) { /* sin storage */ }
+      load();
+    });
+    bFirst.addEventListener('click', function () { st.p = 1; load(); });
+    bPrev.addEventListener('click', function () { if (st.p > 1) { st.p--; load(); } });
+    bNext.addEventListener('click', function () { if (st.p < paginas) { st.p++; load(); } });
+    bLast.addEventListener('click', function () { st.p = paginas; load(); });
+
+    table.dataset.dtReady = '1';
+    // Auto-refresh: solo en la primera página, sin agrupar, con 25-1000 por página y sin una carga en curso
+    // (no mueve a quien navega más atrás, y con "Todas" no vuelve a bajar miles de filas cada 10 s).
+    table._dtReload = function () {
+      if (st.p === 1 && !st.agrupar && st.n > 0 && !table.classList.contains('dt-cargando') && document.visibilityState === 'visible') load();
+    };
+    load();
+  }
+
   function enhance(table) {
     if (!table || table.dataset.dtReady) return;
+    if (table.dataset.lista) { remote(table); return; }
     var thead = table.querySelector('thead');
     var tbody = table.querySelector('tbody');
     if (!thead || !tbody) return;
@@ -1721,9 +1768,11 @@ window.DT = (function () {
     document.querySelectorAll('table.dt').forEach(enhance);
   }
 
+  function reload(table) { if (table && table._dtReload) table._dtReload(); }
+
   document.addEventListener('DOMContentLoaded', enhanceAll);
 
-  return { enhance: enhance, refresh: refresh, enhanceAll: enhanceAll };
+  return { enhance: enhance, refresh: refresh, reload: reload, enhanceAll: enhanceAll };
 }());
 </script>
 <script>
@@ -1778,24 +1827,6 @@ window.DT = (function () {
     return Math.floor(s/3600) + 'h ' + Math.floor((s%3600)/60) + 'm';
   }
 
-  function visitorBadge(dias) {
-    if (dias == null) return '';
-    dias = parseInt(dias, 10);
-    if (dias >= 8) return '<span title="Núcleo fiel (8+ días)">💎</span>';
-    if (dias >= 4) return '<span title="Frecuente (4-7 días)">⭐</span>';
-    if (dias >= 2) return '<span title="Recurrente (2-3 días)">🔁</span>';
-    return '<span title="Ocasional (1 día)" style="opacity:.5">🆕</span>';
-  }
-
-  function botBadge(hops) {
-    hops = parseInt(hops, 10) || 0;
-    if (hops >= 12) return '<span title="' + hops + ' emisoras distintas en 1h — muy probable bot/script" style="color:var(--danger,#c0392b)">🤖 Bot</span>';
-    if (hops >= 6)  return '<span title="' + hops + ' emisoras distintas en 1h — station-hopping, revisar">🤔 Probable bot</span>';
-    return '<span style="color:var(--muted)">Persona</span>';
-  }
-
-  var CH = {copy: '🔗 Link', wa: '💬 WhatsApp', qr: '⬛ QR', x: '𝕏 X', tg: '✈️ Telegram', m3u: '📻 M3U'};
-
   function upd(id, val) {
     var el = document.getElementById(id);
     if (el && val !== undefined) el.textContent = val;
@@ -1817,57 +1848,9 @@ window.DT = (function () {
         upd('stat-plays-total',s.plays_total);
         upd('stat-listeners',  s.listeners);
 
-        // Plays
-        var pb = document.getElementById('plays-body');
-        if (pb && d.plays) {
-          pb.innerHTML = d.plays.map(function (p) {
-            var estado = p.is_active
-              ? '<span style="color:#22c55e">▶ Reproduciendo</span>'
-              : '<span style="color:var(--muted)">Terminada</span>';
-            var dur = p.is_active
-              ? '<span style="color:#22c55e">' + esc(fmtDur(p.duration_secs)) + '</span>'
-              : esc(fmtDur(p.duration_secs != null ? p.duration_secs : null));
-            var nom = p.slug
-              ? '<a href="/radio/' + esc(p.slug) + '/" target="_blank">' + esc(p.nombre || '—') + '</a>'
-              : '<span style="color:var(--muted)">—</span>';
-            var dt = (p.played_at || '').replace('T', ' ').substring(0, 19);
-            return '<tr>'
-              + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
-              + '<td>' + nom + '</td>'
-              + '<td style="font-size:12px;white-space:nowrap">' + estado + '</td>'
-              + '<td style="font-size:12px;white-space:nowrap">' + dur + '</td>'
-              + '<td style="font-size:12px;color:var(--muted)">' + esc(p.source || '—') + '</td>'
-              + '<td style="font-size:14px;text-align:center">' + visitorBadge(p.dias_activos) + '</td>'
-              + '<td style="font-size:12px;text-align:center">' + botBadge(p.hops_1h) + '</td>'
-              + '<td style="font-size:12px;color:var(--muted)">' + (p.provincia ? '📍 ' + esc(p.provincia) : '—') + '</td>'
-              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.ip_hash || '').substring(0,16)) + '…</td>'
-              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((p.session_id || '').substring(0,12)) + '…</td>'
-              + '</tr>';
-          }).join('');
-          DT.refresh(document.getElementById('dt-reproducciones'));
-        }
-
-        // Shares
-        var sb = document.getElementById('shares-body');
-        if (sb && d.shares) {
-          sb.innerHTML = d.shares.map(function (sh) {
-            var nom = sh.slug
-              ? '<a href="/radio/' + esc(sh.slug) + '/" target="_blank">' + esc(sh.nombre || sh.slug) + '</a>'
-              : '—';
-            var dt = (sh.created_at || '').replace('T', ' ').substring(0, 19);
-            return '<tr>'
-              + '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' + esc(dt) + '</td>'
-              + '<td>' + nom + '</td>'
-              + '<td>' + esc(CH[sh.channel] || sh.channel) + '</td>'
-              + '<td style="font-size:12px;color:var(--muted)">' + (sh.provincia ? '📍 ' + esc(sh.provincia) : '—') + '</td>'
-              + (sh.ua
-                  ? '<td style="font-size:12px;white-space:nowrap" title="' + esc(sh.ua) + '">' + esc(sh.ua_corto) + '</td>'
-                  : '<td style="font-size:12px;white-space:nowrap"><span style="color:var(--muted)">—</span></td>')
-              + '<td style="font-size:11px;color:var(--muted);font-family:monospace">' + esc((sh.ip_hash || '').substring(0,16)) + '…</td>'
-              + '</tr>';
-          }).join('');
-          DT.refresh(document.getElementById('dt-compartidos'));
-        }
+        // Reproducciones y Compartidos: se vuelve a pedir la página 1 al servidor
+        DT.reload(document.getElementById('dt-reproducciones'));
+        DT.reload(document.getElementById('dt-compartidos'));
 
         // Indicador
         var ind = document.getElementById('refresh-ind');

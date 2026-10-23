@@ -3660,3 +3660,55 @@ archivos.
 Deploy: `web/.htaccess`, `web/index.php`, `web/pages/listing.php`,
 `web/pages/station.php`. Todo verificado en vivo con `curl` fresco antes
 de dar por terminado. Commit `5dc0a04`.
+
+## TKT-0827 — 2026-10-23 — Admin: listas sin tope de filas
+
+**Pedido de Carlos:** "en ningún panel quiero esa limitación: si hay mil datos, ver los mil; si hay
+50 mil, los 50 mil". Antes cada lista del admin traía las últimas 30/40/60/100/200 filas y el
+filtro/orden/paginado (`window.DT`) trabajaba en el navegador solo sobre esas.
+
+**Qué se hizo:**
+- `web/api/_admin_listas.php` (nuevo, protegido por el `FilesMatch "^_"` de `api/.htaccess`): registro
+  de listas (`plays`, `shares`, `ayuda`, `encuestas`, `crawlers`, `patrones`) con su consulta, columnas
+  ordenables, columnas de búsqueda, columnas agrupables, armado de la fila y columnas del CSV.
+  `admin.php?lista=X` (con sesión de admin) responde la página pedida, el resumen agrupado
+  (`agrupar=`, todos los valores con su cantidad) o el CSV completo (`csv=1`, por tandas de 2000, con BOM
+  para Excel).
+- `window.DT` tiene un **modo remoto** para `<table data-lista>`: búsqueda (sobre todos los datos),
+  orden por `th[data-col]`, agrupado por `th[data-gk]` (clic en un grupo = filtro por ese valor, con un
+  chip "Provincia: Salta ✕"), 25–1000 por página o **Todas**, primera/anterior/siguiente/última,
+  "Mostrando 1–25 de 17.031", botón ⬇ CSV. Las tablas acotadas por naturaleza (emisoras, suscriptores,
+  notificaciones, ICY activas, encuestas por emisora) siguen en modo cliente pero sin `LIMIT`.
+- **Días activos y saltos de emisora** (🆕/🔁/⭐/💎 y 🤖) se calculan en lote para las filas de la página
+  (`admin_listas_plays_post`): antes eran dos subconsultas POR FILA sobre toda la tabla `plays`, que con
+  "todas" no escalaba. Verificado contra la consulta vieja: mismos valores.
+- El auto-refresh de 10 s ya no baja 200 reproducciones + 100 compartidos con esas subconsultas en cada
+  vuelta: pide la página 1 de cada tabla (solo si se está mirando la página 1, sin agrupar, sin "Todas" y
+  sin una carga en curso). Se borró el JS que duplicaba el armado de esas filas.
+- `admin_stats.php`: la tabla de emisoras más escuchadas muestra **todas** (485 en producción), con las 10
+  primeras visibles y "Ver todas (N)"; el gráfico sigue siendo de las 10 primeras.
+- Sin cambios a propósito: la vista previa de chips de artistas (top 40/80, igual que el formulario
+  público de suscripción) y el rango de meses de las estadísticas (es el selector de período, no un tope).
+
+**Problemas encontrados en la prueba (MySQL 5.7.44 en Docker con 30 mil reproducciones ficticias):**
+1. CSV vacío: la columna `'ip_hash'` se tomaba como función (`is_callable('ip_hash')` es verdadero porque
+   existe `ip_hash()` en `_helpers.php`). Ahora solo se llaman los `Closure`.
+2. "Todas" en un solo pedido agotó los 128 MB de PHP con 30 mil filas. Ahora el servidor responde de a
+   2000 como máximo y el navegador encadena las tandas.
+3. Paginado con horas repetidas: dos filas con el mismo `played_at` podían repetirse o faltar entre
+   páginas. Se agregó desempate por `id` en todas las listas. Verificado: recorriendo todas las páginas en
+   4 órdenes distintos, 30.000 filas, 30.000 únicas.
+4. "Todas" tardaba 48 s: 8 s de descarga y ~20 s solo en que el navegador acomode una tabla de 30 mil
+   filas (ni `table-layout:fixed` ni `content-visibility` lo bajan de 13 s). Ahora se bajan todas y se
+   dibujan de a 500 al bajar con el scroll (IntersectionObserver): lista en ~9 s.
+5. El panel completo no cargaba en la base de prueba por `ONLY_FULL_GROUP_BY` en la consulta de artistas
+   (vieja, no tocada): producción no tiene ese modo, por eso funciona. Las consultas nuevas sí pasan con
+   ese modo estricto. Ojo si algún día se migra a un MySQL con el modo por defecto.
+
+**Producción (verificado con curl):** login 1,3 s; listas 0,45–0,55 s; última página de reproducciones
+(682 de 682) 1,3 s; resumen agrupado por emisora (473 grupos) 0,5 s; CSV completo de 17.031
+reproducciones en 5,1 s; `admin_stats.php` 0,7 s. Sin sesión, `?lista=` devuelve el login; el archivo
+`_admin_listas.php` da 403. Respaldo previo: `~/Backups/radio_admin_pre_TKT0827_20261023/`.
+
+**A futuro:** el CSV de reproducciones crece con la tabla (~0,3 ms por fila); con 100 mil filas serían
+~30 s, cerca del límite de ejecución del hosting. Si llega ahí: exportar por rango de fechas.

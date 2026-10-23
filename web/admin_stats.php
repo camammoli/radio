@@ -133,8 +133,8 @@ $top_emisoras = $db->query("
     JOIN stations s ON s.id = p.station_id
     GROUP BY p.station_id
     ORDER BY plays DESC
-    LIMIT 10
-")->fetchAll(PDO::FETCH_ASSOC);
+")->fetchAll(PDO::FETCH_ASSOC);   // todas las emisoras con reproducciones (TKT-0827); el gráfico usa las 10 primeras
+$top10 = array_slice($top_emisoras, 0, 10);
 
 // Día más activo
 $dia_top = $db->query("
@@ -164,9 +164,9 @@ if ($modo === 'dia') {
     $chart_oyentes = json_encode(array_column($mes_map, 'uniq'));
 }
 $chart_hora  = json_encode(array_values($hora_map));
-$top_nombres = json_encode(array_column($top_emisoras, 'nombre'));
-$top_plays   = json_encode(array_column($top_emisoras, 'plays'));
-$top_oyentes = json_encode(array_column($top_emisoras, 'oyentes'));
+$top_nombres = json_encode(array_column($top10, 'nombre'));
+$top_plays   = json_encode(array_column($top10, 'plays'));
+$top_oyentes = json_encode(array_column($top10, 'oyentes'));
 
 function fmt_dur(int $secs): string {
     if ($secs <= 0) return '—';
@@ -333,7 +333,7 @@ if(document.body.classList.contains('light'))themeBtn.textContent='🌙 Oscuro';
 </div>
 
 <!-- ── Top emisoras ───────────────────────────────────────────────────────── -->
-<h2>Top emisoras más escuchadas</h2>
+<h2>Emisoras más escuchadas (<?= count($top_emisoras) ?>)</h2>
 
 <?php if ($top_emisoras): ?>
 <?php
@@ -351,7 +351,7 @@ $max_plays_top = max(array_column($top_emisoras, 'plays') ?: [1]);
     </tr></thead>
     <tbody>
     <?php foreach ($top_emisoras as $i => $em): ?>
-    <tr>
+    <tr<?= $i >= 10 ? ' class="fila-extra" hidden' : '' ?>>
       <td style="color:var(--muted);width:30px"><?= $i+1 ?></td>
       <td><a href="/radio/<?= h($em['slug']) ?>/" target="_blank"><?= h($em['nombre']) ?></a></td>
       <td><?= number_format((int)$em['plays']) ?></td>
@@ -366,6 +366,10 @@ $max_plays_top = max(array_column($top_emisoras, 'plays') ?: [1]);
     <?php endforeach; ?>
     </tbody>
   </table>
+  <?php if (count($top_emisoras) > 10): ?>
+  <p style="padding:10px 14px"><button type="button" id="ver-todas" style="background:var(--card2);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:5px 12px;cursor:pointer"
+     onclick="var ver=this.dataset.abierto!=='1';document.querySelectorAll('tr.fila-extra').forEach(function(t){t.hidden=!ver});this.dataset.abierto=ver?'1':'0';this.textContent=ver?'Ver solo las 10 primeras':'Ver todas (<?= count($top_emisoras) ?>)'">Ver todas (<?= count($top_emisoras) ?>)</button></p>
+  <?php endif; ?>
 </div>
 
 <!-- Chart horizontal top 10 -->
