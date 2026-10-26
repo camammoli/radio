@@ -29,7 +29,11 @@ function admin_listas(): array {
     $durVivo = sql_seconds_diff('p.played_at', $now);
     $durCrawler = sql_seconds_diff('started_at', 'finished_at');
     $ch = ['copy' => '🔗 Link', 'wa' => '💬 WhatsApp', 'qr' => '⬛ QR', 'x' => '𝕏 X', 'tg' => '✈️ Telegram', 'm3u' => '📻 M3U'];
-    $ay = ['mostrado' => '👁 Mostrado', 'ok' => '👍 OK', 'no_molestar' => '🚫 No molestar', 'cafecito' => '☕ Cafecito', 'contacto' => '💬 Contacto'];
+    $ay = ['mostrado' => '👁 Mostrado', 'ok' => '👍 OK', 'no_molestar' => '🚫 No molestar', 'cafecito' => '☕ Cafecito (botón viejo)',
+           'contacto' => '📬 Abrió Contacto', 'colaborar_click' => '💳 Abrió Colaborar', 'colaborar_mp' => '💳 Fue a pagar (MP)',
+           'm3u_mostrado' => '📻 M3U: vio el pedido', 'm3u_link' => '📻 M3U: bajó sin colaborar', 'm3u_mp' => '📻 M3U: fue a pagar (MP)'];
+    $estDon = ['aprobado' => '<span class="badge-ok">✅ Aprobado</span>', 'rechazado' => '<span class="badge-err">❌ Rechazado</span>',
+               'pendiente' => '<span class="badge-warn">⏳ Pendiente</span>'];
     $dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
     $fecha = fn($v, $n = 19) => h(str_replace('T', ' ', substr((string)$v, 0, $n)));
     $emisora = fn($r) => !empty($r['slug'])
@@ -115,6 +119,50 @@ function admin_listas(): array {
                     . '</tr>';
             },
             'csv' => ['Fecha (UTC)' => 'created_at', 'Tipo' => 'tipo', 'Provincia' => 'provincia', 'IP hash' => 'ip_hash'],
+        ],
+
+        // ── Mensajes del formulario de contacto (TKT-0837) ─────────────────
+        'mensajes' => [
+            'select' => "id, nombre, email, mensaje, created_at",
+            'id'     => 'id',
+            'from'   => "contacto_mensajes",
+            'orden'  => ['fecha' => 'created_at', 'nombre' => 'nombre', 'def' => ['fecha', 'desc']],
+            'buscar' => ['nombre', 'email', 'mensaje'],
+            'grupos' => ['nombre' => "COALESCE(nombre, '(anónimo)')"],
+            'fila'   => function ($m) use ($fecha) {
+                $mail = $m['email'] ? '<a href="mailto:' . h($m['email']) . '">' . h($m['email']) . '</a>' : '<span style="color:var(--muted)">—</span>';
+                return '<tr>'
+                    . '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' . $fecha($m['created_at']) . '</td>'
+                    . '<td>' . ($m['nombre'] ? h($m['nombre']) : '<span style="color:var(--muted)">(anónimo)</span>') . '</td>'
+                    . '<td style="font-size:12px">' . $mail . '</td>'
+                    . '<td style="white-space:pre-wrap;max-width:560px">' . h($m['mensaje']) . '</td>'
+                    . '</tr>';
+            },
+            'csv' => ['Fecha (UTC)' => 'created_at', 'Nombre' => 'nombre', 'Email' => 'email', 'Mensaje' => 'mensaje'],
+        ],
+
+        // ── Colaboraciones por Mercado Pago (TKT-0837) ──────────────────────
+        // Cada fila nace "pendiente" cuando el visitante toca "Pagar" (api/donar.php) y pasa a aprobado/rechazado
+        // cuando llega el aviso de MP (api/mp_webhook.php). Pendiente viejo = no pagó… o el aviso de MP no llegó.
+        'donaciones' => [
+            'select' => "id, monto, estado, mp_preference_id, mp_payment_id, ip_hash, created_at, confirmed_at",
+            'id'     => 'id',
+            'from'   => "donaciones",
+            'orden'  => ['fecha' => 'created_at', 'monto' => 'monto', 'estado' => 'estado', 'def' => ['fecha', 'desc']],
+            'buscar' => ['estado', 'mp_payment_id', 'mp_preference_id', 'ip_hash'],
+            'grupos' => ['estado' => 'estado', 'monto' => 'monto'],
+            'fila'   => function ($d) use ($fecha, $hash, $estDon) {
+                return '<tr>'
+                    . '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' . $fecha($d['created_at']) . '</td>'
+                    . '<td style="text-align:right">$ ' . number_format((float)$d['monto'], 0, ',', '.') . '</td>'
+                    . '<td>' . ($estDon[$d['estado']] ?? h($d['estado'])) . '</td>'
+                    . '<td style="white-space:nowrap;font-size:12px;color:var(--muted)">' . ($d['confirmed_at'] ? $fecha($d['confirmed_at']) : '—') . '</td>'
+                    . '<td style="font-size:11px;font-family:monospace">' . ($d['mp_payment_id'] ? h($d['mp_payment_id']) : '—') . '</td>'
+                    . $hash($d['ip_hash'])
+                    . '</tr>';
+            },
+            'csv' => ['Fecha (UTC)' => 'created_at', 'Monto (ARS)' => 'monto', 'Estado' => 'estado', 'Confirmada (UTC)' => 'confirmed_at',
+                      'Pago MP' => 'mp_payment_id', 'Preferencia MP' => 'mp_preference_id', 'IP hash' => 'ip_hash'],
         ],
 
         // ── Encuestas: detalle ──────────────────────────────────────────────

@@ -405,6 +405,21 @@ try {
         "SELECT tipo, COUNT(*) AS n FROM ayuda_toast_eventos GROUP BY tipo"
     )->fetchAll(PDO::FETCH_KEY_PAIR);
 } catch (Exception $e) { $ayuda_stats = []; }
+try {
+    $ayuda_ips = $db->query(
+        "SELECT tipo, COUNT(DISTINCT ip_hash) AS n FROM ayuda_toast_eventos GROUP BY tipo"
+    )->fetchAll(PDO::FETCH_KEY_PAIR);
+} catch (Exception $e) { $ayuda_ips = []; }
+
+// Mensajes de contacto y colaboraciones por MP (TKT-0837): antes no se veían en el panel
+$hace7 = db_engine() === 'mysql' ? "DATE_SUB(UTC_TIMESTAMP(), INTERVAL 7 DAY)" : "datetime('now', '-7 days')";
+try {
+    $msg_stats = $db->query("SELECT COUNT(*) AS total, SUM(created_at >= $hace7) AS semana, MAX(created_at) AS ultimo FROM contacto_mensajes")->fetch(PDO::FETCH_ASSOC);
+} catch (Exception $e) { $msg_stats = ['total' => 0, 'semana' => 0, 'ultimo' => null]; }
+try {
+    $don_stats = $db->query("SELECT estado, COUNT(*) AS n, SUM(monto) AS total, COUNT(DISTINCT ip_hash) AS ips, MAX(created_at) AS ultimo FROM donaciones GROUP BY estado")->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC);
+    $don_semana = (int)$db->query("SELECT COUNT(*) FROM donaciones WHERE estado = 'aprobado' AND confirmed_at >= $hace7")->fetchColumn();
+} catch (Exception $e) { $don_stats = []; $don_semana = 0; }
 
 // ICY cache — resumen
 $icy = $db->query(
@@ -741,6 +756,14 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <button class="tab-btn" data-tab="encuestas">Encuestas</button>
   <button class="tab-btn" data-tab="compartidos">Compartidos</button>
   <button class="tab-btn" data-tab="ayuda">🙏 Ayuda</button>
+  <button class="tab-btn" data-tab="mensajes">
+    💬 Mensajes
+    <?php if ((int)$msg_stats['semana'] > 0): ?><span class="tab-badge" title="Mensajes de los últimos 7 días"><?= (int)$msg_stats['semana'] ?></span><?php endif; ?>
+  </button>
+  <button class="tab-btn" data-tab="colaboraciones">
+    💳 Colaboraciones
+    <?php if ($don_semana > 0): ?><span class="tab-badge" style="background:var(--green)" title="Aprobadas en los últimos 7 días"><?= $don_semana ?></span><?php endif; ?>
+  </button>
   <button class="tab-btn" data-tab="reproducciones">Reproducciones</button>
   <button class="tab-btn" data-tab="sugerencias">
     Sugerencias
@@ -961,14 +984,19 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
     $ay_nomolestar = (int)($ayuda_stats['no_molestar'] ?? 0);
     $ay_cafecito   = (int)($ayuda_stats['cafecito']    ?? 0);
     $ay_contacto   = (int)($ayuda_stats['contacto']    ?? 0);
-    $ay_respondio  = $ay_ok + $ay_nomolestar + $ay_cafecito + $ay_contacto;
+    $ay_colab      = (int)($ayuda_stats['colaborar_click'] ?? 0);
+    $ay_colab_mp   = (int)($ayuda_stats['colaborar_mp'] ?? 0) + (int)($ayuda_stats['m3u_mp'] ?? 0);
+    $ay_respondio  = $ay_ok + $ay_nomolestar + $ay_cafecito + $ay_contacto + $ay_colab;
+    $ips = fn($k) => (int)($ayuda_ips[$k] ?? 0);
     $ay_tasa       = $ay_mostrado > 0 ? round($ay_respondio / $ay_mostrado * 100, 1) : 0;
   ?>
   <div class="cards">
     <div class="card"><div class="v"><?= $ay_mostrado ?></div><div class="l">Veces mostrado</div></div>
     <div class="card"><div class="v pos">👍 <?= $ay_ok ?></div><div class="l">OK (7 días)</div></div>
-    <div class="card"><div class="v pos">☕ <?= $ay_cafecito ?></div><div class="l">Cafecito</div></div>
-    <div class="card"><div class="v">💬 <?= $ay_contacto ?></div><div class="l">Contacto (7 días)</div></div>
+    <div class="card"><div class="v pos">💳 <?= $ay_colab ?></div><div class="l">Abrió «Colaborar» (<?= $ips('colaborar_click') ?> personas)</div></div>
+    <div class="card"><div class="v pos">➡️ <?= $ay_colab_mp ?></div><div class="l">Fue a pagar con MP (<a href="#" onclick="document.querySelector('.tab-btn[data-tab=colaboraciones]').click();return false">ver colaboraciones</a>)</div></div>
+    <div class="card"><div class="v">☕ <?= $ay_cafecito ?></div><div class="l">Cafecito (botón viejo, hasta el 8/10)</div></div>
+    <div class="card"><div class="v">📬 <?= $ay_contacto ?></div><div class="l">Abrió la página de Contacto (<a href="#" onclick="document.querySelector('.tab-btn[data-tab=mensajes]').click();return false">ver mensajes</a>)</div></div>
     <div class="card"><div class="v neg">🚫 <?= $ay_nomolestar ?></div><div class="l">No molestar más</div></div>
     <div class="card"><div class="v"><?= $ay_tasa ?>%</div><div class="l">Tasa de respuesta</div></div>
   </div>
@@ -976,6 +1004,40 @@ if (document.body.classList.contains('light')) themeBtn.textContent = '🌙 Oscu
   <table id="dt-ayuda" class="dt" data-lista="ayuda">
     <thead><tr><th data-col="fecha">Fecha / Hora</th><th data-col="tipo" data-gk="tipo" data-group="Tipo">Tipo</th><th data-col="provincia" data-gk="provincia" data-group="Provincia">Provincia</th><th>IP hash</th></tr></thead>
     <tbody><tr class="dt-empty-row"><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+  </table>
+</div>
+
+<!-- ══ Tab: Mensajes de contacto (TKT-0837) ═════════════════════════════════ -->
+<div class="tab-content" id="tab-mensajes">
+  <h2>Mensajes del formulario de contacto</h2>
+  <p style="color:var(--muted);font-size:13px">Lo que la gente escribió en <a href="contacto.php" target="_blank">contacto.php</a>. Cada mensaje también se manda por Telegram; si alguno no te llegó, acá está igual.</p>
+  <div class="cards">
+    <div class="card"><div class="v"><?= (int)$msg_stats['total'] ?></div><div class="l">Mensajes en total</div></div>
+    <div class="card"><div class="v"><?= (int)$msg_stats['semana'] ?></div><div class="l">Últimos 7 días</div></div>
+    <div class="card"><div class="v" style="font-size:15px"><?= $msg_stats['ultimo'] ? h(substr($msg_stats['ultimo'], 0, 16)) : '—' ?></div><div class="l">Último (UTC)</div></div>
+  </div>
+  <table id="dt-mensajes" class="dt" data-lista="mensajes">
+    <thead><tr><th data-col="fecha">Fecha / Hora (UTC)</th><th data-col="nombre" data-gk="nombre" data-group="Nombre">Nombre</th><th>Email</th><th>Mensaje</th></tr></thead>
+    <tbody><tr class="dt-empty-row"><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+  </table>
+</div>
+
+<!-- ══ Tab: Colaboraciones por Mercado Pago (TKT-0837) ═══════════════════════ -->
+<div class="tab-content" id="tab-colaboraciones">
+  <h2>Colaboraciones con Mercado Pago</h2>
+  <?php
+    $don = fn($e, $k) => $don_stats[$e][$k] ?? 0;
+    $don_pend = (int)$don('pendiente', 'n');
+  ?>
+  <p style="color:var(--muted);font-size:13px">Cada fila nace cuando alguien elige un monto y toca «Pagar con Mercado Pago». Queda <b>pendiente</b> hasta que Mercado Pago avisa si se pagó o no. Un pendiente viejo casi siempre es alguien que no terminó el pago; si sospechás que alguien sí pagó, buscalo por fecha y monto en tu cuenta de Mercado Pago.</p>
+  <div class="cards">
+    <div class="card"><div class="v pos">✅ <?= (int)$don('aprobado', 'n') ?></div><div class="l">Aprobadas · $ <?= number_format((float)$don('aprobado', 'total'), 0, ',', '.') ?></div></div>
+    <div class="card"><div class="v">⏳ <?= $don_pend ?></div><div class="l">Pendientes (<?= (int)$don('pendiente', 'ips') ?> personas) · $ <?= number_format((float)$don('pendiente', 'total'), 0, ',', '.') ?></div></div>
+    <div class="card"><div class="v neg">❌ <?= (int)$don('rechazado', 'n') ?></div><div class="l">Rechazadas</div></div>
+  </div>
+  <table id="dt-colaboraciones" class="dt" data-lista="donaciones">
+    <thead><tr><th data-col="fecha">Fecha / Hora (UTC)</th><th data-col="monto" data-gk="monto" data-group="Monto">Monto</th><th data-col="estado" data-gk="estado" data-group="Estado">Estado</th><th>Confirmada</th><th>Pago MP</th><th>IP hash</th></tr></thead>
+    <tbody><tr class="dt-empty-row"><td colspan="6" class="empty">Cargando…</td></tr></tbody>
   </table>
 </div>
 
@@ -1790,7 +1852,9 @@ window.DT = (function () {
     'notificaciones': 'suscriptores',
     'patrones': 'suscriptores',
     'icy': 'icy',
-    'crawlers': 'crawlers'
+    'crawlers': 'crawlers',
+    'mensajes': 'mensajes',
+    'colaboraciones': 'colaboraciones'
   };
 
   function showTab(id) {

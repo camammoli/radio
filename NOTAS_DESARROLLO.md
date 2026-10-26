@@ -3712,3 +3712,46 @@ reproducciones en 5,1 s; `admin_stats.php` 0,7 s. Sin sesión, `?lista=` devuelv
 
 **A futuro:** el CSV de reproducciones crece con la tabla (~0,3 ms por fila); con 100 mil filas serían
 ~30 s, cerca del límite de ejecución del hosting. Si llega ahí: exportar por rango de fechas.
+
+## 26/10/2026 — TKT-0837: el admin muestra Colaborar/MP, los mensajes de contacto y las colaboraciones
+**Por qué:** Carlos miró la pestaña 🙏 Ayuda («☕ 16 Cafecito, 💬 6 Contacto») y no le había llegado nada. Las tarjetas
+engañaban:
+- «Cafecito» solo contaba el botón viejo, anterior al 08/10. Los eventos del botón nuevo «💳 Colaborar» (TKT-0806:
+  `colaborar_click`, `colaborar_mp`, `m3u_*`) no se contaban en ninguna tarjeta.
+- «Contacto» cuenta las veces que se ABRIÓ `contacto.php`, no los mensajes enviados.
+- Los mensajes (`contacto_mensajes`) y los intentos de pago (`donaciones`) no se veían en ningún lado: solo llegaban por
+  Telegram, y el aviso de MP nunca se probó con un pago real.
+
+**Cambios** (`admin.php`, `api/_admin_listas.php`):
+- **Tarjetas de Ayuda:**
+  - «💳 Abrió Colaborar (N personas)»;
+  - «➡️ Fue a pagar con MP» (`colaborar_mp` + `m3u_mp`);
+  - «☕ Cafecito (botón viejo, hasta el 8/10)»;
+  - «📬 Abrió la página de Contacto».
+  - Las tarjetas tienen enlaces a las pestañas nuevas y la tasa de respuesta suma Colaborar. Las etiquetas de la tabla
+    de eventos cubren todos los tipos.
+- **Pestaña 💬 Mensajes:** lista `mensajes` sobre `contacto_mensajes`, con búsqueda, agrupado por nombre y CSV. Tarjetas
+  de total, últimos 7 días y último mensaje; la insignia muestra los de los últimos 7 días.
+- **Pestaña 💳 Colaboraciones:** lista `donaciones`, agrupable por estado y monto, con CSV. Tarjetas de aprobadas (con
+  el total), pendientes (con cuántas personas) y rechazadas; la insignia verde muestra las aprobadas en 7 días. Un texto
+  explica que «pendiente» es un pago no terminado o un aviso de MP que no llegó.
+- Rutas `#mensajes` y `#colaboraciones` en `HASH_MAP`.
+
+**Prueba local** (MySQL 5.7.44 y PHP en Docker, igual que en TKT-0827, con `sql_mode` sin ONLY_FULL_GROUP_BY como en
+producción):
+- listas, búsqueda (1 de 2 filtrada), agrupado y CSV;
+- HTML escapado (`<script>` en un mensaje);
+- capturas en PC y celular sin errores de JS.
+
+**Producción:** respaldo en `~/Backups/radio_admin_pre_TKT0837_20261026/` (igual al repo antes del cambio). Subida
+atómica (`.new` y después `mv`). `_admin_listas.php` directo da 403.
+
+**Lo que había, visto con el admin nuevo:**
+- **3 mensajes:** 2 son pruebas de Carlos (18/08 y 14/10). El único real es el de Carlos Barreira, del 20/09: pide sumar
+  Radio InterCom FM 98.3 (J. V. González, Salta), `https://s2.netradiofm.com:9804`. No aparece en la API pública de
+  emisoras.
+- **8 colaboraciones, todas pendientes y ninguna aprobada:**
+  - 4 son del 08/10, de una misma IP: las pruebas del despliegue de TKT-0806.
+  - Las otras 4 son de 3 personas: 09/10 $1.000 y $100 (misma IP), 20/10 $200 y 22/10 $50.
+  - Si alguna aparece cobrada en la cuenta de MP, el webhook no anda.
+- **Toast:** 18 aperturas de Colaborar (6 personas) y 11 idas a pagar.
