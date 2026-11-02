@@ -3755,3 +3755,36 @@ atómica (`.new` y después `mv`). `_admin_listas.php` directo da 403.
   - Las otras 4 son de 3 personas: 09/10 $1.000 y $100 (misma IP), 20/10 $200 y 22/10 $50.
   - Si alguna aparece cobrada en la cuenta de MP, el webhook no anda.
 - **Toast:** 18 aperturas de Colaborar (6 personas) y 11 idas a pagar.
+
+## 2026-11-02 — Alta de 16 emisoras y 9 URLs alternativas del competitor_scan (TKT-0854)
+Carlos pidió por Telegram cargar las nuevas y las URLs alternativas del último informe de `competitor_scan.py`
+(«si están disponibles»). Se bajó el artifact completo del run `41520453831` (02/11 17:34; el mensaje de Telegram
+viene truncado): 23 nuevas y 105 alternativas (radio-browser.info + myradioenvivo.ar).
+
+**Criterio de stream más estricto que TKT-0725/0726:** antes bastaba HTTP 200–399; eso deja pasar páginas web
+(aradio.org, radios-argentinas.org responden 200 con HTML). Ahora: GET con Range, tipo de contenido de audio (o
+cabeceras icy-) y bytes recibidos, y HTML = «página web».
+
+**Nuevas:** 16 cargadas (EL CLUB DE LA PLUMA, Big Songs Radio, FM Fribuay 90.7, Frecuencia 97, Frecuencia Sundance
+98.7, LT+A Radio, Maxima FM 94.5, MetalRadio, MikiRadio, Radio Fm Sur 107.7 Rosario, Radio Jujuy 104.5 San Pedro,
+Radio Ritmo (venía «Radio Rit moOnline», mismo stream que «Radio Ritmo»), Radio Satélite LRK 428 San Pedro de Jujuy,
+Radionauta, Sunrise Cariló 98.5, Origen AM 950). Descartadas 6: 4 páginas web, «Frecuencia 97.5» 404, «radio
+indecente» sin respuesta. Sin duplicados contra el catálogo (URL ni nombre normalizado). Nota: Frecuencia Sundance y
+Radio Fm Sur siguen además como sugerencias pendientes (ids 1382 y 1429, URLs viejas con 401): se pueden rechazar.
+
+**Alternativas — el emparejamiento por nombre NO es confiable:** el scan propone, por ejemplo, para «Radio 10» de
+Bahía Blanca (caída) cuatro radios de otras ciudades, para Radio Mitre Bahía Blanca Mitre Mendoza y la nacional, para
+Nihuil FM la Nihuil AM. Solo se aplicaron 9 con identidad clara y URL actual caída: Factory Radio (exacto), LV10
+Radio De Cuyo (exacto), Radio Ancasti (exacto), Acqua (102.7, misma ruta «acquamd»), La Colifata (100.3), LU6 (señal
+distintiva, homepage lu6.com.ar), Estación del Sol (Mendoza 100.9, mismo servidor que LV10), Radio María (Argentina,
+homepage radiomaria.org.ar), Somos Radio (AM 530). 33 dudosas, 30 con las dos URLs funcionando (el catálogo no tiene
+URL de respaldo) y 29 alternativas caídas: lista completa y respaldo de las URLs anteriores en
+`docs/competitor_scan/2026-11-02_alternativas.md`.
+
+**Método:** admin.php con sesión real (crear_emisora / editar_emisora; el editar pisa nombre/provincia/homepage, así
+que se reenviaron los valores actuales leídos del propio panel), de a una con 4 s de pausa (por el 429 del hosting).
+El navegador sin ventana recibe 406 del WAF en el POST de login; con ventana (fuera de pantalla) funciona.
+**Verificado:** 1530 → 1546 emisoras en el ABM; 9/9 URLs nuevas y 16/16 altas presentes.
+
+**Mejora sugerida a `competitor_scan.py`:** emparejar alternativas por nombre + frecuencia/ciudad/homepage (no solo
+nombre) y marcar «misma emisora segura» vs «revisar»; y aplicar el criterio de audio real en el informe.
