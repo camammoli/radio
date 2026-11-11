@@ -697,3 +697,17 @@ body.light .rp-welcome-privacy { background: rgba(0,0,0,.05); }
   padding: 20px 16px; border-top: 1px solid var(--border); margin-top: 20px;
 }
 .site-footer a { color: var(--muted); text-decoration: underline; }
+
+/* ── Despedida (11/11/2026): arriba de todo, dentro de la página, sin cerrar ── */
+.rp-despedida {
+  position: relative; z-index: 300;
+  margin: 0; padding: 16px 20px;
+  background: var(--surface); color: inherit;
+  border-bottom: 3px solid #fbbf24;
+  font-size: 15px; line-height: 1.55;
+}
+.rp-despedida h3 { margin: 0 0 8px; font-size: 18px; }
+.rp-despedida p { margin: 0 0 8px; max-width: 900px; }
+.rp-despedida a { color: #fbbf24; }
+.rp-despedida-firma { font-style: italic; opacity: .85; }
+@media (max-width: 480px) { .rp-despedida { padding: 12px 14px; font-size: 14px; } .rp-despedida h3 { font-size: 16px; } }

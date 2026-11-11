@@ -361,7 +361,7 @@ if ($prov) {
 <?php $__base = defined('RADIO_BASE') ? RADIO_BASE : '/radio'; ?>
 <script src="<?= $__base ?>/assets/theme.js"></script>
 <script>window.RADIO_TOTAL = <?= radio_total_emisoras($db) ?>;</script>
-<script src="<?= $__base ?>/assets/player.js"></script>
+<script src="<?= $__base ?>/assets/player.js?v=<?= @filemtime(__DIR__ . '/../assets/player.js') ?>"></script>
 <script>
 (function () {
   // Tema

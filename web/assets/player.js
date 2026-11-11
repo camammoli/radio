@@ -46,6 +46,9 @@
   var AYUDA_NEVER_KEY  = 'radio_ayuda_never';         // '1' = no mostrar nunca más
   var AYUDA_SESSION_KEY = 'radio_ayuda_session_shown'; // sessionStorage: ya se mostró en esta sesión de navegación
   var AYUDA_SNOOZE_DIAS = 7;
+  // Despedida (11/11/2026, decisión de Carlos): aviso fijo arriba de todo para todos, sin cerrar; mientras esté,
+  // no se muestran los otros carteles (ayuda, bienvenida, encuestas). Para sacarlo: DESPEDIDA = false.
+  var DESPEDIDA = true;
 
   // Total real de emisoras, lo inyecta la página desde la DB (TKT-0816) — no
   // escribir cantidades a mano en los textos. Sin dato: texto genérico.
@@ -574,6 +577,7 @@
     }
 
     function showSurvey() {
+      if (DESPEDIDA) return;
       if (survShown) return;
       var key = 'survey_v2_' + slug;
       var stored = localStorage.getItem(key);
@@ -629,6 +633,7 @@
     }
 
     function showWelcome() {
+      if (DESPEDIDA) return;
       if (localStorage.getItem(WELCOME_KEY)) return;
 
       var toast = document.createElement('div');
@@ -699,6 +704,7 @@
     }
 
     function showAyuda() {
+      if (DESPEDIDA) return;
       if (ayudaSuprimido()) return;
 
       // Si el toast de bienvenida o el de encuesta de sitio siguen abiertos
@@ -949,6 +955,7 @@
     }
 
     function showSiteSurvey() {
+      if (DESPEDIDA) return;
       if (localStorage.getItem(SITE_SURVEY_KEY)) return;
 
       var toast = document.createElement('div');
@@ -1071,5 +1078,26 @@
   }
 
   global.RadioPlayer = RadioPlayer;
+
+  // ── Despedida: aviso arriba de todo, dentro de la página (no flota ni tapa el reproductor), sin botón de cerrar ──
+  function despedida() {
+    if (!DESPEDIDA || document.getElementById('rp-despedida')) return;
+    var d = document.createElement('section');
+    d.id = 'rp-despedida';
+    d.className = 'rp-despedida';
+    d.setAttribute('role', 'status');
+    d.innerHTML =
+      '<h3>&#x1F4FB; Esta noche Radio Argentina se despide</h3>' +
+      '<p>La arm&#xE9; y la sostuve solo, en mi tiempo libre. Monitorear ' + totalTxt('emisoras en vivo') +
+      ' termin&#xF3; llev&#xE1;ndose la mayor parte del espacio y del tr&#xE1;fico del servidor que comparto con otros proyectos, ' +
+      'y no logr&#xE9; que se sostuviera. Por eso, esta noche la doy de baja.</p>' +
+      '<p>Hasta entonces pod&#xE9;s seguir escuchando como siempre. El c&#xF3;digo queda abierto en ' +
+      '<a href="https://github.com/camammoli/radio" target="_blank" rel="noreferrer">GitHub</a>, por si alg&#xFA;n d&#xED;a vuelve.</p>' +
+      '<p>Gracias por escuchar, por sugerir emisoras y por avisarme cada vez que algo se ca&#xED;a. ' +
+      '<a href="contacto.php">Si quer&#xE9;s decirme algo, escribime</a>.</p>' +
+      '<p class="rp-despedida-firma">&#x2014; Carlos</p>';
+    document.body.insertBefore(d, document.body.firstChild);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', despedida); else despedida();
 
 }(window));

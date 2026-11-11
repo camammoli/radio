@@ -33,7 +33,7 @@
   <meta name="apple-mobile-web-app-capable"      content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title"        content="Radio AR">
-  <link rel="stylesheet" href="<?= $__base ?>/assets/style.css">
+  <link rel="stylesheet" href="<?= $__base ?>/assets/style.css?v=<?= @filemtime(__DIR__ . '/../assets/style.css') ?>">
   <link rel="stylesheet" href="<?= $__base ?>/assets/player.css">
   <?php if (defined('GA_ID') && GA_ID): ?>
   <script async src="https://www.googletagmanager.com/gtag/js?id=<?= GA_ID ?>"></script>
