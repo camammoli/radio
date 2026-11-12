@@ -1,0 +1,12 @@
+# Radio Argentina se cerró el 11/11/2026. Ficha: /proyectos/radio-argentina/ · código: github.com/camammoli/radio
+# Cómo volver a levantarla: COMO_VOLVER.md en el repo.
+Options -Indexes
+RewriteEngine On
+# Lo que usan reproductores, la lista M3U, radio.sh y la app instalada: 410 (ya no existe) para que dejen de pedir.
+RewriteCond %{QUERY_STRING} (^|&)m3u= [NC]
+RewriteRule ^ - [G,L]
+RewriteRule ^(api|crawlers|data|db|assets)(/|$) - [G,L]
+RewriteRule \.(m3u8?|pls|json|xml|js|css|png|ico)$ - [G,L]
+RewriteRule ^(proxy|listeners|log|sitemap|survey|suscribirse|sugerir|admin|admin_stats)\.php$ - [G,L]
+# Todo lo demás (portada, páginas de emisoras): a la ficha del proyecto.
+RewriteRule ^ https://mammoli.ar/proyectos/radio-argentina/ [R=301,L]

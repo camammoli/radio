@@ -3788,3 +3788,14 @@ El navegador sin ventana recibe 406 del WAF en el POST de login; con ventana (fu
 
 **Mejora sugerida a `competitor_scan.py`:** emparejar alternativas por nombre + frecuencia/ciudad/homepage (no solo
 nombre) y marcar «misma emisora segura» vs «revisar»; y aplicar el criterio de audio real en el informe.
+
+## 11/11/2026 — Cierre de Radio Argentina (decisión de Carlos)
+Motivo: se llevaba la mayor parte del espacio y del tráfico del hosting compartido y provocaba bloqueos 429 de la IP de la casa. Queda solo en el repo, documentada para volver.
+- Apagado: 7 workflows desactivados (no borrados) y sus secretos borrados; 3 cron de cPanel borrados; cron local `trafico_github.py` quitado; Radio quitada del monitor de novedades.
+- Copia final: volcado MySQL (21 tablas, 630.785 filas, verificado fila por fila), servidor completo, bundle del repo y lo no versionado → `~/Archivo/Radio_Argentina/` (fuera del repo). Capturas del sitio en vivo.
+- Hosting: `/radio/` quedó solo con `docs/despedida.htaccess` (301 → `mammoli.ar/proyectos/radio-argentina/`; 410 para API, M3U, `sw.js` y endpoints).
+- Ficha con capturas e historia en mammoli.ar; la portada de mammoli.ar ya no consulta la API; robots y sitemap sin `/radio`.
+- MG Digital: trabajo «Radio Argentina» despublicado; quitada de firmas y de herramientas.
+- Donaciones: `api/donar.php` y `api/mp_webhook.php` borrados (cuenta de Mercado Libre/Mercado Pago dada de baja); Cafecito queda solo como enlace en el código.
+- La credencial FTP general de mammoli.ar vivía en `.ftp.conf` de este repo (la usaban unas 15 herramientas): pasó a `~/.config/mammoli/ftp.conf`.
+- README profesionalizado (estado, capturas, historia), `COMO_VOLVER.md` y `docs/VPS_PROXIMA_CASA.md`. Tag `v2-final`. Repo archivado.

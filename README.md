@@ -1,8 +1,38 @@
 # Radio Argentina
 
-Escuchar cientos de radios argentinas desde la terminal, o desde el navegador sin instalar nada.
+![Estado: archivado](https://img.shields.io/badge/estado-archivado-lightgrey)
+![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue)
+![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777bb4)
+![MySQL](https://img.shields.io/badge/MySQL-MariaDB-4479a1)
 
-**Player web:** [mammoli.ar/radio](https://mammoli.ar/radio/) — funciona en celular, buscador en tiempo real, filtros por estado y género, ICY now-playing, encuestas, compartir por link/WhatsApp/QR, descarga M3U.
+Directorio para escuchar radios argentinas desde el navegador, sin instalar nada, y desde la terminal de Linux.
+
+> **Proyecto cerrado el 11 de noviembre de 2026.** Estuvo en línea en `mammoli.ar/radio` y llegó a registrar 1.554 emisoras. Se dio de baja porque se llevaba la mayor parte de un hosting compartido con otros proyectos. El código queda abierto y documentado: **[COMO_VOLVER.md](COMO_VOLVER.md)** explica qué se apagó y cómo levantarla de nuevo, y [docs/VPS_PROXIMA_CASA.md](docs/VPS_PROXIMA_CASA.md) anota la idea de un servidor propio. Historia y capturas: [mammoli.ar/proyectos/radio-argentina](https://mammoli.ar/proyectos/radio-argentina/).
+
+| Listado | Página de una emisora | En el celular |
+|---|---|---|
+| ![Listado con buscador, filtros y tarjetas de emisoras](docs/capturas/listado_escritorio.jpg) | ![Página de una emisora con el botón Escuchar en vivo](docs/capturas/emisora_escritorio.jpg) | ![Radio Argentina en un celular](docs/capturas/listado_celular.jpg) |
+
+## Contenido
+
+- [Historia](#historia)
+- [Terminal — radio2.sh](#terminal--radio2sh)
+- [Player web](#player-web)
+- [Arquitectura (v2)](#arquitectura-v2)
+- [Crawlers](#crawlers)
+- [GitHub Actions](#github-actions)
+- [Configuración](#configuración-configphp)
+- [Versiones](#versiones)
+- [Licencia](#licencia)
+
+## Historia
+
+- **12/07/2021:** primer commit. Un script para la terminal con una lista de radios argentinas.
+- **2026:** pasa a la web en `mammoli.ar/radio`. El 25/06 sale la v2, reescrita de cero: base de datos, una página por emisora, API REST propia y verificación automática de señales.
+- **Julio–agosto de 2026:** la base SQLite se corrompe cinco veces; la causa nunca se confirmó.
+- **03/09/2026:** migración a MySQL.
+- **Septiembre–octubre:** canción al aire, encuestas, alertas, estadísticas, modo mantenimiento y aprendizaje de horarios de programas. Promedio: unas 270 reproducciones y entre 40 y 50 oyentes distintos por día.
+- **11/11/2026:** cierre. Datos finales: 1.554 emisoras registradas, 23.791 reproducciones registradas y más de 560.000 chequeos de señal.
 
 ---
 
@@ -57,9 +87,9 @@ sudo apt install mpv
 
 ---
 
-## Player web — mammoli.ar/radio
+## Player web
 
-Accesible desde cualquier navegador sin instalar nada.
+Estuvo en `mammoli.ar/radio` hasta el 11/11/2026. Se podía usar desde cualquier navegador, sin instalar nada.
 
 - Buscador en tiempo real (nombre, provincia, género)
 - Filtros: Activas / Dudosas / Caídas / Más escuchadas
@@ -197,13 +227,9 @@ Script PHP para cPanel cron. Barre todas las emisoras con `icy_supported=1` usan
 
 ## GitHub Actions
 
-| Workflow | Frecuencia | Qué hace |
-|---|---|---|
-| `check-streams-v2.yml` | cada 6hs | verifica streams, notifica cambios por Telegram |
-| `enrich-v2.yml` | días 1 y 15 | enriquece metadatos desde Radio Browser |
-| `gist-sync.yml` | cada lunes | exporta el directorio completo al [gist público](#directorio-como-gist) |
+**Todos desactivados desde el 11/11/2026** (no borrados). Lista completa, horarios y secretos en [COMO_VOLVER.md](COMO_VOLVER.md#workflows-de-github-actions-desactivados).
 
-Los workflows se activan desde `master` (default branch). Descargan la DB por FTP, corren el crawler, y suben la DB actualizada.
+Mientras estuvieron activos, descargaban la base por FTP, corrían el crawler y subían la base actualizada.
 
 ---
 
@@ -241,7 +267,7 @@ Un solo branch (`master` = producción). Las versiones se marcan con tags:
 | Tag | Descripción |
 |---|---|
 | `v1-final` | último estado de v1 antes del cutover a v2 (2026-06-25) |
-| HEAD | v2 activa en mammoli.ar/radio/ |
+| `v2-final` | último estado de v2, al cerrar (2026-11-11) |
 
 ---
 
@@ -251,7 +277,7 @@ El listado completo de emisoras está disponible públicamente en formato TSV (U
 
 **[gist.github.com/camammoli/21ce6e3ba07486bcd16a28cda967f0d9](https://gist.github.com/camammoli/21ce6e3ba07486bcd16a28cda967f0d9)**
 
-Es un fork del [gist original de pisculichi](https://gist.github.com/pisculichi/fae88a2f5570ab22da53). Se actualiza automáticamente cada lunes via `gist-sync.yml` exportando directamente desde la base de datos V2. Para actualizar manualmente:
+Es un fork del [gist original de pisculichi](https://gist.github.com/pisculichi/fae88a2f5570ab22da53). Se actualizaba cada lunes con `gist-sync.yml`; quedó congelado con la lista del cierre. Para actualizar manualmente:
 
 ```bash
 python3 gist_sync.py --dry-run   # previsualizar sin enviar
