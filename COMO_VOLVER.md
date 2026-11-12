@@ -39,7 +39,7 @@ Este archivo cuenta **qué se apagó y cómo se enciende de nuevo**. Nada se per
 | `gist-sync.yml` | `0 12 * * 1` | Exportaba el directorio al gist público |
 | `learn-patterns.yml` | `0 7 * * 1` | Aprendía los horarios de los programas |
 
-Secretos que usaban (se borraron del repo al cerrar; hay que volver a cargarlos con `gh secret set`): `CRAWLER_TOKEN`, `FTP_PASS`, `RADIO_ADMIN_KEY`, `TELEGRAM_TOKEN`, `TG_CHAT_ID`, `TG_TOKEN`.
+Secretos que usaban (siguen cargados en el repo, cifrados; con los workflows desactivados y el repo archivado no se usan. Si se borran, volver a cargarlos con `gh secret set`): `CRAWLER_TOKEN`, `FTP_PASS`, `RADIO_ADMIN_KEY`, `TELEGRAM_TOKEN`, `TG_CHAT_ID`, `TG_TOKEN`.
 
 ## Cron del servidor (borrados)
 

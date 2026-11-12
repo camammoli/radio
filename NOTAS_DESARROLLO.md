@@ -3791,7 +3791,7 @@ nombre) y marcar «misma emisora segura» vs «revisar»; y aplicar el criterio 
 
 ## 11/11/2026 — Cierre de Radio Argentina (decisión de Carlos)
 Motivo: se llevaba la mayor parte del espacio y del tráfico del hosting compartido y provocaba bloqueos 429 de la IP de la casa. Queda solo en el repo, documentada para volver.
-- Apagado: 7 workflows desactivados (no borrados) y sus secretos borrados; 3 cron de cPanel borrados; cron local `trafico_github.py` quitado; Radio quitada del monitor de novedades.
+- Apagado: 7 workflows desactivados (no borrados; sus secretos siguen cargados, pendiente decidir si se borran); 3 cron de cPanel borrados; cron local `trafico_github.py` quitado; Radio quitada del monitor de novedades.
 - Copia final: volcado MySQL (21 tablas, 630.785 filas, verificado fila por fila), servidor completo, bundle del repo y lo no versionado → `~/Archivo/Radio_Argentina/` (fuera del repo). Capturas del sitio en vivo.
 - Hosting: `/radio/` quedó solo con `docs/despedida.htaccess` (301 → `mammoli.ar/proyectos/radio-argentina/`; 410 para API, M3U, `sw.js` y endpoints).
 - Ficha con capturas e historia en mammoli.ar; la portada de mammoli.ar ya no consulta la API; robots y sitemap sin `/radio`.
