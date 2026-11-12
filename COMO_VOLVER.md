@@ -18,14 +18,14 @@ Este archivo cuenta **qué se apagó y cómo se enciende de nuevo**. Nada se per
 | Portfolio de MG Digital, firmas y clics | Trabajo despublicado; sitio quitado de firmas y de herramientas | Volver a publicar desde el panel de MG Digital |
 | Gist con el directorio (TSV) | Congelado con la última lista | Reactivar `gist-sync.yml` |
 
-## Datos archivados (fuera del repo, en la PC de Carlos)
+## Datos archivados (repo privado)
 
-`~/Archivo/Radio_Argentina/` contiene:
-- `mammoli_radio.sql.gz` + `conteos.txt`: volcado final de MySQL y conteo de filas por tabla;
-- `servidor_final/radio/`: copia completa de lo que había en el servidor (con el `config.php` real, **que tiene secretos**);
-- `repo_local/`: `radio.bundle` (el repo entero) y lo no versionado (`.ftp.conf`, `config.php`, SQLite local, reportes);
-- `estado_al_apagar/`: los workflows, los cron y el crontab tal como estaban;
-- `documentos/`, `logs/`, `capturas/`: informes, encuestas, análisis y capturas del sitio en vivo.
+Los datos van en el repo **privado** `camammoli/radio-archivo`: tienen información de usuarios y no pueden ir acá. Al cerrar quedó preparado; si todavía no está en GitHub, la copia está en la PC de desarrollo, en `~/Archivo/radio-archivo`.
+- `volcado/`: volcado final de MySQL y conteo de filas por tabla;
+- `servidor_final/radio/`: lo que había en el servidor (claves tachadas);
+- `no_versionado/`: lo que no estaba en git (SQLite local, reportes, scripts v1);
+- `documentos/`, `logs/`, `capturas/`, `estado_al_apagar/`;
+- `SECRETOS.md`: qué claves usaba y dónde están hoy, sin valores.
 
 ## Workflows de GitHub Actions (desactivados)
 

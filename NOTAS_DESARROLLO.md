@@ -3799,3 +3799,5 @@ Motivo: se llevaba la mayor parte del espacio y del tráfico del hosting compart
 - Donaciones: `api/donar.php` y `api/mp_webhook.php` borrados (cuenta de Mercado Libre/Mercado Pago dada de baja); Cafecito queda solo como enlace en el código.
 - La credencial FTP general de mammoli.ar vivía en `.ftp.conf` de este repo (la usaban unas 15 herramientas): pasó a `~/.config/mammoli/ftp.conf`.
 - README profesionalizado (estado, capturas, historia), `COMO_VOLVER.md` y `docs/VPS_PROXIMA_CASA.md`. Tag `v2-final`. Repo archivado.
+
+- 11/11 (más tarde): base MySQL `mammoli_radio` BORRADA del hosting (el usuario `mammoli_carlos` queda: lo usan otras bases). Datos al repo privado `camammoli/radio-archivo` (claves tachadas; lista en su SECRETOS.md). En la PC no queda nada de la Radio.
