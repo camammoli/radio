@@ -4,6 +4,7 @@
 ![Licencia: MIT](https://img.shields.io/badge/licencia-MIT-blue)
 ![PHP 8.2+](https://img.shields.io/badge/PHP-8.2%2B-777bb4)
 ![MySQL](https://img.shields.io/badge/MySQL-MariaDB-4479a1)
+[![Archivado en Software Heritage](https://archive.softwareheritage.org/badge/origin/https://github.com/camammoli/radio/)](https://archive.softwareheritage.org/browse/origin/?origin_url=https://github.com/camammoli/radio)
 
 Directorio para escuchar radios argentinas desde el navegador, sin instalar nada, y desde la terminal de Linux.
 
